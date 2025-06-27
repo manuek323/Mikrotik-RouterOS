@@ -1,0 +1,132 @@
+
+
+    Creado por Deniss M., actualizado por última vez el may 20, 2025 6 min de lectura
+
+    Overview
+    Repeater setup
+        2.4 GHz interface configuration
+        5 GHz interface configuration
+        Optional step - adding virtual interface
+        Bridging and listing
+        DHCP
+
+Overview
+
+Package: wifi-qcom
+
+This guide is meant for 802.11 AX devices running wifi-qcom package/drivers.
+
+WiFi range is limited. APs (devices that broadcast Wi-Fi networks) run on 2.4 and/or 5 GHz frequency. 5 GHz networks enable a much better throughput, but with reduced range. 2.4 GHz networks ensure a better coverage, but with less throughput.
+
+Indoor APs are, usually, equipped with omnidirectional antennas (which allow broadcasting the signal in a "donut" shape around the AP, 360°). For indoor and short distance outdoor installations, it is a perfect antenna to use. Using a simple home AP with omnidirection antennas, you can achieve a distance of up to ±100 meters in an "ideal" interference-free line of sight setup. Which is reduced much further inside buildings. Concrete, pipes, metal, water...and all kinds of other different materials affect WiFi indoors. Some items can absorb, some deflect, some diffract and some can scatter the signal.
+
+With that in mind, it is not always possible to cover the required range with a single AP/router, and additional APs need to be installed.
+
+For the best possible throughput, each AP should be connected to the main network via an ethernet cable. However! It is not always possible to pass the cable from the AP to the main router for whatever reason...most likely, aesthetics.
+
+This is where, "repeaters" or "extenders" can help.
+
+Extender's/Repeater's job is to establish a Wi-Fi connection with your main router as a "client" or a "station", use this connection as an uplink connection, and also broadcast extender's own WiFi network at the same time.
+
+Throughput!
+
+When a device is used as an extender, the throughput you get from it is reduced, at least, in half.
+
+This is because half of the device's WiFi resources are used to keep an ongoing connection with the main router, while the extender is left with the other half for its own "broadcasting".
+
+Also! Since you are installing the extender at a distance from the main router... with distance, WiFi throughput is reduced further.
+
+Roaming!
+
+If you copy SSID name from your router settings and configure the extender to broadcast the same SSID name →  roaming will be purely client dependent.
+
+Roaming is when your client device transitions between different APs which use the same WiFi name. There are standards that can help "accelerate" and "smoothen" the transition (like 802.11 r/k/v) but, unfortunately, they can not be used in this setup and so, the decision, "to roam" or "not to roam" is up to the client fully. Different vendors have different algorithms implemented that decide how and when your client device should switch.
+
+Keep that in mind! Some devices, that have a good algorithm (decision-making), will roam properly, while others might stick to a poor signal (furthest) AP.
+Repeater setup
+
+Which frequency to use?
+
+Dual-band routers and access points, from the get-go, should have two Wi-Fi interfaces → wifi1 and wifi2, each representing a certain frequency, 5 and 2.4 GHz respectively. For repeater setup, x1 of the interfaces needs to be turned into a station interface (which will act as a client to another network), while, the other, should be set in ap mode (which will allow the device to broadcast its own network).
+
+If we use 2.4 GHz as a station interface, it would increase the distance at which we can install the repeater, but it would also reduce the throughput we can get from it. If we use 5 GHz as station interface, we reduce the range but increase the throughput.
+
+Because we will be changing Wi-Fi and port-related configurations, it is advised to connect to the device's settings via Ethernet port/cable, using MAC-address. You can use Winbox "Neighbors" tab and double-click on the MAC-address of the device in the list. This way, you will not lose access later on when changing interface-related settings.
+
+In our example, we want to use wifi2 (2.4 GHz), as a "station" interface, while having wifi1 (5 GHz) broadcast repeater's own SSID (and also, potentially re-broadcast router's SSID over 2.4 GHz as well):
+
+Overall configuration:
+/interface wifi
+set [ find default-name=wifi2 ] configuration.mode=station-bridge .ssid=router.ssid.2 disabled=no security.authentication-types=wpa2-psk .passphrase=router.password
+set [ find default-name=wifi1 ] configuration.mode=ap .ssid=router.ssid.5 disabled=no security.authentication-types=wpa2-psk .passphrase=router.password
+add configuration.mode=ap .ssid=router.ssid.2 disabled=no master-interface=wifi2 name=wifi3 security.authentication-types=wpa2-psk .passphrase=router.password
+/interface list
+add comment=defconf name=WAN
+add comment=defconf name=LAN
+/interface bridge
+add auto-mac=no comment=defconf name=bridge
+/interface bridge port
+add interface=all bridge=bridge 
+/interface list member
+add comment=defconf interface=bridge list=LAN
+/ip dhcp-client
+add interface=bridge
+2.4 GHz interface configuration
+/interface wifi
+set [ find default-name=wifi2 ] configuration.mode=station-bridge .ssid=router.ssid.2 disabled=no security.authentication-types=wpa2-psk .passphrase=router.password
+
+    configuration.mode=station-bridge → selects the station mode.
+
+Which station mode to use?
+
+For MikroTik Wi-Fi 6 AX (router that uses wifi-qcom package/drivers) to MikroTik Wi-Fi 6 AX (repeater/station that uses wifi-qcom package/drivers) connection, use station-bridge mode.
+
+For 3d-party-vendor or MikroTik legacy WiFi 5 AC and below (router) to Wi-Fi 6 AX (repeater) connection, use station-pseudobridge mode.
+
+station-pseudobridge does something similar to "Network Address Translation" but with MAC addresses. With this mode, if you have multiple devices connected to the repeater and they all access the internet, the router would see all those attempts coming from a single MAC address. Basically, all client devices would be hidden behind one MAC address, which could potentially cause networking issues. It is not advised to use this mode, but, in such cases, there are no other options.
+
+    ssid=router.ssid.2 → it is the 2.4 GHz SSID network name that the router broadcasts (where the repeater should connect).
+    security.authentication-types=wpa2-psk → selects, which authentication types the main router uses.
+    passphrase=router.password → configures the password from the main router network. The password configured in your router's settings.
+
+5 GHz interface configuration
+/interface wifi
+set [ find default-name=wifi1 ] configuration.mode=ap .ssid=router.ssid.5 disabled=no security.authentication-types=wpa2-psk .passphrase=router.password
+
+    configuration.mode=ap → configures interface to work in "access point" mode.
+    ssid=router.ssid5 → configures wireless network name (SSID), which the repeater needs to re-broadcast. It can be the same network name as the main router uses, or it can be a different name. For testing, better use a "unique" name so you can differentiate networks. For "client roaming" to happen, use the exact same WiFi name from the router settings.
+    security.authentication-types=wpa2-psk → select which authentication types to use. For "client roaming" to happen, use the exact same authentication type from the router settings.
+    passphrase=router.password → sets password from the repeaters WiFi network. For "client roaming" to happen, use the exact same password from the router settings.
+
+Optional step - adding virtual interface
+
+In case, you want to make the extender re-broadcast wireless networks using both frequencies (e.g. wifi2 is reserved for "mode=station-bridge", and you are left only with wifi1 for "mode=ap"), create a virtual interface on-top of the station interface:
+/interface wifi
+add configuration.mode=ap .ssid=router.ssid.2 disabled=no master-interface=wifi2 name=wifi3 security.authentication-types=wpa2-psk .passphrase=router.password
+
+    configuration.mode=ap → ensures that it will act as an "access point" interface.
+    ssid=router.ssid2 → configures wireless network name (SSID), which the repeater needs to re-broadcast. For "client roaming" to happen, use the exact same WiFi name from the router settings.
+    master-interface=wifi2 → specify, which interface to "base" the "virtual" interface on (specify on-top of which interface to create it). Select the interface, which is used as a "station" interface.
+    name=wifi3 → name the virtual interface.
+    security.authentication-types=wpa2-psk → select which authentication types to use. For "client roaming" to happen, use the exact same authentication type from the router settings.
+    passphrase=router.password → sets password from the repeater's WiFi network. For "client roaming" to happen, use the exact same password from the router settings.
+
+The virtual interface will use the exact same frequency channel, which is used by the station interface to connect to the router. Wi-Fi frequency channel for this interface can not be changed.
+Bridging and listing
+
+Bridge all ports:
+/interface bridge
+add auto-mac=no comment=defconf name=bridge
+/interface bridge port
+add interface=all bridge=bridge 
+
+And, ensure, that the bridge is listed as "LAN" interface, so that the firewall rules do not block access to extender's management:
+/interface list member
+add comment=defconf interface=bridge list=LAN
+
+That is, of course, if you have proper firewall and access restrictions added on the main router. Otherwise, restrict it.
+DHCP
+/ip dhcp-client
+add interface=bridge
+
+Apply DHCP-client on top of the bridge interface, so that the repeater itself and all its connected clients get IP addresses from the main router.
