@@ -1,2016 +1,876 @@
-    Creado por Normunds R., actualizado por última vez por GG el feb 29, 2024 1 min de lectura
+    Creado por Usuario desconocido (emils), actualizado por última vez por Matīss O. el ene 21, 2025 4 min de lectura
 
-In This Section:
+    SSH Server
+        Properties
+        Enabling PKI authentication
+    SSH Client
+        Simple log-in to remote host
+        Log-in from certain IP address of the router
+        Log-in using RSA public/private key
+        Executing remote commands
+    SSH exec
+        Retrieve information
 
-        API
-        Branding
-        Command Line Interface
-        MAC server
-        MikroTik mobile app
-        Quick Set
-        REST API
-        RoMON
-        Serial Console
-        SSH
-        TR-069
-        WebFig
-        WinBox
-        FlashFig
+SSH Server
 
+RouterOS has built in SSH (SSH v2) server that is enabled by default and is listening for incoming connections on port TCP/22. It is possible to change the port and disable the server under Services menu.
+Properties
 
-After successful RouterOS software installation (if it was needed) it is time to access the router for the first time. There are various ways how to connect to it:
+Sub-menu: /ip ssh
+allow-none-crypto (yes|no; Default: no)	Whether to allow connection if cryptographic algorithms are set to none.
+always-allow-password-login (yes | no; Default: no)	Whether to allow password login at the same time when public key authorization is configured for a user.
+ciphers (3des-cbc | aes-cbc | aes-ctr | aes-gcm | auto | null; Default: auto)	
 
-    Command Line Interface (CLI) via Telnet, SSH, serial cable or keyboard and monitor if the router has VGA card.
-    Web interface (WebFig)
-    WinBox configuration utility
-    Using mobile utility (MikroTik mobile app)
+Allow to configure SSH ciphers.
+forwarding-enabled (both | local | no | remote; Default: no)	Allows to control which SSH forwarding method to allow:
 
-Normally you connect to the router by IP addresses with any telnet or SSH client software (a simple text-mode telnet client is usually called telnet and is distributed together with almost any OS).
+    no - SSH forwarding is disabled;
+    local - Allow SSH clients to originate connections from the server(router), this setting controls also dynamic forwarding;
+    remote - Allow SSH clients to listen on the server(router) and forward incoming connections;
+    both - Allow both local and remote forwarding methods.
 
-If no IP or MAC connectivity is available, some devices allow connection through a serial port (DB9 or RJ45, depending on the model);
+host-key-size (1024 | 1536 | 2048 | 4096 | 8192; Default: 2048)	RSA key size when host key is being regenerated.
+host-key-type (ed25519 | rsa; Default: rsa)	Select host key type
+strong-crypto (yes | no; Default: no)	Use stronger encryption, HMAC algorithms, use bigger DH primes and disallow weaker ones:
 
-    Accessing devices over serial console
+    use 256 and 192 bit encryption instead of 128 bits;
+    disable null encryption;
+    use sha256 for hashing instead of sha1;
+    disable md5;
+    use 2048bit prime for Diffie-Hellman exchange instead of 1024bit.
 
+Commands
+export-host-key (key-file-prefix)	
 
+Export public and private RSA/Ed25519 to files. Command takes two parameters:
 
+    key-file-prefix - used prefix for generated files, for example, prefix 'my' will generate files 'my_rsa', 'my_rsa.pub' etc.
+    passphrase - private key passphrase
 
+Host keys are exported in PKCS#8 format.
+import-host-key (private-key-file)	
+Import and replace private RSA/Ed25519 key from specified file. Command takes two parameters:
 
+    private-key-file - name of the private RSA/Ed25519 key file
+    passphrase - private key passphrase
 
-    Creado por Māris B., actualizado por última vez por Toms Filatovs el feb 27, 2025 10 min de lectura
+Private key is supported in PEM or PKCS#8 format.
+regenerate-host-key ()	Generated new and replace current set of private keys (RSA/Ed25519) on the router. Be aware that previously imported keys might stop working.
 
-    Summary
-    Protocol
-        API words
-            Command word
-            Attribute word
-            API attribute word
-            Query word
-            Reply word
-        API sentences
-    Initial login
-    Tags
-    Command description
-        Queries
-        OID
-        !trap
-            message
-            category
-    Command examples
-        /system/package/getall
-        /user/active/listen
-        /cancel, simultaneous commands
-    Example client
-    See also
-        API examples
+Exporting the SSH host key requires "sensitive" user policy.
+Enabling PKI authentication
 
-Summary
+Example of importing public key for user admin
 
-Application Programmable Interface (API) allows users to create custom software solutions to communicate with RouterOS to gather information, adjust the configuration, and manage the router. API closely follows syntax from the command-line interface (CLI). It can be used to create translated or custom configuration tools to aid ease of use in running and managing routers with RouterOS.
+Generate SSH keys on the client device (the device you will connect from). Upload the public SSH key to the router and import it.
+/user ssh-keys import public-key-file=id_rsa.pub user=admin
+SSH Client
 
-API service must be enabled before trying to establish the API connection. By default, API uses TCP:8728 and TCP:8729 (secure). 
+Sub-menu: /system ssh
+Simple log-in to remote host
 
-API-SSL service is capable of working in two modes - with and without a certificate. In the case no certificate is used in /ip service settings then an anonymous Diffie-Hellman cipher has to be used to establish a connection. If a certificate is in use, a TLS session can be established.
-Protocol
+It is able to connect to remote host and initiate ssh session. IP address supports both IPv4 and IPv6.
+/system ssh 192.168.88.1
+/system ssh 2001:db8:add:1337::beef
 
-Communication with the router is done by sending sentences and receiving one or more sentences in return. A sentence is a sequence of words terminated by zero-length words. Word is part of a sentence encoded in a certain way - encoded length and data. Communication happens by sending sentences to the router and receiving replies to sent sentences. Each sentence sent to the router using API should contain a command as a first word followed by words in no particular order, the end of the sentence is marked by a zero-length word. When the router receives a full sentence (command word, no or more attribute words, and zero-length word) it is evaluated and executed, then a reply is formed and returned.
-API words
+In this case user name provided to remote host is one that has logged into the router. If other value is required, then user=<username> has to be used.
+/system ssh 192.168.88.1 user=lala
+/system ssh 2001:db8:add:1337::beef user=lala
+Log-in from certain IP address of the router
 
-Words are part of a sentence. Each word has to be encoded in a certain way - the length of the word followed by the word content. The length of the word should be given as a count of bytes that are going to be sent.
+For testing or security reasons it may be required to log in to other host using certain source address of the connection. In this case src-address=<ip address> argument has to be used. Note that IP address in this case supports both, IPv4 and IPv6.
+/system ssh 192.168.88.1 src-address=192.168.89.2
+/system ssh 2001:db8:add:1337::beef src-address=2001:db8:bad:1000::2
 
-The length of the word is encoded as follows:
-0 <= len <= 0x7F	1	len, lowest byte
-0x80 <= len <= 0x3FFF	2	len | 0x8000, two lower bytes
-0x4000 <= len <= 0x1FFFFF	3	len | 0xC00000, three lower bytes
-0x200000 <= len <= 0xFFFFFFF	4	len | 0xE0000000
-len >= 0x10000000	5	0xF0 and len as four bytes
+in this case, ssh client will try to bind to address specified and then initiate ssh connection to remote host.
+Log-in using RSA public/private key
 
+Example of importing private key for user admin
 
-    Each word is encoded as length, followed by that many bytes of content;
-    Words are grouped into sentences. The end of a sentence is terminated by a zero-length word;
-    The scheme allows encoding of length up to 0x7FFFFFFFFF, only four-byte length is supported;
-    len bytes are sent most significant first (network order);
-    If the first byte of the word is >= 0xF8, then it is a reserved control byte. After receiving an unknown control byte API client cannot proceed, because it does not know how to interpret the following bytes;
-    Currently, control bytes are not used;
+First, export currently generated SSH keys to a file:
+/ip ssh export-host-key key-file-prefix=admin
 
-In general, words can be described like this <<encoded word length><word content>>. Word content can be separated into 5 parts: command word, attribute word, API attribute word. query word, and reply word
-Command word
+Two files admin_rsa and admin_rsa.pub will be generated. The pub file needs to be trusted on the SSH server side (how to enable SSH PKI on RouterOS) The private key has to be added for the particular user.
+/user ssh-keys private import user=admin private-key-file=admin_rsa
 
-The first word in the sentence has to be a command followed by attribute words and a zero-length word or terminating word. The name of the command word should begin with '/'. Names of commands closely follow CLI, with spaces replaced with '/'. Some commands are specific to API;
+Only user with full rights on the router can change 'user' attribute value under /user ssh-keys private
 
-Command word structure in the strict order:
+After the public key is installed and trusted on the SSH server, a PKI SSH session can be created.
+/system ssh 192.168.1.1
 
-    encoded length
-    content prefix /
-    CLI converted command
+Watch how to:
 
+Log in wih an RSA key.
 
-API-specific commands:
+Log in with ed25519.
+Executing remote commands
 
-login
-cancel
+To execute remote command it has to be supplied at the end of log-in line
+/system ssh 192.168.88.1 "/ip address print"
+/system ssh 192.168.88.1 command="/ip address print"
+/system ssh 2001:db8:add:1337::beef "/ip address print"
+/system ssh 2001:db8:add:1337::beef command="/ip address print"
 
-Command word content examples:
+If the server does not support pseudo-tty (ssh -T or ssh host command), like MikroTik ssh server, then it is not possible to send multiline commands via SSH
 
-/login
+For example, sending command "/ip address \n add address=1.1.1.1/24" to MikroTik router will fail.
 
-/user/active/listen
+If you wish to execute remote commands via scripts or scheduler, use command ssh-exec.
+SSH exec
 
-/interface/vlan/remove
+Sub-menu: /system ssh-exec
 
-/system/reboot
+Command ssh-exec is a non-interactive ssh command, thus allowing to execute commands remotely on a device via scripts and scheduler.
+Retrieve information
 
-Attribute word
+The command will return two values:
 
-Each command word has its list of attribute words depending on content.
+    exit-code: returns 0 if the command execution succeeded
+    output: returns the output of remotely executed command
 
-Attribute word structure consists of 5 parts in this order:
 
-    encoded length
-    content prefix equals sign - =
-    attribute name
-    separating equals sign - =
-    value of an attribute if there is one. It is possible that the attribute does not have a value
+Example: Code below will retrieve interface status of ether1 from device 10.10.10.1 and output the result to "Log"
+:local Status ([/system ssh-exec address=10.10.10.1 user=remote command=":put ([/interface ethernet monitor [find where name=ether1] once as-value]->\"status\")" as-value]->"output")
+:log info $Status
 
+For security reasons you should not use plain text password with parameter "password" specified in the command line. To ensure safe execution of the command remotely, it is strongly recommended to use SSH PKI authentication for users on both sides.
 
-Value can hold multiple equal signs in the value of an attribute word since the way the word is encoded.
 
-Value can be empty.
+The user group and script policy executing the command requires test permission
 
-Examples without encoded length prefix:
+Watch how to execute commands through SSH.
 
-=address=10.0.0.1
 
-=name=iu=c3Eeg
 
-=disable-running-check=yes
+    Creado por Normunds R., actualizado por última vez por Matīss O. el ago 14, 2024 5 min de lectura
 
-Order of attribute words and API parameters is not important and should not be relied on
-API attribute word
+    Configuration Settings
+        Writable Settings
+        Read-only Settings
+        Commands
+    CWMP Session
+    Parameters and Data Models
+    Download RPC
+        RouterOS Update (1 Firmware Upgrade Image)
+        Configuration Change (3 Vendor Configuration File)
+        Alter configuration
+        Overwrite all configurations
+        RouterOS default configuration change (X MIKROTIK Factory Configuration File)
+    FactoryReset RPC
+    Upload RPC
+        Upload current configuration (1 Vendor Configuration File)
+        Upload log file (2 Vendor Log File)
+        Upload default configuration (X MIKROTIK Factory Configuration File)
+    Security
+    Tested ACSs
+        Commercial
+        Open Source
 
-API attribute word structure is in the strict order:
+TR069-client implements CPE WAN Management Protocol (CWMP) for remote device management, which is standardized by the Broadband Forum (BBF). CWMP works over IP network using HTTP(S) to communicate with an Auto Configuration Server (ACS), which can monitor, configure attributes and update the firmware of a remote device. Typically used by ISPs to manage CPEs, but also can be used for Network Infrastructure Device management.
 
-    encoded length
-    content prefix with the dot.
-    attribute name
-    name postfixed with equals =sign
-    attribute value
+Requires tr069-client package.
+Configuration Settings
 
-Currently, the only such API attribute is the tag.
+Sub-menu: /tr069-client
 
-If the sentence contains an API attribute word tag then each returned sentence in reply from the router to that tagged sentence will be tagged with the same tag.
-Query word
+TR069-client menu parameters:
+Writable Settings
 
-Sentences can have additional query parameters that restrict their scope. A detailed explanation is in the query section.
+Client configuration settings.
+enabled	enable/disable CWMP protocol
+acs-url	
 
-Example of a sentence using query word attributes:
+URL of ACS. Examples: "https://example.com:8080/path/", "https://192.168.1.100/"
 
-/interface/print
-?type=ether
-?type=vlan
-?#|!
+If ACS is accessed using HTTPS, in a client must be imported Root CA to verify ACS server certificate.
+username	HTTP authentication username (used by CPE to "login" into ACS)
+password	HTTP authentication password (used by CPE to "login" into ACS)
+periodic-inform-enabled	enable/disable CPE periodical session initiation. Timer is started after every successful session. When session is started by periodic interval then Inform RPC contains "2 PERIODIC" event. Maps to "Device.ManagementServer.PeriodicInformEnable" Parameter
+periodic-inform-interval	timer interval of periodic inform. Maps to "Device.ManagementServer.PeriodicInformInterval"
+client-certificate	certificate of client/CPE, which can be used by ACS for extra authentication
+Read-only Settings
 
+Read only parameters to monitor state of the client.
+status	informative status of CWMP.
 
-    Query words begin with '?'.
-    Currently, only the print command handles query words.
+    disabled - protocol disabled,
+    waiting-URL - protocol enabled, but ACS URL not configured,
+    running - CWMP is configured correctly and will communicate with ACS on events
 
-The order of query words is significant
-Reply word
+last-session-error	user-friendly error description indicating why the previous session didn't finish successfully
+retry-count	consecutive unsuccessful session count. If > 0, then last-session-error should indicate error. Resets to 0 on a successful session, disabled protocol or reboot
+Commands
+reset-tr069-config	completely resets and forgets tr069-client configuration and state (without affecting other ROS configurations). Use when CWMP goes into unresponsive/hanged state and should be restored without re-installation of the RouterOS.
+CWMP Session
 
-It is only sent by the router in response to the full sentence received from the client.
+CWMP client usually starts communication(Session) with ACS on different events - first boot, reboot, periodic interval, remote request, value change etc. In each session, CPE and ACS can call RPCs to be "executed" on the other side. CPE always starts with Inform RPC, which contains connection reason, device info and some Parameter values depending on configuration. When CPE has nothing more to say, then ACS executes its RPCs (which most of the time are Parameter management RPCs).
+Parameters and Data Models
 
-    The first word of reply begins with '!';
-    Each sentence sent generates at least one reply (if a connection does not get terminated);
-    The last reply for every sentence is the reply that has the first word !done;
-    Errors and exceptional conditions begin with !trap;
-    Data replies begin with !re;
-    Replies of commands which do not have any data to reply with, begin with !empty (introduced in RouterOS 7.18);
-    If the API connection is closed, RouterOS sends !fatal with a reason as a reply and then closes the connection;
+Parameters are simple name+value pairs and each vendor can decide which Parameters to support in its devices. A combination of all supported Parameters is called Data Model (DM). BBF defines three root Data Models(TR-098, TR-181:1, TR-181:2) on which vendors should base their supported Parameters. RouterOS Data Model is based on "TR-181 Issue 2 Amendment 11", which is the newest DM and recommended by BBF.
 
-API sentences
+RouterOS TR069 client supported parameter reference document:
 
-API sentence is the main object of communication using API.
+  	Fichero 	Modificado
+	Archivo HTML current.html v7.13 - RouterOS TR069 client supported parameter reference document 	feb 28, 2024 by Confluence Helper
 
-    Empty sentences are ignored.
-    A sentence is processed after receiving zero length word.
-    There is a limit on the number and size of sentences that the client can send before it has logged in.
-    Order of attribute words should not be relied on. As order and count are changeable by .proplist attribute.
-    The sentence structure is as follows:
-        The first word should contain a command word;
-        Should contain zero-length word to terminate the sentence;
-        Can contain none or several attribute words. There is no particular order in what attribute words have to be sent in the sentence, order is not important for attribute words;
-        Can contain none or several query words. The order of query words in the sentence is important.
+Download RPC
+RouterOS Update (1 Firmware Upgrade Image)
 
-Zero-length word terminates the sentence. If it is not provided router will not start to evaluate sent words and will consider all the input as part of the same sentence.
-Initial login
+CWMP standard defines that CPE's firmware can be updated using Download RPC with FileType="1 Firmware Upgrade Image" and single URL of a downloadable file (HTTP and HTTPS are supported). Standard also states that downloaded file can be any type and vendor specific process can be applied to finish firmware update. Because MikroTik's update is package based (and also for extra flexibility), an XML file is used to describe firmware upgrade/downgrade. For now, XML configuration supports providing multiple URLs of files, which will be downloaded and applied similarly as regular RouterOS update through firmware/package file upload.
 
-Note: that each command and response ends with an empty word.
+An example of RouterOS bundle package and tr069-client package update (don't forget to also update tr069-client package). An XML file should be put on some HTTP server, which is accessible from CPE for download. Also, downloadable RouterOS package files should be accessible the same way (can be on any HTTP server). Using ACS execute Download RPC with URL pointing to XML file (e.g. "https://example.com/path/upgrade.xml") with contents:
 
-Login method post-v6.43:
-/login
-=name=admin
-=password=
- !done
+<upgrade version="1" type="links">
+   <config/>
+   <links>
+       <link>
+          <url>https://example.com/routeros-mipsbe-X.Y.Z.npk</url>
+       </link>
+       <link>
+          <url>https://example.com/tr069-client-X.Y.Z-mipsbe.npk</url>
+       </link>
+   </links>
+</upgrade>
 
+CPE will download XML, parse/validate its contents, download files from provided URLs and try to upgrade. The result will be reported with TransferComplete RPC.
 
-    Now the client sends a username and password in the first message.
-    Password is sent in plain text.
-    in case of an error, the reply contains =message=error message.
-    In case of a successful login, the client can start to issue commands.
+Note
 
-Tags
+Always make firmware updates incremental - first, update locally tested device and make sure that CWMP communication is resumed with a new version and required ROS functionality works. Secondly, repeat steps by updating groups of CPEs incrementally. We do not recommend updating all remote devices at once.
 
-    It is possible to run several commands simultaneously, without waiting for the previous one to complete. If the API client is doing this and needs to differentiate command responses, it can use the 'tag' API parameter in command sentences.
-    If you include the 'tag' parameter with a non-empty value in the command sentence, then the 'tag' parameter with the same value will be included in all responses generated by this command.
-    If you do not include the 'tag' parameter or its value is empty, then all responses for this command will not have a 'tag' parameter.
+Warning: Use HTTPS in production for firmware management
+Configuration Change (3 Vendor Configuration File)
 
-Command description
+The same Download RPC can be used to perform complete configuration overwrite (as intended by standard) OR configuration alteration (when URL's filename extension is ".alter").
+Alter configuration
 
-    /cancel
-        optional argument: =tag=tag of command to cancel, without it, cancels all running commands
-        does not cancel itself
-        all canceled commands are interrupted and in the usual case generate '!trap' and '!done' responses
-        please note that /cancel is separate command and can have its own unique '.tag' parameter, that is not related to '=tag' argument of this command
+RouterOS has a lot of configuration attributes and not everything can be ported to CWMP Parameters, that's why RouterOS provides a possibility to execute its powerful scripting language to configure any attribute. A configuration alteration (which is really a regular script execution) can be performed using Download RPC FileType="3 Vendor Configuration File" with downloadable file extension ".alter". This powerful feature can be used to configure any ROS attributes which are not available through CWMP Parameters.
+Overwrite all configurations
 
-    listen
-        listen command is available where console print command is available, but it does not have the expected effect everywhere (i.e. may not work)
-        "!re" sentences are generated as something changes in a particular item list
-        when an item is deleted or disappears in any other way, the '!re' sentence includes the value '=.dead=yes'
-        This command does not terminate. To terminate it, use /cancel command.
+Full ROS configuration overwrite can be performed using Download RPC FileType="3 Vendor Configuration File" with any URL file name (except with ".alter" extension).
 
-    getall
-        getall command is available where console print command is available (getall is an alias for print).
-        replies contain =.id=Item internal number property.
+Warning: Provided configuration file(script) must be "smart" enough to apply configuration correctly right after reboot. This is especially important when using uploaded configuration file with Upload RPC, because it only contains values export. Some things that should be added manually:
 
-    print
-        API print command differs from the console counterpart in the following ways:
-            where an argument is not supported. Items can be filtered using query words (see below).
-            .proplist argument is a comma-separated list of property names that should be included for the returned items.
-                returned items may have additional properties.
-                order of returned properties is not defined.
-                if a list contains duplicate entries, handling of such entries is not defined.
-                if a property is present in ".proplist", but absent from the item, then that item does not have this property value (?name will evaluate to false for that item).
-                if ".proplist" is absent, all properties are included as requested by the print command, even those that have slow access time (such as file contents and performance counters). Thus the use of .proplist is encouraged. The omission of .proplist may have a high-performance penalty if the "=detail=" argument is set.
+    delay at beginning, for interfaces to show up;
+    hidden passwords for users;
+    certificates.
 
-Queries
+RouterOS default configuration change (X MIKROTIK Factory Configuration File)
 
-The print command accepts query words that limit the set of returned sentences. 
+This vendor specific FileType allows the change of the RouterOS default configuration script that is executed when /system reset-configuration command is executed (or the other means when router configuration is being reset).
 
-    Query words begin with '?'.
-    The order of query words is significant. A query is evaluated starting from the first word.
-    A query is evaluated for each item in the list. If the query succeeds, the item is processed, if a query fails, the item is ignored.
-    A query is evaluated using a stack of boolean values. Initially, the stack contains an infinite amount of 'true' values. At the end of the evaluation, if the stack contains at least one 'false' value, the query fails.
-    Query words operate according to the following rules:
+Note
 
-?name	pushes 'true' if an item has a value of property name, 'false' if it does not.
-?-name	pushes 'true' if an item does not have a value of property name, 'false' otherwise.
-?name=x
-?=name=x	pushes 'true' if the property name has a value equal to x, 'false' otherwise.
-?<name=x	pushes 'true' if the property name has a value less than x, 'false' otherwise.
-?>name=x	pushes 'true' if the property name has a value greater than x, 'false' otherwise.
-?#operations	applies operations to the values in the stack.
+If the default configuration script is changed it will not be displayed by /system default-configuration print as it is the case if that script is altered via Netinstall tool. That command will always show the default script set up by MikroTik
 
-    operation string is evaluated from left to right.
-    the sequence of decimal digits followed by any other character or end of the word is interpreted as a stack index. top value has an index 0.
-    an index that is followed by a character pushes a copy of the value at that index.
-    an index that is followed by the end of the word replaces all values with the value at that index.
-    ! character replaces the top value with the opposite.
-    & pops two values and pushes the result of logical 'and' operation.
-    | pops two values and pushes the result of logical 'or' operation.
-    . after an index does nothing.
-    . after another character pushes a copy of the top value.
+Warning: Use this with caution as the failure of uploaded script may render device inoperable and/or inaccessible by the ACS
+FactoryReset RPC
 
+This is CWMP standard RPC, which performs RouterOS configuration factory-reset. The reset process is performed in the same way as executing the command:
 
-Regular expressions are not supported in API, so do not try to send a query with the ~ symbol
+/system reset-configuration skip-backup=yes
 
+Note that the default factory configuration can be different for each device (see [1]) and execution of this command removes all configurations and executes internally stored default-configuration script.
 
-Examples:
+Best Practices Guide for preparing CPE with custom factory settings for TR069 https://wiki.mikrotik.com/wiki/Tr069-best-practices
+Upload RPC
+Upload current configuration (1 Vendor Configuration File)
 
-    Get all ethernet and VLAN interfaces:
+The result of this is file uploaded to the ACS same as the output of /export command in the RouterOS
+Upload log file (2 Vendor Log File)
 
-/interface/print
-?type=ether
-?type=vlan
-?#|
+The result of this is file uploaded to the ACS is similar to the output of /log print command in the RouterOS
+Upload default configuration (X MIKROTIK Factory Configuration File)
 
-    Get all routes that have a non-empty comment:
+The result of this is file uploaded to the ACS that has contents of the current set default configuration script that will be executed if /system reset-configuration command is executed. It may differ from one returned using /system default-configuration print.
+Security
 
-/ip/route/print
-?>comment=
+    HTTP should only be used when testing initial setup in the secured/private network because Man-in-the-middle attacker could read/change configuration parameters. In the production environment, HTTPS is a MUST.
+    CWMP's incoming connection validation by design is safe because CPE will not communicate with any other device except previously configured ACS. Connection Request only signals CPE to start a new connection + new session with previously configured ACS.
 
-    Forum thread with a detailed explanation of the use of queries
+Tested ACSs
 
-OID
+Ordering is alphabetical. MikroTik does not imply any one vendor superiority of another. 
+Commercial
 
-The print command can return OID values for properties that are available in SNMP. 
+We have tested and verified to be working the following commercial ACS solutions:
 
-In the console, OID values can be seen by running the 'print oid' command. In API, these properties have a name that ends with ".oid", and can be retrieved by adding their name to the value of '.proplist'. An example:
+    AVSystem
+    Axiros
+    Friendly Tech
 
+Open Source
 
-/system/resource/print
-=.proplist=uptime,cpu-load,uptime.oid,cpu-load.oid
- !re
-=uptime=01:22:53
-=cpu-load=0
-=uptime.oid=.1.3.6.1.2.1.1.3.0
-=cpu-load.oid=.1.3.6.1.2.1.25.3.3.1.2.1
+    GenieACS
 
- !done
+Note: these ACS systems below seem to be not maintained and thus is not suggested as useful options
 
-
-!trap
-
-When for some reason API sentence fails trap is sent in return accompanied by a message attribute and on some occasions category argument.
-message
-
-When an API sentence fails, some generic message or message from the used internal process is returned to give more details about the failure
-<<< /ip/address/add 
-<<< =address=192.168.88.1 
-<<< =interface=asdf <<< 
-
->>> !trap 
->>> =category=1 
->>> =message=input does not match any value of interface
-
-
-category
-
-if it is a general error, it is categorized and the error category is returned. possible values for this attribute are
-
-    0 - missing item or command
-    1 - argument value failure
-    2 - execution of command interrupted
-    3 - scripting related failure
-    4 - a general failure
-    5 - API related failure
-    6 - TTY related failure
-    7 - value generated with :return command
-
-Command examples
-/system/package/getall
-/system/package/getall
-
- !re
-=.id=*5802
-=disabled=no
-=name=routeros-x86
-=version=3.0beta2
-=build-time=oct/18/2006 16:24:41
-=scheduled=
-
- !re
-=.id=*5805
-=disabled=no
-=name=system
-=version=3.0beta2
-=build-time=oct/18/2006 17:20:46
-=scheduled=
-
-... more !re sentences ...
- !re
-=.id=*5902
-=disabled=no
-=name=advanced-tools
-=version=3.0beta2
-=build-time=oct/18/2006 17:20:49
-=scheduled=
-
- !done
-
-/user/active/listen
-/user/active/listen
-
- !re
-=.id=*68
-=radius=no
-=when=oct/24/2006 08:40:42
-=name=admin
-=address=0.0.0.0
-=via=console
-
- !re
-=.id=*68
-=.dead=yes
-
-... more !re sentences ...
-/cancel, simultaneous commands
-/login
-
- !done
-=ret=856780b7411eefd3abadee2058c149a3
-
-/login
-=name=admin
-=response=005062f7a5ef124d34675bf3e81f56c556
-
- !done
--- first start listening for interface changes (tag is 2)
-/interface/listen
-.tag=2
--- disable interface (tag is 3)
-/interface/set
-=disabled=yes
-=.id=ether1
-.tag=3
--- this is done for disable command (tag 3)
- !done
-.tag=3
-
--- enable interface (tag is 4)
-/interface/set
-=disabled=no
-=.id=ether1
-.tag=4
--- this update is generated by a change made by the first set command (tag 3)
- !re
-=.id=*1
-=disabled=yes
-=dynamic=no
-=running=no
-=name=ether1
-=mtu=1500
-=type=ether
-.tag=2
-
--- this is done for enable command (tag 4)
- !done
-.tag=4
-
--- get interface list (tag is 5)
-/interface/getall
-.tag=5
-
--- this update is generated by a change made by the second set command (tag 4)
- !re
-=.id=*1
-=disabled=no
-=dynamic=no
-=running=yes
-=name=ether1
-=mtu=1500
-=type=ether
-.tag=2
-
--- these are replies to getall command (tag 5)
- !re
-=.id=*1
-=disabled=no
-=dynamic=no
-=running=yes
-=name=ether1
-=mtu=1500
-=type=ether
-.tag=5
-
- !re
-=.id=*2
-=disabled=no
-=dynamic=no
-=running=yes
-=name=ether2
-=mtu=1500
-=type=ether
-.tag=5
-
--- here interface getall ends (tag 5)
- !done
-.tag=5
-
--- stop listening - request to cancel command with tag 2, cancel itself uses tag 7
-/cancel
-=tag=2
-.tag=7
-
--- listen command is interrupted (tag 2)
- !trap
-=category=2
-=message=interrupted
-.tag=2
-
--- cancel command is finished (tag 7)
- !done
-.tag=7
-
--- listen command is finished (tag 2)
- !done
-.tag=2
-Example client
-
-A simple API client in Python3
-
-Example output:
-debian@localhost:~/api-test$ ./api.py 10.0.0.1 admin ''
-<<< /login
-<<< 
->>> !done
->>> =ret=93b438ec9b80057c06dd9fe67d56aa9a
->>> 
-<<< /login
-<<< =name=admin
-<<< =response=00e134102a9d330dd7b1849fedfea3cb57
-<<< 
->>> !done
->>> 
-/user/getall
-
-<<< /user/getall
-<<< 
->>> !re
->>> =.id=*1
->>> =disabled=no
->>> =name=admin
->>> =group=full
->>> =address=0.0.0.0/0
->>> =netmask=0.0.0.0
->>> 
->>> !done
->>> 
-See also
-API examples
-
-API implementations in different languages, provided by different sources. They are not ordered in any particular order.
-
-    in Python3 by MikroTik
-    in .NET (C#) high-level API solution forum thread additional info by danikf
-    in PHP by boen_robot
-    in C by Håkon Nessjøen
-    in Java by Gideon LeGrange
-    in Erlang by Valery Comtihon
-    in GO by André Luiz dos Santos
-    in Python3 by Arturs Laizans
-    in Python3 by Jakub Gocławski
-    in Python3 by Arseniy Kuznetsov
-    in C++17 by Ayman Al-Qadhi
-
-
-
-
-
-    Creado por Māris B., actualizado por última vez por GG el mar 06, 2024 3 min de lectura
-
-A simple Python3 example client.
-
-    usage: api.py ip-address username password secure
-    i.e. api.py 10.0.0.1 Admin Badpassword123 True
-    after that, type words from the keyboard, terminating them with a new line
-    Since an empty word terminates a sentence, you should press enter twice after the last word before a sentence will be sent to the router.
-
-
-#!/usr/bin/python3
-# -*- coding: latin-1 -*-
-import sys, posix, time, binascii, socket, select, ssl
-import hashlib
-
-class ApiRos:
-	"Routeros api"
-	def __init__(self, sk):
-		self.sk = sk
-		self.currenttag = 0
-
-	def login(self, username, pwd):
-		for repl, attrs in self.talk(["/login", "=name=" + username, "=password=" + pwd]):
-			if repl == '!trap':
-				return False
-			elif '=ret' in attrs.keys():
-				#for repl, attrs in self.talk(["/login"]):
-				chal = binascii.unhexlify((attrs['=ret']).encode(sys.stdout.encoding))
-				md = hashlib.md5()
-				md.update(b'\x00')
-				md.update(pwd.encode(sys.stdout.encoding))
-				md.update(chal)
-				for repl2, attrs2 in self.talk(["/login", "=name=" + username, "=response=00" 
-					+ binascii.hexlify(md.digest()).decode(sys.stdout.encoding) ]):
-					if repl2 == '!trap':
-						return False
-		return True
-
-	def talk(self, words):
-		if self.writeSentence(words) == 0: return
-		r = []
-		while 1:
-			i = self.readSentence();
-			if len(i) == 0: continue
-			reply = i[0]
-			attrs = {}
-			for w in i[1:]:
-				j = w.find('=', 1)
-				if (j == -1):
-					attrs[w] = ''
-				else:
-					attrs[w[:j]] = w[j+1:]
-			r.append((reply, attrs))
-			if reply == '!done': return r
-
-	def writeSentence(self, words):
-		ret = 0
-		for w in words:
-			self.writeWord(w)
-			ret += 1
-		self.writeWord('')
-		return ret
-
-	def readSentence(self):
-		r = []
-		while 1:
-			w = self.readWord()
-			if w == '': return r
-			r.append(w)
-
-	def writeWord(self, w):
-		print(("<<< " + w))
-		self.writeLen(len(w))
-		self.writeStr(w)
-
-	def readWord(self):
-		ret = self.readStr(self.readLen())
-		print((">>> " + ret))
-		return ret
-
-	def writeLen(self, l):
-		if l < 0x80:
-			self.writeByte((l).to_bytes(1, sys.byteorder))
-		elif l < 0x4000:
-			l |= 0x8000
-			tmp = (l >> 8) & 0xFF
-			self.writeByte(((l >> 8) & 0xFF).to_bytes(1, sys.byteorder))
-			self.writeByte((l & 0xFF).to_bytes(1, sys.byteorder))
-		elif l < 0x200000:
-			l |= 0xC00000
-			self.writeByte(((l >> 16) & 0xFF).to_bytes(1, sys.byteorder))
-			self.writeByte(((l >> 8) & 0xFF).to_bytes(1, sys.byteorder))
-			self.writeByte((l & 0xFF).to_bytes(1, sys.byteorder))
-		elif l < 0x10000000:
-			l |= 0xE0000000
-			self.writeByte(((l >> 24) & 0xFF).to_bytes(1, sys.byteorder))
-			self.writeByte(((l >> 16) & 0xFF).to_bytes(1, sys.byteorder))
-			self.writeByte(((l >> 8) & 0xFF).to_bytes(1, sys.byteorder))
-			self.writeByte((l & 0xFF).to_bytes(1, sys.byteorder))
-		else:
-			self.writeByte((0xF0).to_bytes(1, sys.byteorder))
-			self.writeByte(((l >> 24) & 0xFF).to_bytes(1, sys.byteorder))
-			self.writeByte(((l >> 16) & 0xFF).to_bytes(1, sys.byteorder))
-			self.writeByte(((l >> 8) & 0xFF).to_bytes(1, sys.byteorder))
-			self.writeByte((l & 0xFF).to_bytes(1, sys.byteorder))
-
-	def readLen(self):
-		c = ord(self.readStr(1))
-		# print (">rl> %i" % c)
-		if (c & 0x80) == 0x00:
-			pass
-		elif (c & 0xC0) == 0x80:
-			c &= ~0xC0
-			c <<= 8
-			c += ord(self.readStr(1))
-		elif (c & 0xE0) == 0xC0:
-			c &= ~0xE0
-			c <<= 8
-			c += ord(self.readStr(1))
-			c <<= 8
-			c += ord(self.readStr(1))
-		elif (c & 0xF0) == 0xE0:
-			c &= ~0xF0
-			c <<= 8
-			c += ord(self.readStr(1))
-			c <<= 8
-			c += ord(self.readStr(1))
-			c <<= 8
-			c += ord(self.readStr(1))
-		elif (c & 0xF8) == 0xF0:
-			c = ord(self.readStr(1))
-			c <<= 8
-			c += ord(self.readStr(1))
-			c <<= 8
-			c += ord(self.readStr(1))
-			c <<= 8
-			c += ord(self.readStr(1))
-		return c
-
-	def writeStr(self, str):
-		n = 0;
-		while n < len(str):
-			r = self.sk.send(bytes(str[n:], 'UTF-8'))
-			if r == 0: raise RuntimeError("connection closed by remote end")
-			n += r
-
-	def writeByte(self, str):
-		n = 0;
-		while n < len(str):
-			r = self.sk.send(str[n:])
-			if r == 0: raise RuntimeError("connection closed by remote end")
-			n += r
-
-	def readStr(self, length):
-		ret = ''
-		# print ("length: %i" % length)
-		while len(ret) < length:
-			s = self.sk.recv(length - len(ret))
-			if s == b'': raise RuntimeError("connection closed by remote end")
-			# print (b">>>" + s)
-			# atgriezt kaa byte ja nav ascii chars
-			if s >= (128).to_bytes(1, "big") :
-				return s
-			# print((">>> " + s.decode(sys.stdout.encoding, 'ignore')))
-			ret += s.decode(sys.stdout.encoding, "replace")
-		return ret
-
-def open_socket(dst, port, secure=False):
-	s = None
-	res = socket.getaddrinfo(dst, port, socket.AF_UNSPEC, socket.SOCK_STREAM)
-	af, socktype, proto, canonname, sockaddr = res[0]
-	skt = socket.socket(af, socktype, proto)
-	if secure:
-		s = ssl.wrap_socket(skt, ssl_version=ssl.PROTOCOL_TLSv1_2, ciphers="ECDHE-RSA-AES256-GCM-SHA384") #ADH-AES128-SHA256
-	else:
-		s = skt
-	s.connect(sockaddr)
-	return s
-
-def main():
-	s = None
-	dst = sys.argv[1]
-	user = "admin"
-	passw = ""
-	secure = False
-	port = 0
-
-	# use default username and pasword if not specified      
-	arg_nr = len(sys.argv)
-    if arg_nr > 2: user = sys.argv[2] 
-    if arg_nr > 3: passw = sys.argv[3]
-    if arg_nr > 4: secure = sys.argv[4]
-
-	if (port==0):
-		port = 8729 if secure else 8728
-
-	s = open_socket(dst, port, secure)
-	if s is None:
-		print ('could not open socket')
-		sys.exit(1)
-
-	apiros = ApiRos(s);
-	if not apiros.login(user, passw):
-		return
-
-	inputsentence = []
-
-	while 1:
-		r = select.select([s, sys.stdin], [], [], None)
-		if s in r[0]:
-			# something to read in socket, read sentence
-			x = apiros.readSentence()
-
-		if sys.stdin in r[0]:
-			# read line from input and strip off newline
-			l = sys.stdin.readline()
-			l = l[:-1]
-
-			# if empty line, send sentence and start with new
-			# otherwise append to input sentence
-			if l == '':
-				apiros.writeSentence(inputsentence)
-				inputsentence = []
-			else:
-				inputsentence.append(l)
-
-if __name__ == '__main__':
-	main()
-
-
-
-
-    Creado por Normunds R., actualizado por última vez por Serhii T. el ene 22, 2025 3 min de lectura
-
-RouterOS allows slight system customization with the help of a branding package (modify default configuration, LCD logo, WebFig homepage, etc.).
-
-This is a special system package, which you can generate from within your mikrotik.com account, in the account section "Branding maker". The resulting file will have a .dpk extension and can be installed by all the same means as an .npk package.
-
-To install the package on a router, branding package has to upload to it and then a router has to reboot, Netinstall tool can be used for the same effect.
-
-The generated package can be installed in any RouterOS version.
-
-Note that specific branding features are available starting from specific RouterOS versions.
-Options
-
-Options that can be configured using a branding package:
-
-    Router name - branding package name, device identity and platform name in RouterOS, can only be one word, don't use spaces or special characters;
-    Company URL - value that appears in the console when you connect to RouterOS device;
-    Manual URL - documentation link, which can be opened in WebFig;
-    ASCII Logo - a text logo that is shown when logging into the command line interface, i.e. Telnet, SSH, WinBox Terminal. A logo can be created in the branding maker or copied from any other plaintext editor. A logo height cannot be larger than 8 lines, width is not limited, but note that in a narrow terminal window a logo might be distorted.
-    Hide "Mikrotik" from SNMP information - MikroTik name will be hidden in SNMP information;
-    Do not run script on install - do not run Default configuration script on branding package install;
-    Hide Default configuration prompt - hide Default configuration prompt after configuration reset (available starting from RouterOS 7.15)
-    Hide default caps-mode-script - hide default caps-mode-script (available starting from RouterOS 7.15)
-
-Custom files
-
-Custom files such as the WebFig login page, WebFig logo, hotspot, skins, Default configuration, LCD logo, Custom files and CAPs mode script can be included in the branding package.
-WebFig login page
-
-The WebFig login page is a customized default RouterOS login interface that appears when accessing the router's IP address. This page can be customized to meet branding or functional requirements.
-
-    Customization Files:
-        /index2.html: Main template for the login page.
-        /assets/style.css:  MikroTik RouterOS stylesheet.
-        /assets/script.js is responsible for handling the login functionality and contains code that gives the button interactivity.
-
-    Required Elements for the script.js:
-        Form for Login:
-        <form id="login">
-        Username Field:
-        <input id="name" data-defaultuser="admin">
-            The admin value can be changed to another username or left blank.
-        Password Field:
-        <input id="password">
-        Error Display Section:
-        <div id="error">
-    Here is an example of a user-customized login page with a "Show Password" button, achieved using a modified index2.html along with additional css and js files.
-    The HTML file must be named "index2.html" and should use properly nested HTML to ensure compatibility with all browsers.
-    The uploaded images or JavaScript files must reference to the same path as the index file, no custom folder names can be used.
-
-WebFig logo
-
-RouterOS WebFig page (configuration page) logo. To overwrite the MikroTik logo on the WebFig login page, upload your custom logo named "mikrotik_logo.png".
-hotspot
-
-Hotspot login page logo. The file must be named "logobottom.png".
-skins
-
-A skin file with name "your_file_name.json". To apply a particular skin to a specific user group, you don't need to log into the router. You can do it with branding by uploading a Default configuration file.
-Default configuration
-
-A RouterOS default configuration file that will override RouterOS default configuration. This configuration will persist even after a RouterOS reset. Factory passwords can be reapplied using the read-only variables $defconfPassword and $defconfWifiPassword (access to factory passwords is available starting RouterOS 7.10).
-LCD logo
-
-LCD logo will be displayed on devices equipped with LCD screen. A Logo size cannot be larger than 160px width and 72px height. CCR1xxx series has white (0xffffff) background, 2011 series have black (0x000000) background.
-Custom files 
-
-Custom files will be copied into a folder named "branding" and will be accessible from within RouterOS.
-CAPs mode script
-
-A RouterOS CAPs mode script that will override RouterOS default CAPs mode script. It is possible to reapply the factory passwords by utilizing the read-only variables $defconfPassword and $defconfWifiPassword (available starting from RouterOS 7.15).
-
-If a Default configuration or CAPs mode script execution takes more than 2 minutes, a script will fail, and LOG will contain "runtime limit exceeded" or in rare cases "std failure: timeout" error.
-
-
-
-
-
-
-    Creado por Normunds R., actualizado por última vez el ene 03, 2025 13 min de lectura
-
-    Login Options
-    Banner and Messages
-    Command Prompt
-    Hierarchy
-    Item Names and Numbers
-        Item Names
-        Item Numbers
-    General Commands
-    Input Modes
-    Quick Typing
-    Console Search
-    Internal Chat System
-    List of Keys
-
-The console is used for accessing the MikroTik Router's configuration and management features using text terminals, either remotely using a serial port, telnet, SSH, console screen within WinBox, or directly using monitor and keyboard. The console is also used for writing scripts. This manual describes the general console operation principles. Please consult the Scripting Manual on some advanced console commands and on how to write scripts.
-Login Options
-
-Console login options enable or disable various console features like color, terminal detection, and many other.
-
-Additional login parameters can be appended to the login name after the '+' sign.
-
-    login_name ::= user_name [ '+' parameters ]
-    parameters ::= parameter [ parameters ]
-    parameter ::= [ number ] 'a'..'z'
-    number ::= '0'..'9' [ number ]
-  
-
-If the parameter is not present, then the default value is used. If the number is not present then the implicit value of the parameter is used.
-
-Example: admin+ct80w - will disable console colors, disable auto detection and then set terminal width to 80.
-"w"	auto	auto	Set terminal width
-"h"	auto	auto	Set terminal height
-"c"	on	off	disable/enable console colors
-"t"	off	off	Disable auto-detection of terminal capabilities
-"e"	on	off	Enables "dumb" terminal mode
-Banner and Messages
-
-The login process will display the MikroTik banner and short help after validating the user name and password.
-  MMM      MMM       KKK                          TTTTTTTTTTT      KKK
-  MMMM    MMMM       KKK                          TTTTTTTTTTT      KKK
-  MMM MMMM MMM  III  KKK  KKK  RRRRRR     OOOOOO      TTT     III  KKK  KKK
-  MMM  MM  MMM  III  KKKKK     RRR  RRR  OOO  OOO     TTT     III  KKKKK
-  MMM      MMM  III  KKK KKK   RRRRRR    OOO  OOO     TTT     III  KKK KKK
-  MMM      MMM  III  KKK  KKK  RRR  RRR   OOOOOO      TTT     III  KKK  KKK
-
-  MikroTik RouterOS 6.22 (c) 1999-2014       https://www.mikrotik.com/
-
-[?]             Gives the list of available commands
-command [?]     Gives help on the command and list of arguments
-
-[Tab]           Completes the command/word. If the input is ambiguous,
-                a second [Tab] gives possible options
-
-/               Move up to base level
-..              Move up one level
-/command        Use command at the base level
-
-
-After the banner can be printed other important information, like /system note set by another admin, the last few critical log messages, demo version upgrade reminder, and default configuration description.
-
-For example, the demo license prompt and last critical messages are printed
-UPGRADE NOW FOR FULL SUPPORT
-----------------------------
-FULL SUPPORT benefits:
-- receive technical support
-- one year feature support
-- one year online upgrades
-    (avoid re-installation and re-configuring your router)
-To upgrade, register your license "software ID"
-on our account server www.mikrotik.com
-
-Current installation "software ID": ABCD-456
-
-Please press "Enter" to continue!
-
-
-dec/10/2007 10:40:06 system,error,critical login failure for user root from 10.0.0.1 via telnet
-dec/10/2007 10:40:07 system,error,critical login failure for user root from 10.0.0.1 via telnet
-dec/10/2007 10:40:09 system,error,critical login failure for user test from 10.0.0.1 via telnet
-Command Prompt
-
-At the end of the successful login sequence, the login process prints a banner that shows the command prompt, and hands over control to the user.
-
-Default command prompt consists of user name, system identity, and current command path />
-
-For example, change the current path from the root to the interface then go back to the root
-  [admin@MikroTik] > interface [enter]
-  [admin@MikroTik] /interface> / [enter]
-  [admin@MikroTik] >
-
-Use up arrow to recall previous commands (if this is a multiline command, then you can press F8 in order to expand it) from command history (commands that added sensitive data, like passwords, will not be available in the history), TAB key to automatically complete words in the command you are typing, ENTER key to execute the command, Control-C to interrupt currently running command and return to prompt and ? to display built-in help, in RouterOS v7, F1 has to be used instead.
-
-The easiest way to log out of the console is to press Control-D at the command prompt while the command line is empty (You can cancel the current command and get an empty line with Control-C, so Control-C followed by Control-D will log you out in most cases).
-
-It is possible to write commands that consist of multiple lines. When the entered line is not a complete command and more input is expected, the console shows a continuation prompt that lists all open parentheses, braces, brackets, and quotes, and also trailing backslash if the previous line ended with backslash-white-space.
-    [admin@MikroTik] > {
-    {... :put (\
-    {(\... 1+2)}
-    3
-
-When you are editing such multiple line entries, the prompt shows the number of current lines and total line count instead of the usual username and system name.
-
-line 2 of 3> :put (\
-
-Sometimes commands ask for additional input from the user. For example, the command '/password' asks for old and new passwords. In such cases, the prompt shows the name of the requested value, followed by colon and space.
-    [admin@MikroTik] > /password
-    old password: ******
-    new password: **********
-    retype new password: **********
-Hierarchy
-
-The console allows the configuration of the router's settings using text commands. Since there is a lot of available commands, they are split into groups organized in a way of hierarchical menu levels. The name of a menu level reflects the configuration information accessible in the relevant section.
-
-For example, you can issue the /ip route print command:
-[admin@MikroTik] > /ip route print 
-Flags: D - dynamic; X - disabled, I - inactive, A - active; 
-C - connect, S - static, r - rip, b - bgp, o - ospf, d - dhcp, v - vpn 
- #     DST-ADDRESS        GATEWAY            DISTANCE
- 0  XS 4.4.4.4            10.155.101.1      
-   D o 0.0.0.0/0          10.155.101.1            110
- 1  AS 0.0.0.0/0          10.155.101.1              1
-   D b 1.0.4.0/24         10.155.101.1             20
-   D b 1.0.4.0/24         10.155.101.1             20
-   DAb 1.0.4.0/24         10.155.101.1             20
-[admin@MikroTik] >
-
-Instead of typing `/ip route` path before each command, the path can be typed only once to move into this particular branch of the menu hierarchy. Thus, the example above could also be executed like this:
-[admin@MikroTik] > /ip route
-[admin@MikroTik] /ip/route> print 
-Flags: D - dynamic; X - disabled, I - inactive, A - active; 
-C - connect, S - static, r - rip, b - bgp, o - ospf, d - dhcp, v - vpn 
- #     DST-ADDRESS        GATEWAY            DISTANCE
- 0  XS 4.4.4.4            10.155.101.1      
-   D o 0.0.0.0/0          10.155.101.1            110
- 1  AS 0.0.0.0/0          10.155.101.1              1
-   D b 1.0.4.0/24         10.155.101.1             20
-   D b 1.0.4.0/24         10.155.101.1             20
-   DAb 1.0.4.0/24         10.155.101.1             20
-[admin@MikroTik] >
-
-Each word in the path can be separated by space (as in the example above) or by "/"
-[admin@MikroTik] > /ip/route/
-[admin@MikroTik] /ip/route> print 
-Flags: D - dynamic; X - disabled, I - inactive, A - active; 
-C - connect, S - static, r - rip, b - bgp, o - ospf, d - dhcp, v - vpn 
- #     DST-ADDRESS        GATEWAY            DISTANCE
- 0  XS 4.4.4.4            10.155.101.1      
-   D o 0.0.0.0/0          10.155.101.1            110
- 1  AS 0.0.0.0/0          10.155.101.1              1
-   D b 1.0.4.0/24         10.155.101.1             20
-   D b 1.0.4.0/24         10.155.101.1             20
-   DAb 1.0.4.0/24         10.155.101.1             20
-[admin@MikroTik] >
-
-Notice that the prompt changes in order to reflect where you are located in the menu hierarchy at the moment. To move to the top level again, type " / "
-[admin@MikroTik] > ip route
-[admin@MikroTik] /ip/route> /
-[admin@MikroTik] >
-
-To move up one command level, type " .. "
-[admin@MikroTik] /ip/route> ..
-[admin@MikroTik] /ip>
-
-You can also use / and .. to execute commands from other menu levels without changing the current level:
-[admin@MikroTik] /ip/route> /ping 10.0.0.1
-10.0.0.1 ping timeout
-2 packets transmitted, 0 packets received, 100% packet loss
-[admin@MikroTik] /ip/firewall/nat> .. service-port print
-Flags: X - disabled, I - invalid
-#   NAME                                                                PORTS
-0   ftp                                                                 21
-1   tftp                                                                69
-2   irc                                                                 6667
-3   h323
-4   sip
-5   pptp
-[admin@MikroTik] /ip/firewall/nat>
-Item Names and Numbers
-
-Many of the command levels operate with arrays of items: interfaces, routes, users, etc. Such arrays are displayed in similarly-looking lists. All items in the list have an item number followed by flags and parameter values.
-
-To change the properties of an item, you have to use the set command and specify the name or number of the item.
-Item Names
-
-Some lists have items with specific names assigned to each of them. Examples are interface or user levels. There you can use item names instead of item numbers.
-
-You do not have to use the print command before accessing items by their names, which, as opposed to numbers, are not assigned by the console internally, but are properties of the items. Thus, they would not change on their own. However, there are all kinds of obscure situations possible when several users are changing the router's configuration at the same time. Generally, item names are more "stable" than the numbers, and also more informative, so you should prefer them to numbers when writing console scripts.
-Item Numbers
-
-Item numbers are assigned by the print command and are not constant - it is possible that two successive print commands will order items differently. But the results of the last print commands are memorized and, thus, once assigned, item numbers can be used even after add, remove and move operations (since version 3, move operation does not renumber items). Item numbers are assigned on a per session basis, they will remain the same until you quit the console or until the next print command is executed. Also, numbers are assigned separately for every item list, so /ip address print will not change the numbering of the interface list.
-
-You can specify multiple items as targets to some commands. Almost everywhere, where you can write the number of items, you can also write a list of numbers.
-[admin@MikroTik] > interface print
-Flags: X - disabled, D - dynamic, R - running
-  #    NAME                 TYPE             MTU
-  0  R ether1               ether            1500
-  1  R ether2               ether            1500
-  2  R ether3               ether            1500
-  3  R ether4               ether            1500
-[admin@MikroTik] > interface set 0,1,2 mtu=1460
-[admin@MikroTik] > interface print
-Flags: X - disabled, D - dynamic, R - running
-  #    NAME                 TYPE             MTU
-  0  R ether1               ether            1460
-  1  R ether2               ether            1460
-  2  R ether3               ether            1460
-  3  R ether4               ether            1500
-[admin@MikroTik] >
-General Commands
-
-There are some commands that are common to nearly all menu levels, namely: print, set, remove, add, find, get, export, enable, disable, comment, move. These commands have similar behavior throughout different menu levels.
-add	This command usually has all the same arguments as a set, except the item number argument. It adds a new item with the values you have specified, usually at the end of the item list, in places where the order of items is relevant. There are some required properties that you have to supply, such as the interface for a new address, while other properties are set to defaults unless you explicitly specify them.
-
-Common Parameters
-
-    copy-from - Copies an existing item. It takes default values of a new item's properties from another item. If you do not want to make an exact copy, you can specify new values for some properties. When copying items that have names, you will usually have to give a new name to a copy
-    place-before - places a new item before an existing item with a specified position. Thus, you do not need to use the move command after adding an item to the list
-    disabled - controls disabled/enabled state of the newly added item(-s)
-    comment - holds the description of a newly created item
-
-Return Values
-
-    add command returns the internal number of items it has added
-
-edit	This command is associated with the set command. It can be used to edit values of properties that contain a large amount of text, such as scripts, but it works with all editable properties. Depending on the capabilities of the terminal, either a full-screen editor or a single line editor is launched to edit the value of the specified property.
-find	The find command has the same arguments as a set, plus the flag arguments like disabled or active that take values yes or no depending on the value of the respective flag. To see all flags and their names, look at the top of the print command's output. The find command returns internal numbers of all items that have the same values of arguments as specified.
-move	Changes the order of items in the list. Parameters:
-
-    the first argument specifies the item(-s) being moved.
-    the second argument specifies the item before which to place all items being moved (they are placed at the end of the list if the second argument is omitted).
-
-print	Shows all information that's accessible from a particular command level. Thus, /system clock print shows the system date and time, /ip route print shows all routes etc. If there\'s a list of items in the current level and they are not read-only, i.e. you can change/remove them (example of read-only item list is /system history, which shows a history of executed actions), then print command also assigns numbers that are used by all commands that operate with items in this list.
-
-Common Parameters:
-
-    append - 
-    brief - forces the print command to use tabular output form
-    count-only - shows the number of items
-    detail - forces the print command to use property=value output form
-    file - prints the contents of the specific sub-menu into a file on the router.
-    follow - 
-    follow-only - 
-    follow-strict - 
-    from - show only specified items, in the same order in which they are given.
-    interval - updates the output from the print command for every interval of seconds.
-    oid - prints the OID value for properties that are accessible from SNMP.
-    proplist - comma-separated and ordered list of property names that should be included for the returned items.
-    show-ids - 
-    where - show only items that match specified criteria. The syntax of where the property is similar to the find command.
-    without-paging - prints the output without stopping after each screenful.
-
-remove	Removes specified item(-s) from a list.
-set	Allows you to change values of general parameters or item parameters. The set command has arguments with names corresponding to values you can change. Use ? or double Tab to see a list of all arguments. If there is a list of items in this command level, then the set has one action argument that accepts the number of items (or list of numbers) you wish to set up. This command does not return anything.
-Input Modes
-
-It is possible to switch between several input modes:
-
-    Normal mode - indicated by normal command prompt.
-    Safe mode - safe mode is indicated by the word SAFE after the command prompt. In this mode, the configuration is saved to disk only after the safe mode is turned off. Safe mode can be turned on/off with Ctrl+X or F4. Read more >>
-    Hot-lock mode - indicated by additional yellow >. Hot-lock mode autocompletes commands and can be turned on/off with F7
-
-Quick Typing
-
-There are two features in the console that help entering commands much quicker and easier - the [Tab] key completions, and abbreviations of command names. Completions work similarly to the bash shell in UNIX. If you press the [Tab] key after a part of a word, the console tries to find the command within the current context that begins with this word. If there is only one match, it is automatically appended, followed by a space:
-
-/inte[Tab]_ becomes /interface _
-
-If there is more than one match, but they all have a common beginning, which is longer than that what you have typed, then the word is completed to this common part, and no space is appended:
-
-/interface set e[Tab]_ becomes /interface set ether_
-
-If you've typed just the common part, pressing the tab key once has no effect. However, pressing it for the second time shows all possible completions in compact form:
-
-[admin@MikroTik] > interface set e[Tab]_
-[admin@MikroTik] > interface set ether[Tab]_
-[admin@MikroTik] > interface set ether[Tab]_
-ether1 ether5
-[admin@MikroTik] > interface set ether_
-
-The [Tab] key can be used almost in any context where the console might have a clue about possible values - command names, argument names, arguments that have only several possible values (like names of items in some lists or name of the protocol in firewall and NAT rules). You cannot complete numbers, IP addresses, and similar values.
-
-Another way to press fewer keys while typing is to abbreviate command and argument names. You can type only the beginning of the command name, and, if it is not ambiguous, the console will accept it as a full name. So typing:
-
-[admin@MikroTik] > pi 10.1 c 3 si 100
-
-equals to:
-
-[admin@MikroTik] > ping 10.0.0.1 count 3 size 100
-
-It is possible to complete not only the beginning, but also any distinctive sub-string of a name: if there is no exact match, the console starts looking for words that have string being completed as first letters of a multiple word name, or that simply contain letters of this string in the same order. If a single such word is found, it is completed at the cursor position. For example:
-
-[admin@MikroTik] > interface x[TAB]_
-[admin@MikroTik] > interface export _
-
-[admin@MikroTik] > interface mt[TAB]_
-[admin@MikroTik] > interface monitor-traffic _
-
-Console Search
-
-Console search allows performing keyword search through the list of RouterOS menus and the history. The search prompt is accessible with the [Ctrl+r] shortcut. 
-Internal Chat System
-
-RouterOS console has a built-in internal chat system. This allows remotely located admins to talk to each other directly in RouterOS CLI. To start the conversation prefix the intended message with the # symbol, anyone who is logged in at the time of sending the message will see it.
-[admin@MikroTik] > # ready to break internet?
-[admin@MikroTik] > 
-fake_admin: i was born ready
-[admin@MikroTik] > 
-[fake_admin@MikroTik] > 
-admin: ready to break internet?
-[fake_admin@MikroTik] > # i was born ready
-[fake_admin@MikroTik] > 
-List of Keys
-Control-C	keyboard interrupt
-Control-D	log out (if an input line is empty)
-Control-K	clear from the cursor to the end of the line
-Control-U	clear from the cursor to the beginning of the line
-Control-X or F4	toggle safe mode
-F7	toggle hot-lock mode
-Control-R or F3	toggle console search
-F6	toggle cellar
-F1	show context-sensitive help.
-Tab	perform line completion. When pressed a second time, show possible completions.
-#	Send a message to an internal chat system
-Delete	remove character at the cursor
-Control-H or Backspace	removes character before cursor and moves the cursor back one position.
-Control-\	split line at cursor. Insert newline at the cursor position. Display second of the two resulting lines.
-Control-B or Left	move cursor backward one character
-Control-F or Right	move cursor forward one character
-Control-P or Up	go to the previous line. If this is the first line of input then recall previous input from history.
-Control-N or Down	go to the next line. If this is the last line of input then recall the next input from the history
-Control-A or Home	move the cursor to the beginning of the line. If the cursor is already at the beginning of the line, then go to the beginning of the first line of the current input
-Control-E or End	move the cursor to the end of the line. If the cursor is already at the end of the line, then move it to the end of the last line of the current input
-Control-L or F5	reset terminal and repaint screen
-
-
-
-
-
-    Creado por Deniss M., actualizado por última vez por Dāvis Bleikšs el abr 10, 2025 3 min de lectura
-
-MAC server section allows you to configure MAC Telnet Server, MAC WinBox Server and MAC Ping Server on RouterOS device.
-
-MAC Telnet is used to provide access to a router that has no IP address set. It works just like IP telnet. MAC telnet is possible between two MikroTik RouterOS routers only.
-
-MAC WinBox is used to provide WinBox access to the router via MAC address.
-
-MAC Ping is used to allow MAC pings to the router's MAC address.
-
-MAC-server settings are included in the "system" package.
-MAC Telnet Server
-
-It is possible to set MAC Telnet access to specific interfaces that are a part of the interface list:
-[admin@device] /tool mac-server set allowed-interface-list=listBridge
-[admin@device] /tool mac-server print
-  allowed-interface-list: listBridge
-
-In the example above, MAC Telnet is configured for the interface list "listBridge" and, as a result, MAC Telnet will only work via the interfaces that are members of the list (you can add multiple interfaces to the list).
-
-To disable MAC Telnet access, issue the command (set "allowed-interface-list" to "none"):
-[admin@device] /tool mac-server set allowed-interface-list=none
-[admin@device] /tool mac-server print
-  allowed-interface-list: none
-
-You can check active MAC Telnet sessions (that the device accepted) with the command:
-[admin@device] > tool mac-server sessions print
-Columns: INTERFACE, SRC-ADDRESS, UPTIME
-#  INTERFACE  SRC-ADDRESS        UPTIME
-0  ether5     64:D1:54:FB:E3:E6  17s 
-MAC Telnet Client
-
-When MAC Telnet Server is enabled, you can use another RouterOS device to connect to the server using the mac-telnet client:
-[admin@device2] > tool mac-telnet B8:69:F4:7F:F2:E7    
-Login: admin
-Password: 
-Trying B8:69:F4:7F:F2:E7...
-Connected to B8:69:F4:7F:F2:E7
-
-
-
-
-  MMM      MMM       KKK                          TTTTTTTTTTT      KKK
-  MMMM    MMMM       KKK                          TTTTTTTTTTT      KKK
-  MMM MMMM MMM  III  KKK  KKK  RRRRRR     OOOOOO      TTT     III  KKK  KKK
-  MMM  MM  MMM  III  KKKKK     RRR  RRR  OOO  OOO     TTT     III  KKKKK
-  MMM      MMM  III  KKK KKK   RRRRRR    OOO  OOO     TTT     III  KKK KKK
-  MMM      MMM  III  KKK  KKK  RRR  RRR   OOOOOO      TTT     III  KKK  KKK
-
-  MikroTik RouterOS 7.1rc3 (c) 1999-2021       https://www.mikrotik.com/
-
-Press F1 for help
-  
-[admin@device] > 
-
-Change the MAC address accordingly (to your setup) and you should get into the server's CLI (as shown in the example above).
-MAC Scan
-
-Mac scan feature discovers all devices, which support MAC telnet protocol on the given network. The command requires you to select an interface that should be scanned:
-[admin@Sw_Denissm] > tool mac-scan interface=all           
-MAC-ADDRESS       ADDRESS                AGE
-B8:69:F4:7F:F2:E7 192.168.69.1            26
-2C:C8:1B:FD:F2:C3 192.168.69.3            56
-
-In the example, above, all interfaces are chosen, and the scan will run infinitely unless stopped (by pressing "q").
-
-You can also add a "duration" parameter that will dictate for how long the scan should go on:
-[admin@Sw_Denissm] > tool mac-scan interface=all duration=1
-MAC-ADDRESS       ADDRESS                AGE
-B8:69:F4:7F:F2:E7 192.168.69.1            48
-2C:C8:1B:FD:F2:C3 192.168.69.3            17
-
-In the example above, we set the "duration" parameter to 1 second.
-MAC WinBox Server
-
-Same as with MAC Telnet, it is possible to set MAC WinBox access to specific interfaces that are a part of the interface list:
-[admin@device] > tool mac-server mac-winbox set allowed-interface-list=listBridge 
-[admin@device] > tool mac-server mac-winbox print                   
-  allowed-interface-list: listBridge
-
-In the example above, MAC WinBox access is configured for the interface list "listBridge" and, as a result, MAC WinBox will only work via the interfaces that are members of the list.
-
-To disable MAC WinBox access, issue the command (set "allowed-interface-list" to "none"):
-[admin@device] > tool mac-server mac-winbox set allowed-interface-list=none
-[admin@device] > tool mac-server mac-winbox print                   
-  allowed-interface-list: none
-MAC Ping Server
-
-MAC Ping Server can be either set to be "disabled" or "enabled":
-[admin@device] > tool mac-server ping print
-  enabled: yes
-
-You can enable or disable MAC ping with the help of the commands (enable=yes → to enable the feature; enable=no → to disable the feature):
-[admin@device] > tool mac-server ping set enabled=yes
-[admin@device] > tool mac-server ping set enabled=no
-
-When MAC Ping is enabled, other hosts on the same broadcast domain can use ping tool to ping the mac address. For example, you can issue the following command to check MAC ping results:
-[admin@device] > /ping 00:0C:42:72:A1:B0
-HOST                                    SIZE  TTL TIME  STATUS                                         
-00:0C:42:72:A1:B0                       56        0ms  
-00:0C:42:72:A1:B0                       56        0ms  
-    sent=2 received=2 packet-loss=0% min-rtt=0ms avg-rtt=0ms max-rtt=0ms 
+    FreeACS
+    LibreACS
 	
 	
-MikroTik mobile app
 
-    Creado por Oskars K., actualizado por última vez por GG el mar 06, 2024 1 min de lectura
+    Creado por Normunds R., actualizado por última vez por Serhii T. el feb 07, 2025 6 min de lectura
+
+    Introduction
+    Connecting to a Router
+    Enable HTTPS
+    The "Terminal"
+    Skins
+        Designing skins
+        Skin design examples
+        Customizing skins
+        Using skins
+
+Introduction
+
+WebFig is a web-based RouterOS utility that allows you to monitor, configure and troubleshoot the router. It is designed as an alternative of WinBox, both have similar layouts and both have access to almost any feature of RouterOS.
+
+As Webfig is platform-independent, it can be used to configure a router directly from various devices without the need for software developed for specific platforms. In other words, there is no need to install additional software.
+
+WebFig allows performing three basic actions:
+
+    Configuration - view and edit current configuration;
+    Monitoring - display the current status of the router, routing information, interface stats, logs, etc.;
+    Troubleshooting - RouterOS has built-in many troubleshooting tools (like ping, traceroute, packet sniffers, traffic generators, etc.) and all of them can be used with WebFig
+
+Connecting to a Router
+
+As we already know from the First Time Configuration section, the device by default has username admin and no password configured. Simply open a Web browser and in the search bar type device IP address which by default is 192.168.88.1. Be sure your device has IP address from the same network, for example, 192.168.88.2 otherwise Layer3 communication will not work.
+
+
+Enable HTTPS
+
+For HTTPS to work properly, you need to specify a valid certificate that WebFig can use. You can use a certificate that is issued by a trusted Certificate Authority (CA) or you can create your own root CA and generate self-signed certificates. 
+
+WebFig supports wildcard certificates. You can generate such a certificate by specifying a wildcard in the common-name property, for example, common-name=*.mikrotik.com.
+
+To generate your own certificates and enable HTTPS access, you must configure the following:
+
+Create your own root CA on your router and sign it
+[admin@MikroTik] > certificate add name=local-cert common-name=local-cert key-usage=key-cert-sign,crl-sign 
+[admin@MikroTik] > certificate sign local-cert 
+  progress: done
+
+In case you already have set up your own CA or you are using a service that signs certificates for you, then you need to create and sign the certificate remotely and import the certificate on the router later. In case you are importing a certificate, then make sure you mark the certificate as trusted.
+
+Create a new certificate for WebFig (non-root certificate)
+[admin@MikroTik] > certificate add name=webfig common-name=192.168.88.1
+[admin@MikroTik] > certificate sign webfig 
+  progress: done
+[admin@MikroTik] > certificate print
+Flags: K - private-key; A - authority; T - trusted
+Columns:NAME        COMMON-NAME     FINGERPRINT                                                     
+0  KAT  local-cert  local-cert      9b6363d033c4b2e6893c340675cfb8d1e330977526dba347a440fabffd983c5d
+1  KAT  webfig      192.168.88.1    9f84ac2979bea65dccd02652056e5559bcdf866f8da5f924139d99453402bd02
+
+Enable www-ssl and specify to use the newly created certificate for WebFig
+[admin@MikroTik] > ip service
+set www-ssl certificate=webfig disabled=no
+
+You can now visit https://192.168.88.1 and securely configure your router.
+
+By default, browsers will not trust self-signed certificates, you will need to add the certificate as trusted on the first time you visit the page in your browser. Another approach is to export the root CA certificate and import it as a trusted root certificate on your computer, this way all certificates signed by this router will be considered as valid and will make it easier to manage certificates in your network.
+
+Most Internet browsers have their own certificate trust chain and work independently of the operating system's certificate trust chain, this means that you may have to add your own root CA's certificate as a trusted certificate in your browser settings since trusting the certificate in your operating system's settings might not have any effect when using your Internet browser.
+The "Terminal"
+
+The "Terminal" or Command Line Interface (CLI) in WebFig is located in the top right corner. It offers the same functionality as the "New Terminal" in the WinBox GUI.
+
+Skins
+
+WebFig Design Skin is a handy tool to make the interface more user-friendly. It is not a security tool. If the user has sufficient rights it is possible to access hidden features by other means.
+Designing skins
+
+If the user has sufficient permissions (the group has the policy "policy" and "sensitive" to edit permissions) Design Skin button becomes available. Pressing that toggle button will open interface editing options. 
+
+To prevent the user from accessing the Design Skin menu, disable policy "policy" and "sensitive" under the user group configuration.
+
+Possible operations are:
+
+    Hide menu - this will hide all items from the menu and its submenus;
+    Hide submenu - only certain submenu will be hidden;
+    Hide tabs - if submenu details have several tabs, it is possible to hide them this way;
+    Rename menus and items - make certain features more obvious or translate them into your language;
+    Add a note to the item (in detail view) - to add comments on the field;
+    Make item read-only (in detail view) - for user safety very sensitive fields can be made read only;
+    Hide flags (in detail view) - while it is only possible to hide a flag in detail view, this flag will not be visible in list view and in detailed view;
+    Add limits for the field - (in detail view) where it is the list of times that are comma or newline separated list of allowed values:
+        number interval '..' example: 1..10 will allow values from 1 to 10 for fields with numbers, for example, MTU size.
+        field prefix (Text fields, MAC address, set fields, combo-boxes). If it is required to limit prefix length $ should be added to the end. For example, limiting the wireless interface to "station" only, "Add limit" will contain "station$"
+
+    Add Tab - will add a gray ribbon with an editable label that will separate the fields. Ribbon will be added before the field it is added to;
+    Add Separator - will add a low height horizontal separator before the field it is added to.
+
+Note: Number interval cannot be set to extend limitations set by RouterOS for that field
+
+Note: Set fields are arguments that consist of a set of check-boxes, for example, setting up policies for user groups, RADIUS "Service"
+
+Note: Limitations set for combo-boxes will also limit the values selectable from the dropdown
+Skin design examples
+
+If you need to limit the user for some services 
+
+Add a limit to the RADIUS Service.
+
+The result will be only those services, that are pointed in the "Limit" field.
+
+Customizing skins
+
+Here is an example of the "Status" page that can be used within the skin *.json file: status.json
+
+The status content is structured as follows:
+{"Status": {"Status": {}}}
+
+Status records are displayed in numbered order, example:
+"7": {
+  "alias": (path to the record),
+  "note": (optional; free form text that appears under the record),
+  "name": (optional; alternative name for the record),
+  "tab": (optional; name of the tab that this and following records belong to),
+  "separator": 1 (optional; should a separating line be placed above his record)
+},
+
+Path (alias) Structure:
+
+The path (e.g. alias: "IP:Firewall:Filter Rules:*17:Statistics:Packet Rate Graph" and corresponding URL: "router_IP/webfig/#IP:Firewall.Filter_Rules.17") consists of the following colon separated sections:
+
+    Group (if any) → IP:
+    Service or Name → Firewall:
+    Container or Tab Name → Filter Rules:
+    Asterisk (*) and Object ID → Found in the URL of the opened object (17)
+    Tab Name in the form (if any) → Statistics
+    Input Field Name → Packet Rate Graph
+
+Using skins
+
+To use skins you have to assign the skin to the group. When that is done, users of that group will automatically use the selected skin as their default when logging into WebFig or WinBox.
+/user/group/set your_group_name skin=your_skin
+
+If it is required to use created skin on another router you can copy files to the skins folder on the other router. On the new router, it is required to add copied skin to the user group to use it.
+
+
+
+    Creado por Normunds R., actualizado por última vez por Mārtiņš S. el jun 17, 2025 12 min de lectura
+
+    1Summary
+    2Starting WinBox
+        2.1Simple mode
+            2.1.1Buttons/check-boxes and Other Fields
+            2.1.2Menu Items
+        2.2Advanced mode
+            2.2.1Buttons/check-boxes and Other Fields
+        2.3Command Line
+        2.4IPv6 connectivity
+        2.5Run WinBox on macOS
+        2.6Run WinBox on Linux
+    3Interface Overview
+    4Work Area and Child Windows
+        4.1Child window menu bar
+        4.2Sorting out displayed items
+        4.3Customizing list of displayed columns
+            4.3.1Detail mode
+            4.3.2Category view
+        4.4Drag & Drop
+        4.5Traffic monitoring
+        4.6Item copy
+    5Transferring Settings
+    6WinBox Keyboard Shortcuts
+    7Troubleshooting
+        7.1WinBox cannot connect to the router's IP address, devices do not show up in the Neighbors list
+        7.2I get an error '(port 20561) timed out' when connecting to routers mac address
+        7.3I can't find my device in WinBox IPv4 Neighbors list or MAC connection fails with "ERROR could not connect to XX-XX-XX-XX-XX-XX"
 
 Summary
 
-The application is available for both Android and iOS operating systems. It is a good way to configure a new device, as it provides a simple and user-friendly setup screen for the most basic settings of your new router. It also features an advanced menu, for the more experienced user.
-Downloading app
+A native WinBox beta version for Linux and macOS is now available on the MikroTik downloads page!
 
-MikroTik application is available to download on App Store and Google Play, please see our web page Software section for direct download links or scan the QR code.
 
-Use the MikroTik smartphone app to configure your router in the field, or to apply the most basic initial settings for your MikroTik home access point.
-Quick start with the application
+WinBox is a small utility that allows the administration of MikroTik RouterOS using a fast and simple GUI. It is a native Win32/Win64 binary but can be run on Linux and macOS (OSX) using Wine. All WinBox interface functions are as close as possible mirroring the console functions, that is why there are no WinBox sections in the manual. Some advanced and system critical configurations are not possible from the WinBox, like MAC address change on an interface.
 
-    Scan QR code and choose your preferred OS;
+From WinBox v3.14, the following security features are used:
 
-    Install and connect to your wireless network;
+    WinBox.exe is signed with an Extended Validation certificate, issued by SIA Mikrotīkls (MikroTik).
+    WinBox uses ECSRP for key exchange and authentication (requires a new WinBox version).
+    Both sides verify that the other side knows the password (no man in the middle attack is possible).
+    WinBox in RoMON mode requires that the agent is the latest version to be able to connect to the latest version routers.
+    WinBox uses AES128-CBC-SHA as an encryption algorithm (requires WinBox version 3.14 or above).
 
-    Open application, by default, the IP address and username will be already entered;
+Starting WinBox
 
-    Click Connect to establish a connection to;
+WinBox loader can be downloaded from the MikroTik download page. When WinBox.exe is downloaded, double click on it, and the WinBox loader window will pop up. There are two WinBox loader modes: simple which is enabled by default and advanced.
+Simple mode
 
-    Choose Quick setup, and the application will guide you through all basic configuration settings in a couple of easy steps.
+When you open WinBox loader for the first time simple mode layout will be used:
 
+To connect to the router enter the IP or MAC address of the router, specify username and password (if any) and click on the Connect button. You can also enter the port number after the IP address, separating them with a colon, like this 192.168.88.1:9999. The port can be changed in the RouterOS services menu.
 
+ It is recommended to use an IP address whenever possible. MAC session uses network broadcasts and is not 100% reliable.
 
+You can also use neighbor discovery, to list available routers use the Neighbors tab:
 
+From the list of discovered routers, you can click on the IP or MAC address column to connect to that router. If you click on IP address then IP will be used to connect, but if you click on MAC Address then the MAC address will be used to connect to the router.
+Neighbor discovery will show also devices that are not compatible with WinBox, like Cisco routers or any other device that uses CDP (Cisco Discovery Protocol). If you will try to connect to a SwOS device, then the connection will be established through a web browser
+Buttons/check-boxes and Other Fields
 
+    Connect - Connect to the router
+    Connect To RoMON - Connect to RoMON Agent
+    Add/set - Save/Edit any of the saved router entries in the Managed tab.
+    Open In New Window - Leaves loader open in the background and opens new windows for each device to which connection is made.
+    Connect To: - destination IP or MAC address of the router
+    Login - username used for authentication
+    Password - password used for authentication
+    Keep Password - if unchecked, the password is not saved to the list
 
+Menu Items
 
+    File
+        New - Create a new managed router list in a specified location
+        Open - Open managed router list file
+        Save As - Save current managed router list to file
+        Exit - Exit WinBox loader
 
-    Creado por Normunds R., actualizado por última vez por GG el mar 06, 2024 6 min de lectura
+    Tools
+        Advanced Mode - Enables/Disables advanced mode view
+        Import - Imports saved session file
+        Export - Exports saved session file
+        Move Session Folder - Change path where session files are stored
+        Clear cache - Clear WinBox cache
+        Check For Updates - Check for updates for WinBox loader
 
-        Summary
-        Modes
-        HomeAP
-            Wireless
-            Internet
-            Local Network
-            VPN
-            System
-        FAQ
+Advanced mode
 
-Summary
+Additional WinBox loader parameters are revealed when an advanced mode is enabled with Tools → Advanced Mode:
 
-Quickset is a simple configuration wizard page that prepares your router in a few clicks. It is the first screen a user sees, when opening the default IP address 192.168.88.1 in a web browser.
+Buttons/check-boxes and Other Fields
 
-Quickset is available for all devices that have some sort of default configuration from factory. Devices that do not have configuration must be configured by hand. The most popular and recommended mode is the HomeAP (or HomeAP dual, depending on the device). This Quickset mode provides the simplest of terminology and the most common options for the home user.
-Modes
+Buttons/check-boxes
 
-Depending on the router model, different Quickset modes might be available from the Quickset dropdown menu:
+    Browse - Browse file directory for some specific session
+    Keep Password - if unchecked, the password is not saved to the list
+    Secure mode - if checked, WinBox will use DH-1984 for key exchange and modified and hardened RC4-drop3072 encryption to secure the session.
+    Autosave session - Saves sessions automatically for devices to which connections are made.
 
-    CAP: Controlled Access Point, an AP device, that will be managed by a centralized CAPsMAN server. Only use if you have already set up a CAPsMAN server.
-    CPE: Client device, which will connect to an Access Point (AP) device. Provides option to scan for AP devices in your area.
-    HomeAP: The default Access Point config page for most home users. Provides fewer options and simplified terminology.
-    HomeAP dual: Dual band devices (2GHz/5GHz). The default Access Point config page for most home users. Provides fewer options and simplified terminology.
-    Home Mesh: Made for making bigger WiFi networks. Enables the CAPsMAN server in the router, and places the local WiFi interfaces under CAPsMAN control. Just boot other MikroTik WiFi APs with the reset button pressed, and they will join this HomeMesh network (see their Quick guide for details)
-    PTP Bridge AP: When you need to transparently interconnect two remote locations together in the same network, set one device to this mode, and the other device to the next (PTP Bridge CPE) mode.
-    PTP Bridge CPE: When you need to transparently interconnect two remote locations together in the same network, set one device to this mode, and the other device to the previous (PTP Bridge AP) mode.
-    WISP AP: Similar to the HomeAP mode, but provides more advanced options and uses industry standard terminology, like SSID and WPA.
+Fields:
 
-HomeAP
+    Session - Saved router session.
+    Note - Note that is assigned to save router entry.
+    Group - Group to which saved router entry is assigned.
+    RoMON Agent - Select RoMON Agent from the available device list
 
-This is the mode you should use if you would like to quickly configure a home access point.
-Wireless
 
-Set up your wireless network in this section:
+Managed routers list is encrypted, but it can still be loaded with another WinBox, IF the master password is not set for it!
+Command Line
 
-    Network Name: How will your smartphone see your network? Set any name you like here. In HomeAP dual, you can set the 2GHz (legacy) and 5GHz (modern) networks to same, or different names (see FAQ). Use any name you like, in any format.
-    Frequency: Normally you can leave "Auto", in this way, the router will scan the environment, and select the least occupied frequency channel (it will do this once). Use a custom selection if you need to experiment.
-    Band: Normally leave this to defaults (2GHz b/g/n and 5GHz A/N/AC).
-    Use Access List (ACL): Enable this if you would like to restrict who can connect to your AP, based on the user's MAC (hardware) address. To use this option, first you need to allow these clients to connect, and then use the below button "Copy to ACL". This will copy the selected client to the access list. After you have built an Access list (ACL), you can enable this option to forbid anyone else to attempt connections to your device. Normally you can leave this alone, as the Wireless password already provides the needed restrictions.
-    WiFi Password: The most important option here. Sets a secure password that also encrypts your wireless communications, which will be needed to connect to wireless network.
-    WPS accept: Use this button to grant access to a specific device that supports the WPS connection mode. Useful for printers and other peripherals where typing a password is difficult. First start WPS mode in your client device, then once click the WPS button here to allow said device. Button works for a few seconds and operates on a per-client basis.
-    Guest network: Useful for house guests who don't need to know your main WiFi password. Set a separate password for them in this option. Important! Guest users will not be able to access other devices in your LAN and other guest devices. This mode enabled Bridge filters to prevent this.
-    Wireless clients: This table shows the currently connected client devices (their MAC address, if they are in your Access List, their last used IP address, how long are they connected, their signal level in dBm and in a bar graph).
+It is possible to use the command line to pass connect to, user, password and session ("workspace" for WInBox 4) parameters automatically:
 
-Internet
+winbox.exe [<connect-to> [<login> [<password>]] <session|workspace>]
 
-    Port: Select which port is connected to the ISP (internet) modem. Usually Eth1.
-    Address Acquisition: Select how the ISP is giving you the IP address. Ask your service provider about this and the other options (IP address, Netmask, Gateway).
-    MAC address: Normally should not be changed, unless your ISP has locked you to a specific MAC address, and you have changed the router to a new one.
-    Firewall router: This enables a secure firewall for your router and your network. Always make sure this box is selected, so that no access is possible to your devices from the internet port.
-    MAC server / MAC Winbox: Allows connection with the [Winbox utility https://mt.lv/winbox] from the LAN port side in MAC address mode. Useful for debugging and recovery, when IP mode is not available. Advanced use only.
-    Discovery: Allows the device to be identified by model name from other RouterOS devices.
+For example (with no password):
 
-Local Network
+winbox.exe 10.5.101.1 admin "" "<own>"
 
-    IP address: Mostly can stay at the default 192.168.88.1 unless your router is behind another router. To avoid IP conflict, change to 192.168.89.1 or similar
-    Netmask: In most situations can leave 255.255.255.0
-    Bridge all LAN ports: Allows your devices to communicate to each other, even if, say, your TV is connected via Ethernet LAN cable, but your PC is connected via WiFi.
-    DHCP server: Normally, you would want automatic IP address configuration in your home network, so leave the DHCP settings ON and on their defaults.
-    NAT: Turn this off ONLY if your ISP has provided a public IP address for both the router and also the local network. If not, leave NAT on.
-    UPnP: This option enables automatic port forwarding ("opening ports to the local network" as some call it) for supported programs and devices, like your NAS disks and peer-to-peer utilities. Use with care, as this option can sometimes expose internal devices to the internet without your knowledge. Enable only if specifically needed.
+Will connect to router 10.5.101.1 with user "admin" without a password and use session|workspace "<own>".
 
-VPN
+It is possible to use the command line to pass connect to, user, and password parameters automatically to connect to the router through RoMON. In this case, RoMON Agent must be saved on the Managed routers list so WinBox would know the user and password for this device:
 
-If you want to access your local network (and your router) from the internet, use a secure VPN tunnel. This option gives you a domain name where to connect to, and enables PPTP and L2TP/IPsec (the second one is recommended). The username is 'vpn' and you can specify your own password. All you need to do is enable it here, and then provide the address, username and password in your laptop or phone, and when connected to the VPN, you will have a securely encrypted connection to your home network. Also, useful when travelling - you will be able to browse the internet through a secure line, as if connecting from your home. This also helps to avoid geographical restrictions that are set up in some countries.
-System
+winbox.exe --romon [<romon-agent> [<connect-to> [<login> [<password>]]] <session|workspace>]
 
-    Check for updates: Always make sure your device is up-to-date with this button. Checks if an updated RouterOS release is available, and installs it.
-    Password: Sets the password for the device config page itself. Make sure nobody can access your router config page and change the settings.
+For example (with no password):
 
-FAQ
+winbox.exe --romon 10.5.101.1 D4:CA:6D:E1:B5:7D admin "" "<own>"
 
-Q: How is Quickset different from the Webfig tab, where a bunch of new menus appear?
+Will connect to router D4:CA:6D:E1:B5:7D, through 10.5.101.1 via RoMON Agent with user "admin" without a password and apply session|workspace called "<own>".
+IPv6 connectivity
 
-A: QuickSet is for new users who only need their device up and running in no time. It provides the most commonly used options in one place. If you need more options, do not use any Quickset settings at all, click on "Webfig" to open the advanced configuration interface. The full functionality is unlocked.
+WinBox supports IPv6 connectivity. To connect to the router's IPv6 address, it must be placed in square braces the same as in web browsers when connecting to the IPv6 server. Example: 
 
-Q: Can I use Quickset and Webfig together? While settings that are not conflicting can be configured this way, it is not recommended to mix up these menus.
+[db8::1]
 
-A: If you are going to use Quickset, use only Quickset and vice versa. What is difference between Router and Bridge mode? Bridge mode adds all interfaces to the bridge, allowing to forward Layer2 packets (acts as a hub/switch). In Router mode, packets are forwarded in Layer3 by using IP addresses and IP routes (acts as a router).
+when connecting to the link-local address interface index must be entered after the %:
 
-Q: In HomeAP mode, should the 2GHz and 5GHz network names be the same, or different?
+[0:a00:27ff:fe70::e88c%2]
 
-A: If you prefer that all your client devices, like TV, phones, game consoles, would automatically select the best preferred network, set the names identically. If you would like to force a client device to use the faster 5GHz 802.11ac connection, set the names unique.
+Port number is set after the square brace when it is necessary to connect WinBox to other port than the default:
 
-Q: Can I create an AP without security settings - no password or connect to such AP while using QuickSet?
+[0:a00:27ff:fe70::e88c]:8299
 
-A: QuickSet uses WPA2 pre-shared key by default. It means that the minimal password length is 8 symbols and the device can only connect to WPA2 secured AP or serve as AP itself. For configurations with no security settings, you need to configure them manually using WinBox, Webfig, or console.
+WinBox neighbor discovery is capable of discovering IPv6 enabled routers. There are two entries for each IPv6 enabled router, one entry is with IPv4 address and another one with IPv6 link-local address. You can easily choose which one you want to connect to.
+Run WinBox on macOS
 
-QuickSet interface:
+Starting with macOS 10.15 Catalina, Apple has removed support for 32bit applications, meaning it is no longer possible to use regular Wine and regular WinBox in this OS. Wine has made available a 64bit version for macOS, and MikroTik has released a special WinBox64.exe version as well.
 
+To run WinBox64 the following steps are required.
 
+    Install latest Wine from the Wine macOS builds page ( wine-devel-7.X-osx64.tar.xz) and make sure you have downloaded the WinBox64.exe executable from the MikroTik download page.
+    Launch WinBox64.exe with "open file with" > Wine64.app
 
+Run WinBox on Linux
 
-    Creado por Māris B., actualizado por última vez por Druvis Timma el sept 25, 2024 5 min de lectura
+It is possible to run WinBox on Linux by using Wine emulation software. Make sure that the Microsoft font pack is installed, otherwise, you may see distortions.
+Interface Overview
 
-    Overview
-    Authentication
-        JSON format
-    HTTP Methods
-        GET
-        PATCH
-        PUT
-        DELETE
-        POST
-            Proplist
-            Query
-            Timeout
-    Errors
+WinBox interface has been designed to be intuitive for most of the users. The interface consists of:
 
-Overview
+    The main toolbar at the top where users can add various info fields, like CPU and memory usage.
+    The menu bar on the left - list of all available menus and sub-menus. This list changes depending on what packages are installed. For example, if the IPv6 package is disabled, then the IPv6 menu and all its sub-menus will not be displayed.
+    Work area - an area where all menu windows are opened.
 
-Watch our video about this feature.
+The title bar shows information to identify with which router WinBox session is opened. Information is displayed in the following format:
 
-The term "REST API" generally refers to an API accessed via HTTP protocol at a predefined set of resource-oriented URLs.
-Starting from RouterOS v7.1beta4, it is implemented as a JSON wrapper interface of the console API. It allows to create, read, update and delete resources and call arbitrary console commands.
+[username]@[Router's IP or MAC] ( [RouterID] ) - WinBox [ROS version] on [RB model] ([platform])
 
-To start using REST API, the www-ssl or www (starting with RouterOS v7.9) service must be configured and running. When the www-ssl service (HTTPS access) is enabled, the REST service can be accessed by connecting to https://<routers_IP>/rest. When www service (HTTP access) is enabled the REST service can be accessed by connecting to http://<routers_IP>/rest.
+From screenshot above we can see that user krisjanis is logged into router with IPv4/IPv6 address [fe80::4e5e:cff:fef6:c0ab%3]. Router's ID is 3C18-Krisjanis_GW, currently installed RouterOS version is v6.36rc6, RouterBoard is CCR1036-12G-4S and platform is tile.
 
-We do not advise enabling HTTP access (www service). The main risk is that authentication credentials can be read with passive eavesdropping. You can use it only when performing tests (not in a production environment) and when you are certain that nobody can listen in (inspect your traffic)!
+On the Main toolbar's left side is located:
 
-The easiest way to start is to use cURL, wget, or any other HTTP client even RouterOS fetch tool.
-$ curl -k -u admin: https://10.155.101.214/rest/system/resource
-[{"architecture-name":"tile","board-name":"CCR1016-12S-1S+",
-"build-time":"Dec/04/2020 14:19:51","cpu":"tilegx","cpu-count":"16",
-"cpu-frequency":"1200","cpu-load":"1","free-hdd-space":"83439616",
-"free-memory":"1503133696","platform":"MikroTik",
-"total-hdd-space":"134217728","total-memory":"2046820352",
-"uptime":"2d20h12m20s","version":"7.1beta4 (development)"}]
+    undo
+    redo
+    Safe Mode 
+     Currently loaded session
 
-Watch how to set up REST api.
-Authentication
+More about Safe mode and undoing performed actions read in this article.
 
-Authentication to the REST API is performed via HTTP Basic Auth. Provide your Username and password are the same as for the console user (by default "admin" with no password).
+On the right side is located:
 
-You have to set up certificates to use secure HTTPS, if self-signed certs are used, then CA must be imported to the trusted root. However, for testing purposes, it is possible to connect insecurely (for cUrl use -k flag, for wget use --no-check-certificate).
-JSON format
+    an indicator that shows whether the WinBox session uses encryption
+    WinBox traffic indicator displayed as a green bar,
+    Custom info fields that can be added by the user by right-clicking on the toolbar and picking available info fields from the list
 
-Server broadly follows ECMA-404 standard, with following notes:
 
-    In JSON replies all object values are encoded as strings, even if the underlying data is a number or a boolean.
-    The server also accepts numbers in octal format (begins with 0) and hexadecimal format (begins with 0x). If the numbers are sent in a string format, they are assumed to be in decimal format.
-    Numbers with exponents are not supported.
+Work Area and Child Windows
 
-HTTP Methods
+WinBox has an MDI interface meaning that all menu configuration (child) widows are attached to the main (parent) WinBox window and is showed in the work area.
 
-Below is a table summarising supported HTTP methods
-GET	Read	print	To get the records.
-PATCH	Update/Modify	set	To update a single record.
-PUT	Create	add	To create a new record.
-DELETE	Delete	remove	To delete a single record.
-POST	
-	
-	Universal method to get access to all console commands.
-GET
+Child windows can not be dragged out of the working area. Notice in the screenshot above that the Interface window is dragged out of the visible working area and a horizontal scroll bar appeared at the bottom. If any window is outside visible work area boundaries the vertical or/and horizontal scrollbars will appear.
+Child window menu bar
 
-This method allows getting the list of all records or a single record from the specified menu encoded in the URL.
-For example, get all IP addresses (equivalent to the 'ip/address/print' command from the CLI):
-$ curl -k -u admin: https://10.155.101.214/rest/ip/address
-[{".id":"*1","actual-interface":"ether2","address":"10.0.0.111/24","disabled":"false",
-"dynamic":"false","interface":"ether2","invalid":"false","network":"10.0.0.0"},
-{".id":"*2","actual-interface":"ether3","address":"10.0.0.109/24","disabled":"true",
-"dynamic":"false","interface":"ether3","invalid":"false","network":"10.0.0.0"}]
+Each child window has its own toolbar. Most of the windows have the same set of toolbar buttons:
 
-To return a single record, append the ID at the end of the URL:
-$ curl -k -u admin: https://10.155.101.214/rest/ip/address/*1
-{".id":"*1","actual-interface":"ether2","address":"10.0.0.111/24","disabled":"false",
-"dynamic":"false","interface":"ether2","invalid":"false","network":"10.0.0.0"}
+     Add - add a new item to the list
+     Remove - remove the selected item from the list
+     Enable - enable selected item (the same as enable command from console)
+     Disable - disable selected item (the same as disable command from console)
+     Comment - add or edit a comment
+     Sort - allows to sort out items depending on various parameters. Read more >> 
 
-If table contains named parameters, then name instread of ID can be used, for example, get ether1:
-$ curl -k -u admin: https://10.155.101.214/rest/interface/ether1
+Almost all windows have a quick search input field on the right side of the toolbar. Any text entered in this field is searched through all the items and highlighted as illustrated in the screenshot below
 
-It is also possible to filter the output, for example, return only valid addresses that belong to the 10.155.101.0 network:
-$ curl -k -u admin: "https://10.155.101.214/rest/ip/address?network=10.155.101.0&dynamic=true"
-[{".id":"*8","actual-interface":"sfp12","address":"10.155.101.214/24","disabled":"false",
-"dynamic":"true","interface":"sfp12","invalid":"false","network":"10.155.101.0"}]
+Notice that on the right side next to the quick find input filed there is a drop-down box. For the currently opened (IP Route) window, this drop-down box allows to quickly sort out items by routing tables. For example, if the main is selected, then only routes from the main routing table will be listed.
+A similar drop-down box is also in all firewall windows to quickly sort out rules by chains.
+Sorting out displayed items
 
-Another example returns only addresses on the "dummy" interface and with the comment "test":
-$ curl -k -u admin: 'https://10.155.101.214/rest/ip/address?comment=test&interface=dummy'
-[{".id":"*3","actual-interface":"dummy","address":"192.168.99.2/24","comment":"test",
-"disabled":"false","dynamic":"false","interface":"dummy","invalid":"false","network":"192.168.99.0"}]
+Almost every window has a Sort button. When clicking on this button several options appear as illustrated in the screenshot below
 
-If you want to return only specific properties, you can use the '.proplist', followed by the '=' and a list of comma-separated properties. For example, to show only the address and if it's disabled:
-$ curl -k -u admin: https://10.155.101.214/rest/ip/address?.proplist=address,disabled
-[{"address":"10.0.0.111/24","disabled":"false"},{"address":"10.0.0.109/24","disabled":"true"}]
-PATCH
+The example shows how to quickly filter out routes that are in the 10.0.0.0/8 range
 
-This method is used to update a single record. Set PATCH call body as a JSON object which contains fields and values of the properties to be updated. For example, add a comment:
-$ curl -k -u admin: -X PATCH https://10.155.101.214/rest/ip/address/*3 \
-  --data '{"comment": "test"}' -H "content-type: application/json"
-{".id":"*3","actual-interface":"dummy","address":"192.168.99.2/24","comment":"test",
-"disabled":"false","dynamic":"false","interface":"dummy","invalid":"false","network":"192.168.99.0"}
-
-In case of a successful update, the server returns the updated object with all its parameters.
-PUT
-
-A method is used to create new records in the menu encoded in the URL. The body should be set as a JSON object containing parameters applied to the newly created record.
-
-In case of success, the server returns the created object with all its parameters.
-
-Only one resource can be created in a single request.
-
-For example, add an IP address to a dummy interface:
-$ curl -k -u admin: -X PUT https://10.155.101.214/rest/ip/address \
-  --data '{"address": "192.168.111.111", "interface": "dummy"}' -H "content-type: application/json"
-{".id":"*A","actual-interface":"dummy","address":"192.168.111.111/32","disabled":"false",
-"dynamic":"false","interface":"dummy","invalid":"false","network":"192.168.111.111"}
-DELETE
-
-This method is used to delete the record with a specified ID from the menu encoded in the URL. If the deletion has been succeeded, the server responds with an empty response. For example, call to delete the record twice, on second call router will return 404 error:
-$ curl -k -u admin: -X DELETE https://10.155.101.214/rest/ip/address/*9
-$ curl -k -u admin: -X DELETE https://10.155.101.214/rest/ip/address/*9
-{"error":404,"message":"Not Found"}
-POST
+    Press Sort button
+    Choose Dst.Address from the first drop-down box.
+    Choose in form the second drop-down box. "in" means that filter will check if DST address value is in range of the specified network.
+    Enter the network against which values will be compared (in our example enter "10.0.0.0/8")
+    These buttons are to add or remove another filter to the stack.
+    Press the Filter button to apply our filter.
 
-All the API features are available through the POST method. The command word is encoded in the header and optional parameters are passed in the JSON object with the corresponding fields and values. For example, to change the password of the active user, send
-POST https://router/rest/password
-{"old-password":"old","new-password":"N3w", "confirm-new-password":"N3w"}
+As you can see from the screenshot WinBox sorted out only routes that are within the 10.0.0.0/8 range.
 
-REST response is structured similar to API response: 
+Comparison operators (Number 3 in the screenshot) may be different for each window. For example "IP Route" window has only two is and in. Other windows may have operators such as "is not", "contains", "contains not".
 
-    If the response contains '!re' sentences (records), the JSON reply will contain a list of objects.
-    If the '!done' sentence contains data, the JSON reply will contain an object with the data.
-    If there are no records or data in the '!done' sentence, the response will hold an empty list.
+WinBox allows building a stack of filters. For example, if there is a need to filter by destination address and gateway, then
 
-There are two special keys: .proplist and .query, which are used with the print command word. Read more about APIs responses, prop lists, and queries in the API documentation.
-Proplist
+    set the first filter as described in the example above,
+    press [+] button to add another filter bar in the stack.
+    set up a second filter to filter by the gateway
+    press the Filter button to apply filters.
 
-The '.proplist' key is used to create .proplist attribute word. The values can be a single string with comma-separated values:
-POST https://router/rest/interface/print
-{".proplist":"name,type"}
+You can also remove unnecessary filters from the stack by pressing the [-] button.
+Customizing list of displayed columns
 
-or a list of strings:
-POST https://router/rest/interface/print
-{".proplist":["name","type"]}
+By default, WinBox shows the most commonly used parameters. However sometimes it is needed to see other parameters, for example, "BGP AS Path" or other BGP attributes to monitor if routes are selected properly.
 
-For example, return address and interface properties from the ip/address list:
-$ curl -k -u admin: -X POST https://10.155.101.214/rest/ip/address/print\
-  --data '{"_proplist": ["address","interface"]}' -H "content-type: application/json"
-[{"address":"192.168.99.2/24","interface":"dummy"},
-{"address":"172.16.5.1/24","interface":"sfpplus1"},
-{"address":"172.16.6.1/24","interface":"sfp2"},
-{"address":"172.16.7.1/24","interface":"sfp3"},
-{"address":"10.155.101.214/24","interface":"sfp12"},
-{"address":"192.168.111.111/32","interface":"dummy"}]
-Query
+WinBox allows to customize displayed columns for each individual window. For example to add BGP AS path column:
 
-The '.query' key is used to create a query stack. The value is a list of query words. For example this POST request :
-POST https://router/rest/interface/print
-{".query":["type=ether","type=vlan","#|!"]}
+    Click on the little arrow button (1) on the right side of the column titles or right mouse click on the route list.
+    From popped up menu move to Show Columns (2) and from the sub-menu pick the desired column, in our case click on BGP AS Path (3)
 
-is equivalent to this API sentence
-/interface/print
-?type=ether
-?type=vlan
-?#|!
+Changes made to window layout are saved and next time when WinBox is opened the same column order and size are applied.
+Detail mode
 
-For example, let's combine 'query' and 'proplist', to return '.id', 'address', and 'interface' properties for all dynamic records and records with the network 192.168.111.111
-$ curl -k -u admin: -X POST https://10.155.101.214/rest/ip/address/print \
-  --data '{".proplist": [".id","address","interface"], ".query": ["network=192.168.111.111","dynamic=true","#|"]}'\
-  -H "content-type: application/json"
-[{".id":"*8","address":"10.155.101.214/24","interface":"sfp12"},
-{".id":"*A","address":"192.168.111.111/32","interface":"dummy"}]
-Timeout
+It is also possible to enable Detail mode. In this mode all parameters are displayed in columns, the first column is the parameter name, the second column is the parameter's value.
 
-If the command runs indefinitely, it will timeout and the connection will be closed with an error. The current timeout interval is 60 seconds. To avoid timeout errors, add a parameter that would sufficiently limit the command execution time.
+To enable detail mode right mouse click on the item list and from the popup menu pick Detail mode
 
-Timeout is not affected by the parameters passed to the commands. If the command is set to run for an hour, it will terminate early and return an error message.
+Category view
 
-For example, let's see what we get when the ping command exceeds the timeout and how to prevent this by adding a count parameter:
-$ curl -k -u admin: -X POST https://10.155.101.214/rest/ping \
-  --data '{"address":"10.155.101.1"}' \
-  -H "content-type: application/json"
-{"detail":"Session closed","error":400,"message":"Bad Request"}
+It is possible to list items by categories. In this mode, all items will be grouped alphabetically or by another category. For example, items may be categorized alphabetically if sorted by name, items can also be categorized by type like in the screenshot below.
 
-$ curl -k -u admin: -X POST https://10.155.101.214/rest/ping \
-  --data '{"address":"10.155.101.1","count":"4"}' \
-  -H "content-type: application/json"
-[{"avg-rtt":"453us","host":"10.155.101.1","max-rtt":"453us","min-rtt":"453us","packet-loss":"0","received":"1","sent":"1","seq":"0","size":"56","time":"453us","ttl":"64"},
-{"avg-rtt":"417us","host":"10.155.101.1","max-rtt":"453us","min-rtt":"382us","packet-loss":"0","received":"2","sent":"2","seq":"1","size":"56","time":"382us","ttl":"64"},
-{"avg-rtt":"495us","host":"10.155.101.1","max-rtt":"650us","min-rtt":"382us","packet-loss":"0","received":"3","sent":"3","seq":"2","size":"56","time":"650us","ttl":"64"},
-{"avg-rtt":"461us","host":"10.155.101.1","max-rtt":"650us","min-rtt":"359us","packet-loss":"0","received":"4","sent":"4","seq":"3","size":"56","time":"359us","ttl":"64"}]
+To enable Category view, right mouse click on the item list and from the popup menu pick Show Categories
 
-Another example is a bandwidth test tool, which can be limited by providing run duration:
-$ curl -k -u admin: -X POST 'https://10.155.101.214/rest/tool/bandwidth-test' \
-  --data '{"address":"10.155.101.1","duration":"2s"}' \
-  -H "content-type: application/json"
-[{".section":"0","connection-count":"20","direction":"receive","lost-packets":"0",
-"random-data":"false","rx-10-second-average":"0","rx-current":"0","rx-size":"1500",
-"rx-total-average":"0",
-"status":"connecting"},
-{".section":"1","connection-count":"20","direction":"receive","duration":"1s",
-"lost-packets":"0","random-data":"false","rx-10-second-average":"0","rx-current":"0",
-"rx-size":"1500","rx-total-average":"0",
-"status":"running"},
-{".section":"2","connection-count":"20","direction":"receive","duration":"2s",
-"lost-packets":"581175","random-data":"false","rx-10-second-average":"854372352",
-"rx-current":"854372352","rx-size":"1500","rx-total-average":"854372352",
-"status":"running"},
-{".section":"3","connection-count":"20","direction":"receive","duration":"3s",
-"lost-packets":"9014","random-data":"false","rx-10-second-average":"891979008",
-"rx-current":"929585664","rx-size":"1500","rx-total-average":"891979008",
-"status":"done testing"}]
-Errors
+Drag & Drop
 
-The success or failure of the API calls is indicated in the HTTP status code. In case of failure (status code 400 or larger), the body of the response contains a JSON object with the error code, a description of the error, and optional error details. For example, trying to delete an interface will return
-{"error":406,"message":"Not Acceptable","detail":"no such command or directory (remove)"}
+It is possible to upload and download files to/from the router using WinBox drag & drop functionality. You can also download the file by pressing the right mouse button on it and selecting "Download".
 
 
+Drag & Drop works if WinBox is running on Linux using wine4. Drag and drop between two WinBox windows may fail.
+Traffic monitoring
 
+WinBox can be used as a tool to monitor the traffic of every interface, queue, or firewall rule in real-time. The screenshot below shows Ethernet traffic monitoring graphs.
 
+Item copy
 
+This shows how easy it is to copy an item in WinBox. In this example, we will use the COPY button to make a Dynamic PPPoE server interface into a Static interface.
 
-    Creado por Artūrs C., actualizado por última vez por Edgars P. el jun 03, 2025 5 min de lectura
+This image shows us the initial state, as you see DR indicates "D" which means Dynamic:
 
-    Summary
-    Configuration
-    Secrets
-    Peer discovery
-    Configuration Examples
-        Applications
-        Run RoMON in WinBox by using CLI
-        Connect to RoMON through WinBox GUI
+Double-Click on the interface and click on COPY:
 
-Summary
+A new interface window will appear, a new name will be created automatically (in this case pppoe-in1)
 
-RoMON stands for "Router Management Overlay Network". RoMON works by establishing an independent MAC layer peer discovery and data forwarding network. RoMON packets are encapsulated with EtherType 0x88bf and DST-MAC 01:80:c2:00:88:bf and its network operate independently of L2 or L3 forwarding configuration. When RoMON is enabled, any received RoMON packets will not be displayed by sniffer or torch tools.
+After this Down/Up event this interface will be Static:
 
-Each router on the RoMON network is assigned its RoMON ID. RoMON ID can be selected from the port MAC address or specified by the user.
+Transferring Settings
 
-RoMON protocol does not provide encryption services. Encryption is provided at the "application" level, by e.g. using ssh or by using a secure WinBox.
+    Managed router transfer - In the File menu, use Save As and Open functions to save the managed router list to file and open it up again on a new workstation.
 
-RoMON packets can be forwarded through network switches or bridges, unless there are specific restrictions on multicast traffic. When using a MikroTik bridge with hardware offloading, these packets are treated like regular multicast packets and are flooded across the network.
+    Router sessions transfer - In the Tools menu, use Export and Import functions to save existing sessions to file and import them again on a new workstation.
 
-Since RouterOS v7.17, if the RoMON service is enabled and the switch chip supports ACL rules, dynamic rules are automatically created to redirect these packets to the CPU, where the RoMON service operates. However, if the switch does not support ACL rules and configuration does not align, such as when CPU and RoMON untagged packets are not in the same VLAN, the RoMON service might not function as expected.
-Configuration
+WinBox Keyboard Shortcuts
+Ctrl + F	Find
+Ctrl + G	Find Next
+F3
+	Find / Find next
+Ctrl + M	Add or edit a comment
+Ctrl + E  or Num+	Enables a selected setting
+Ctrl + D or Num-	Disables a selected setting
+Ctrl + +	Zoom in WinBox
+Ctrl + -	Zoom out WinBox 
+Tab	Choose next control
+Tab + Shift	Choose previous control
+Space	Select focused control
+F4 or Esc	Close window
+F6
+	Focus previous window
+F6 + Shift	Focus next window
+Insert
+	Add new entry into list
+Delete
+	Delete entry from list
+Troubleshooting
+WinBox cannot connect to the router's IP address, devices do not show up in the Neighbors list
 
-In order for a device to participate in RoMON network, RoMON feature must be enabled and ports that participate in RoMON network must be specified.
+Make sure that the Windows firewall is set to allow WinBox connections through Private and/or Public network interfaces in the Windows firewall, it can be changed in Control Panel\System and Security\Windows Defender Firewall\Allowed applications or disable the Windows firewall.
+I get an error '(port 20561) timed out' when connecting to routers mac address
 
-Sub-menu: /tool/romon
-enabled (yes | no; Default: no)	Disable or enable RoMON feature.
-id (MAC address; Default: 00:00:00:00:00:00)	MAC address to use as ID of this router.
-secrets (string; Default: )	List of global secrets used for RoMON message hashing.
+Windows (7/8) does not allow mac connection if file and print sharing is disabled.
+I can't find my device in WinBox IPv4 Neighbors list or MAC connection fails with "ERROR could not connect to XX-XX-XX-XX-XX-XX"
 
-When RoMON is enabled without specifying ID, the ID is automatically selected:
-[admin@MikroTik] /tool/romon> print 
-     enabled: yes              
-          id: 00:00:00:00:00:00
-     secrets:                  
-  current-id: DC:2C:6E:9E:11:27
+Most of the network drivers will not enable IP stack unless your host device has an IP configuration. Set IPv4 configuration on your host device.
 
-Ports that participate in RoMON network are configured in /tool/romon/port menu. Port list is a list of entries that match either a specific interface or interface-list. Each entry defines whether the matched interface is allowed or forbidden to participate in the RoMON network. If participation is allowed, the entry also specifies the port's cost.
+Sometimes the device will be discovered due to caching, but MAC connection will still fail with "ERROR: could not connect to XX:XX:XX:XX:XX:XX
 
-Sub-menu: /tool/romon/port
-comment (string; Default: )	Short description of the entry.
-cost (integer: 0..4294967295; Default: 100)	
+WinBox MAC-ADDRESS connection requires MTU value set to 1500, unfragmented. Other values can perform poorly - loss of connectivity can occur.
 
-Changes the port's cost.
-disabled (yes | no; Default: no)	Changes whether the entry is disabled.
-interface (name; Default: )	Interface name or interface-list used for RoMON.
-secrets (string; Default: )	List of individual port secrets used for RoMON message hashing.
 
 
-A default entry with the interface-list "all" is preconfigured. This means that when the RoMON service is enabled, all interfaces are allowed to participate in the RoMON network by default. This default entry cannot be removed or enabled/disabled, but you can still modify its cost, set it to forbid participation, or configure secrets.
-Secrets
+    Creado por Oskars K., actualizado por última vez por Mārtiņš S. el may 08, 2024 5 min de lectura
 
-RoMON protocol secrets are used for message authentication, integrity check and replay prevention by means of hashing message contents with MD5.
+    Description
+    FlashFig Example
+        Requirements
+        Pre-Configuration
+            Windows Computer
+            RouterBOARD
+        Connect
+        Run FlashFig
+    Troubleshoot
+        FlashFig can not find a router
+        FlashFig finds a router, flashing is not done (no TFTP request)
+        FlashFig is done, but a configuration is not applied
+        Not enough flash space, ignoring
 
-For each interface, if the interface-specific secret list is empty, a global secret list is used. When sending out, messages are hashed with the first secret in list if list is not empty and first is not "empty secret" (empty string = ""), otherwise, messages are sent unhashed. When received, unhashed messages are only accepted if a secret list is empty or contains "empty secret", hashed messages are accepted if they are hashed with any of the secrets in list.
+Description
 
-This design allows for the incremental introduction and/or change of secrets in-network without RoMON service interruption and can happen over RoMON itself, e.g.:
+FlashFig is an application for mass router configuration. It can be used by MikroTik distributors, ISPs, or any other companies who need to apply RouterOS configuration to many routers in the shortest possible time.
 
-     initially, all routers are without secrets;
-     configure each router one by one with secrets="","mysecret" - this will make all routers still send unprotected frames, but they all will be ready to accept frames protected with secret "mysecret";
-     configure each router one by one with secrets="mysecret","" - this will make all routers use secret "mysecret", but also still accept unprotected frames (from routers that have not yet been changed);
-     configure each router with secrets="mysecret" - this will make all routers use secret "mysecret" and also only accept frames protected with "mysecret";
+FlashFig applies MikroTik RouterOS configuration to any RouterBOARD within 3 seconds. You can perform FlashFig on a batch of routers, the only thing you need is to connect RouterBOARD to a Layer 2 network running FlashFig and to power a FlashFig-enabled RouterBOARD up.
 
-Changing of secret in a network should be performed in a similar fashion where for some time both secrets are in use in network.
-Peer discovery
+FlashFig only runs on a Windows computer and is available from the downloads page.
 
-In order to discover all routers on RoMON network RoMON discover command must be used:
-[admin@MikroTik] > /tool/romon/discover 
-Flags: A - active
-Columns: ADDRESS, COST, HOPS, PATH, L2MTU, IDENTITY, VERSION, BOARD
-   ADDRESS            COS  H  PATH               L2MT  IDENTITY   VERSION    BOARD              
-A  6C:3B:6B:48:0E:8B  200  1  6C:3B:6B:48:0E:8B  1500  hEX        6.47beta7  RB750Gr3           
-A  6C:3B:6B:ED:83:69  200  1  6C:3B:6B:ED:83:69  1500  CCR1009    6.47beta7  CCR1009-7G-1C-1S+  
-A  B8:69:F4:B3:1B:D2  200  1  B8:69:F4:B3:1B:D2  1500  4K11       6.47beta7  RB4011iGS+5HacQ2HnD
-A  CC:2D:E0:26:22:4D  200  1  CC:2D:E0:26:22:4D  1500  CCR1036    6.47beta7  CCR1036-8G-2S+     
-A  CC:2D:E0:8D:01:88  200  1  CC:2D:E0:8D:01:88  1500  CRS328     6.47beta7  CRS328-24P-4S+     
-A  E4:8D:8C:1C:D3:0E  200  1  E4:8D:8C:1C:D3:0E  1500  MikroTik   6.47beta7  RB2011iLS          
-A  E4:8D:8C:49:49:DB  200  1  E4:8D:8C:49:49:DB  1500  hAP        6.47beta7  RB962UiGS-5HacT2HnT
+All RouterBOARDs support FlashFig mode. It works between a Windows computer running FlashFig and a RouterBOARD in the same broadcast domain (direct Layer 2 Ethernet network connection is required).
 
-Configuration Examples
+FlashFig support is enabled on every new RouterBOARD manufactured since March 2010 by default from the factory. For older models, FlashFig can be enabled via RouterBOOT or from MikroTik RouterOS console - /system routerboard settings set boot-device=flash-boot-once-then-nand or /system routerboard settings set boot-device=flash-boot.
 
-In order for a device to participate in the RoMON network, the RoMON feature must be enabled and ports that participate in the RoMON network must be specified.
-/tool romon set enabled=yes secrets=testing
+Starting from RouterOS/RouterBOOT v7.16, flash boot mode will be enabled in the same way as from the factory, after every system reset initiated from the software. The same mode will be initiated when you reset router with the reset button, (bootloader version  v7.16 or higher is required). 
+Please note that if you press and hold reset button before powering on the router, then the backup booter is used. The backup booter firmware (installed in the factory) must also then be v7.16 or higher. 
 
-Ports that participate in the RoMON network are configured in the RoMON port menu. Port list is a list of entries that match either specific port or all ports and specifies if matching port(s) is forbidden to participate in the RoMON network and in case port is allowed to participate in RoMON network entry also specifies the port cost. Note that all specific port entries have higher priority than the wildcard entry with interface=all.
+FlashFig mode on a brand new RouterBOARD is disabled on further boots only after the first successful user login or successful FlashFig attempt to avoid unwanted reconfiguration at a later time. To use FlashFig a second time on the same router, you need to enable flash-boot in Bootloader settings (this setting will revert to NAND after a successful configuration change OR once any user logs into the board).
 
-For example, the following list specifies that all ports participate in RoMON network with cost 100 and ether7 interface with cost 200:
-[admin@MikroTik] > /tool/romon/port/print
-Flags: * - default
-Columns: INTERFACE, FORBID, COST
-#     INTERF  FO  COS
-0  *  all     no  100
-1     ether7  no  200
+If RouterOS reset-configuration command is used later (or configuration reset using the Reset button), FlashFig configuration is loaded. To permanently overwrite, use the Netinstall process and check Apply default configuration or use -r flag in Linux-based command line.
 
-By default, one wildcard entry with forbid=no and cost=100 is created.
-Applications
+You view FlashFig video tutorial on MikroTik YouTube channel.
+FlashFig Example
 
-Multiple applications can be run over the RoMON network.
+This is a step-by-step example of how to use the FlashFig process to apply a chosen MikroTik RouterOS configuration to a 'factory fresh' RouterBOARD.
+Requirements
 
-In order to test the reachability of specific router on RoMON network RoMON ping command can be used:
-[admin@MikroTik] > /tool/romon/ping id=6C:3B:6B:48:0E:8B count=5
-  SEQ HOST                                    TIME  STATUS                                                    
-    0 6C:3B:6B:48:0E:8B                       1ms                                                             
-    1 6C:3B:6B:48:0E:8B                       0ms                                                             
-    2 6C:3B:6B:48:0E:8B                       1ms                                                             
-    3 6C:3B:6B:48:0E:8B                       0ms                                                             
-    4 6C:3B:6B:48:0E:8B                       1ms                                                             
-    sent=5 received=5 packet-loss=0% min-rtt=0ms avg-rtt=0ms max-rtt=1ms
+The Windows computer must be equipped with the following ports and contain the following files:
 
-In order to establish a secure terminal connection to router on RoMON network RoMON SSH command can be used:
-[admin@MikroTik] > /tool/romon/ssh 6C:3B:6B:48:0E:8B
-Run RoMON in WinBox by using CLI
+    A working Ethernet port;
+    Valid .rsc file(s) with MikroTik RouterOS configuration similar to an export/import file. In addition to regular configuration commands, it is also possible to re-apply the factory passwords by using the read-only variables $defconfPassword and $defconfWifiPassword (starting from RouterOS 7.10beta8);
+    Always use the latest FlashFig program available from the downloads page;
+    The RouterBOARD has to be in flash-boot mode, if this is the very first boot, nothing needs to be done
 
-In order to establish the RoMON session directly by using the command line on a computer, you must specify RoMON agents and desired routers addresses. RoMON agent must be saved on Managed routers list in WinBox in order to make a successful connection: 
-winbox.exe --romon 192.168.88.1 6C:3B:6B:48:0E:8B admin ""
-Connect to RoMON through WinBox GUI
+Be aware of the text editor's treatment of CR/LF characters and test that the config has no errors when normally applied onto an identical version of RouterOS before applying via FlashFig as run-time errors will not be visible!
+Pre-Configuration
+Windows Computer
 
-Watch a video here.
+    Run FlashFig;
+    Prepare .rsc file, .rsc file is regular/import file, it accepts valid MikroTik RouterOS CLI commands. You can create .rsc file with any text editor program (Notepad, Notepad++, Texteditor, TextEdit, Microsoft Word, OpenOffice Writer)
 
+    Assign Boot Client Address, which should be an address within the same subnet as that configured on the computer's Ethernet interface,
 
+    Browse for .rsc MikroTik RouterOS configuration file to apply to the RouterBOARD, highlight the file and Select to approve it,
 
-    Creado por Normunds R., actualizado por última vez por GG el mar 06, 2024 8 min de lectura
+    Activate FlashFig server, now it is ready to FlashFig. Note, any RouterBOARD will be FlashFig'ed within the network when they are powered on with boot-device configured to flash-boot or flash-boot-once-then-nand,
 
-    Overview
-    Serial Console Connections
-        Null Modem Without Handshake
-        Null Modem With Loopback Handshake
-        Null Modem With Partial Handshake
-        Null Modem With Full Handshake
-        Null Modem Compatibility
-        RJ45 Type Serial Port
-        RB M33G Additional Serial Header
-        CCR Serial Header
-    Serial Terminal Usage
-    Special Login
+RouterBOARD
 
-Overview
+    FlashFig mode is enabled on every RouterBOARD from the factory by default, which means no configuration is required on RouterBOARD.
 
-The Serial Console and Serial Terminal are tools, used to communicate with devices and other systems that are interconnected via the serial port. The serial terminal may be used to monitor and configure many devices - including modems, network devices (including MikroTik routers), and any device that can be connected to a serial (asynchronous) port.
+    If FlashFig is not enabled on your router, access the RouterBOARD with WinBox/Console and change the boot-device to flash-boot or flash-boot-once-then-nand:
 
-The Serial Console feature is for configuring direct-access configuration facilities (monitor/keyboard and serial port) that are mostly used for initial or recovery configuration. A special null-modem cable is needed to connect two hosts (like two PCs, or two routers; not modems). Note that a terminal emulation program (e.g., HyperTerminal on Windows or minicom on Linux) is required to access the serial console from another computer. Default settings of the router's serial port are 115200 bits/s (for x86 default is 9600 bits/s), 8 data bits, 1 stop bit, no parity, hardware (RTS/CTS) flow control. 
+system/routerboard/settings/set boot-device=flash-boot
 
-Several customers have described situations where the Serial Terminal (managing side) feature would be useful:
+Or use a more preferable option, for a single boot flash-boot:
+system/routerboard/settings/set boot-device=flash-boot-once-then-nand
 
-    on a mountaintop, where a MikroTik wireless installation sits next to equipment (including switches and Cisco routers) that can not be managed in-band (by telnet through an IP network)
-    monitoring weather-reporting equipment through a serial port
-    connection to a high-speed microwave modem that needed to be monitored and managed by a serial connection
+Your router is now ready for FlashFig.
+Connect
 
-With the serial-terminal feature of the MikroTik, up to 132 (and, maybe, even more) devices can be monitored and controlled.
-Serial Console Connections
+Connect the Boot port of RouterBOARD and FlashFig computer to the same Local Area Network.
+Run FlashFig
 
-Serial communications between devices are done with RS232, it is one of the oldest and most widely spread communication methods in the computer world. It was used for communication with the modems or other peripheral devices DTE/DCE. In the modern world, the main use of serial communication is DTE/DTE communication (Data Terminal Equipment) e.g. using a null-modem cable. There are several types of null modem cables and some of them may not work with RouterBoards at all.
-Null Modem Without Handshake
+    Plug-in power for RouterBOARD
+    Check the status on FlashFig program,
 
-This cable does not utilize handshake pins at all:
-2	3	
+Messages log shows "FlashFigged" and RouterBOARD should repeatedly make the morse code sound for the character "/" ("_.._." and flash the LED - it is now safe to unplug / power down the router.
 
-Rx ← Tx
-3	2	Tx → Rx
-5	5	GND
+    FlashFig configuration was applied to the RouterBOARD and it is ready to be used in production with this new config.
 
-It allows data-only traffic on the cross-connected Rx/Tx lines. Hardware flow control is not possible with this type of cable. The only way to perform flow control is with software flow control using the XOFF and XON characters.
-Null Modem With Loopback Handshake
+Troubleshoot
+FlashFig can not find a router
 
-The problem with the first cable is when connected to a device on which hardware flow control is enabled software may hang when checking modem signal lines. 
+If between a PC and a router there is another device (a router/switch), ensure that for this device:
 
-Null modem cable with loop back handshake fixes the problem, its main purpose is to fool well-defined software into thinking there is handshaking available:
-2	3	
+    DHCP server is disabled;
+    if used ports are in a bridge, set bridge protocol-mode to none;
+    HW-offload for used ports is disabled.
 
-Rx ← Tx
-3	2	Tx → Rx
-5	5	
+FlashFig finds a router, flashing is not done (no TFTP request)
 
-GND
-1+4+6	-	DTR → CD + DSR
--	1+4+6	DTR → CD + DSR
-7+8	-	RTS → CTS
--	7+8	RTS → CTS
+Ensure that the computer on which FlashFig is running has only one network interface active.
+FlashFig is done, but a configuration is not applied
 
-Hardware flow control is not possible with this cable. Also if remote software does not send its own ready signal to DTR output communication will hang.
-Null Modem With Partial Handshake
+If all procedures went successfully, but RouterOS configuration from .rsc file is not applied, add startup delay to *.rsc configuration file. The reason might be, that the configuration script is executed before all interfaces boots up.
+Not enough flash space, ignoring
 
-This cable can be used when flow control enabled without being incompatible with the original way flow control was used with DTE/DCE communication.
-
-This type of cable is not recommended for use with RouterOS.
-1	7+8	
-
-RTS2 → CTS2 + CD1
-2	3	Rx ← Tx
-3	2	
-
-Tx → Rx
-4	6	DTR → DSR
-5	5	GND
-6	4	DSR ← DTR
-7+8	1	RTS1 → CTS1 + CD2
-Null Modem With Full Handshake
-
-Used with special software and should not be used with RouterOS.
-2	3	Rx ← Tx
-3	2	
-
-Tx → Rx
-4	6	DTR → DSR
-5	5	GND
-6	4	DSR ← DTR
-7	8	RTS → CTS
-8	7	CTS ← RTS
-Null Modem Compatibility
-
-Summary tables below will allow you to choose the proper cable for your application.
-RouterBoards
-with limited port functionality	Y	Y	N*	N
-RouterBoards
-with full functionality	Y	Y	Y	N
-
-* - may work only when hardware flow control is disabled
-Software flow
-control only	Y	Y*	Y**	Y**
-Low-speed DTE/DCE compatible
-hardware flow control	N	Y	Y*	N
-High-speed DTE/DCE compatible
-hardware flow control	N	Y	Y**	N
-High speed
-communication
-using special software	N	N	Y*	Y
-
-* - will work as an alternative
-
-** - will work but not recommended
-RJ45 Type Serial Port
-
-This type of port is used on RouterBOARD 2011, 3011, 4011, CCR1072, CCR1036 r2, CCR2xxx and CRS series devices, sometimes called "Cisco style" serial port.
-
-RJ45 to DB9 Cable Pinout:
-
-
-
-RTS	1	8	8	5	CTS
-DTR	2	7	6	6	DSR
-TxD	3	6	2	3	RxD
-Ground	4	5	5	7	Ground
-Ground	5	4	5	7	Ground
-RxD	6	3	3	2	TxD
-DSR	7	2	4	20	DTR
-CTS	8	1	7	4	RTS
-RB M33G Additional Serial Header
-
-For RBM33G additional serial header can be attached on GPIO pins U3_RXD, GND, U3_TXD, and 3V3
-CCR Serial Header
-
-The Cloud Core Router series devices have a serial header on the PCB board, called J402 or 100
-
-Here is the pin-out of that connector:
-
-Serial Terminal Usage
-
-RouterOS allows to communicate with devices and other systems that are connected to the router via the serial port using a /system serial-terminal  command. All keyboard input will be forwarded to the serial port and all data from the port is output to the connected device.
-
-First, you have to have a free serial port, if the device has only one serial port (like all RouterBoards, WRAP/ALIX boards, etc.) you will have to disable the system console on this serial port to be able to use it as Serial Terminal for connection to other equipment (switches, modems, etc):
-/system console disable 0
-
-Be sure to just disable the console rather than removing it, as RouterOS will recreate the console after the next reboot when you really remove it.
-
-Note that there are some caveats you should be aware of! Take your time understanding those limits to avoid strange things to happen when connecting a device to a serial port on a RouterBoard:
-
-    By re-configuring port Serial0 on a RouterBoard as seen above, you will lose your serial console access to RouterOS. This means, that if you cannot access your RouterBoard over the network anymore, you might even have to reset the whole configuration of it to gain access again.
-
-    When rebooting a RouterBoard the boot loader (RouterBOOT) will always use the serial console (Serial0 on RouterBoards) to send out some startup messages and offer access to the RouterBOOT menu.
-
-    Having text coming out of the serial port to the connected device might confuse your attached device. Furthermore, in the standard config, you can enter the RouterBOOT menu by pressing ANY key. So if your serial device sends any character to the serial port of your RouterBoard during boot time, the RouterBoard will enter the RouterBOOT menu and will NOT boot RouterOS unless you manually intervene!
-
-    You can reconfigure RouterBOOT to enter the RouterBOOT menu only when a DEL character is received - use this to reduce the chance to get a router that's stuck when rebooting!
-
-    Or if newer versions are used "Silent boot" feature can be used to suppress any output on the serial interface, including removal of booting sounds.
-
-Next, you will have to configure your serial port according to the serial port settings of the connected device. Using the following command you will set your serial port to 19200 Baud 8N1. What settings you need to use depends on the device you connect:
-/port set serial0 baud-rate=19200 data-bits=8 parity=none stop-bits=1
-
-You can also try to let RouterOS guess the needed baud rate by setting
-/port set serial0 baud-rate=auto
-
-Now's the time to connect your device if not already done. Usually, you will have to use a null modem cable (the same thing as a cross-over-cable for Ethernet). Now we're ready to go:
-/system serial-terminal serial0
-
-This will give you access to the device you connected to port Serial0. Ctrl-A is the prefix key, which means that you will enter a small "menu". If you need to send the Ctrl-A character to a remote device, press Ctrl-A twice.
-
-If you want to exit the connection to the serial device type Ctrl-A, then Q. This will return you to your RouterOS console.
-
-Do not connect to devices at an incorrect speed and avoid dumping binary data.
-Special Login
-
-Special login can be used to access another device (like a switch, for example) that is connected through a serial cable by opening a telnet/ssh session that will get you directly on this device (without having to login to RouterOS first). 
-
-For demonstration we will use two RouterBoards and one PC. 
-
-Routers R1 and R2 are connected with serial cable and PC is connected to R1 via ethernet. Lets say we want to access router R2 via serial cable from our PC. To do this you have to set up serial interface proxy on R1. It can be done by feature called special-login.
-
-By default console is bound to serial port. 
-
-First task is to unbind console from serial simply by disabling entry in /system console menu:
-[admin@MikroTik] /system console> print
-Flags: X - disabled, U - used, F - free
- #   PORT                                                                    TERM
- 0 X serial0                                                                 vt102
-
-Next step is to add new user, in this case serial, and bind it to the serial port
-[admin@MikroTik] > /user add name=serial group=full
-[admin@MikroTik] > /special-login add user=serial port=serial0 disabled=no
-[admin@MikroTik] > /special-login print
-Flags: X - disabled
- #   USER                                                                    PORT
- 0   serial                                                                  serial0
-
-Now we are ready to access R2 from our PC.
-maris@bumba:/$ ssh serial@10.1.101.146
-
-[Ctrl-A is the prefix key]
-R2 4.0beta4
-R2 Login:
-
-[admin@R2] >
-
-To exit special login mode press Ctrl+A and Q
-[admin@MikroTik] >
-[Q - quit connection]      [B - send break]
-[A - send Ctrl-A prefix]   [R - autoconfigure rate]
-
-
-Connection to 10.1.101.146 closed.
-
-
-After router reboot and serial cable attached router may stuck at Bootloader main menu
-
-To fix this problem you need to allow access bootloader main menu from <any> key to <delete>:
-
-    enter bootloader menu
-    press 'k' for boot key options
-    press '2' to change key to <delete>
-
-What do you want to configure?                                                   
-d - boot delay                                                                
-k - boot key                                                                  
-s - serial console                                                            
-n - silent boot                                                              
-o - boot device                                                               
-u - cpu mode                                                                 
-f - cpu frequency                                                             
-r - reset booter configuration                                                 
-e - format nand                                                               
-g - upgrade firmware                                                         
-i - board info                                                                
-p - boot protocol                                                            
-b - booter options                                                            
-t - call debug code                                                           
-l - erase license                                                             
-x - exit setup                         
-your choice: k - boot key
-
-Select key which will enter setup on boot:
- * 1 - any key
-   2 - <Delete> key only
-
-your choice: 2
-
-
-
-
+FlashFig configuration maximum file size is up to 4000 bytes, otherwise program will return an error as above.
