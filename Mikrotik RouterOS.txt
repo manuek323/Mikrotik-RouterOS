@@ -1,2057 +1,2111 @@
 
 
-    Creado por Artūrs C., actualizado por última vez el jul 21, 2022 15 min de lectura
-
-    Summary
-    Configuration examples
-        Transparent proxy configuration example
-        Proxy-based firewall – Access List
-    Enabling RAM or Store-based caching.
-        RAM proxy cache:
-        Store proxy cache:
-    Reference
-        General
-        Access List
-        Direct Access
-        Cache Management
-        Connections
-        Cache Inserts
-        Cache Lookups
-        Cache Contents
-    HTTP Methods
-        Options
-        GET
-        HEAD
-        POST
-        PUT
-        TRACE
-
-Summary
+    Creado por Māris B., actualizado por última vez el may 05, 2022 9 min de lectura
 
-MikroTik RouterOS performs proxying of HTTP and HTTP-proxy (for FTP and HTTP protocols) requests. The proxy server performs the Internet object cache function by storing requested Internet objects, i.e., data available via HTTP and FTP protocols on a system positioned closer to the recipient in the form of speeding up customer browsing by delivering them requested file copies from the proxy cache at local network speed. MikroTik RouterOS implements the following proxy server features:
-
-    Regular HTTP proxy – customer (itself) specifies what is a proxy server for him;
-    Transparent proxy – the customer does not know about the proxy being enabled and there isn’t a necessity for any additional configuration for the web browser of the client;
-    Access list by source, destination, URL, and requested method (HTTP firewall);
-    Cache access list to specify which objects to cache, and which not;
-    Direct Access List – to specify which resources should be accessed directly, and which - through another proxy server;
-    Logging facility – allows to get and store information about the proxy operation;
-    Parent proxy support – allows to specify another proxy server, (if they don’t have the requested object ask their parents, or to the original server);
+    Routing Tables
+    Use of Routing Tables and Policy Routing
+    OSPF Configuration
+    BGP Configuration
+        Monitoring Advertisements
+        Networks
+    Routing Filters
+    RPKI
+    RIP Configuration
 
+Routing Tables
 
-A proxy server usually is placed at various points between users and the destination server (also known as the origin server) on the Internet.
+By default, all routes are added to the "main" routing table as it was before. From a configuration point of view, the biggest differences are routing table limit increase, routing table monitoring differences, and how routes are added to specific routing tables (see next example)
+v7 introduces a new menu /routing route, which shows all address family routes as well as all filtered routes with all possible route attributes. /ip route and /ipv6 route menus are used to add static routes and for simplicity show only basic route attributes.
 
-A Web proxy (cache) watches requests coming from clients, saving copies of the responses for itself. Then, if there is another request for the same URL, it can use the response that it has, instead of asking the origin server for it again. If the proxy has not requested a file, it downloads that from the original server.
+For more in-depth information on routing see this article (IP Routing).
 
-There can be many potential purposes of proxy servers:
+Another new change is that most common route print requests are processed by the routing process which significantly improves the speed compared to v6.
+Use of Routing Tables and Policy Routing
 
-    To increase access speed to resources (it takes less time for the client to get the object);
-    Works as HTTP firewall (deny access to undesirable web pages);
 
-Allows filtering web content (by specific parameters, like source address, a destination address, port, URL, HTTP request method) scan outbound content, e.g., for data leak protection.
-
-It may be useful to have a Web proxy running even with no cache when you want to use it only as something like an HTTP and FTP firewall (for example, denying access to undesired web pages or denying a specific type of files e.g. .mp3 files) or to redirect requests to external proxy (possibly, to a proxy with caching functions) transparently.
-Configuration examples
-/ip/proxy
-
-In MikroTik RouterOS, a proxy configuration is performed in the /ip/proxy menu. See below how to enable the proxy on port 8080 and set up 192.168.88.254 as the proxy source address:
-[admin@MikroTik] > ip/proxy/set enabled=yes port=8080 src-address=192.168.88.254
-[admin@MikroTik] > ip/proxy/print 
-                 enabled: yes
-             src-address: 192.168.88.254
-                    port: 8080
-               anonymous: no
-            parent-proxy: ::
-       parent-proxy-port: 0
-     cache-administrator: webmaster
-          max-cache-size: unlimited
-   max-cache-object-size: 2048KiB
-           cache-on-disk: no
-  max-client-connections: 600
-  max-server-connections: 600
-          max-fresh-time: 3d
-   serialize-connections: no
-       always-from-cache: no
-          cache-hit-dscp: 4
-              cache-path: web-proxy
-
-When setting up a regular proxy service, make sure it serves only your clients and prevents unauthorized access to it by creating a firewall that allows only your clients to use a proxy, otherwise, it may be used as an open proxy.
-Transparent proxy configuration example
-
-RouterOS can also act as a Transparent Caching server, with no configuration required in the customer’s web browser. A transparent proxy does not modify the requested URL or response. RouterOS will take all HTTP requests and redirect them to the local proxy service. This process will be entirely transparent to the user (users may not know anything about a proxy server that is located between them and the original server), and the only difference to them will be the increased browsing speed.
-
-To enable the transparent mode, the firewall rule in destination NAT has to be added, specifying which connections (to which ports) should be transparently redirected to the proxy. Check proxy settings above and redirect us users (192.168.1.0/24) to a proxy server:
-
-
-[admin@MikroTik] ip firewall nat> add chain=dstnat protocol=tcp src-address=192.168.1.0/24 dst-port=80 action=redirect to-ports=8080
-[admin@MikroTik] ip firewall nat> print
-Flags: X - disabled, I - invalid, D - dynamic
- 0   chain=dstnat protocol=tcp dst-port=80 action=redirect to-ports=8080
-
- The web proxy can be used as a transparent and normal web proxy at the same time. In transparent mode, it is possible to use it as a standard web proxy, too. However, in this case, proxy users may have trouble reaching web pages that are accessed transparently.
-Proxy-based firewall – Access List
-
-An access list is implemented in the same way as MikroTik firewall rules processed from the top to the bottom. The first matching rule specifies the decision of what to do with this connection. Connections can be matched by their source address, destination address, destination port, sub-string of the requested URL (Uniform Resource Locator), or request method. If none of these parameters is specified, every connection will match this rule.
-
-If a connection is matched by a rule, the action property of this rule specifies whether a connection will be allowed or not (deny). If a connection does not match any rule, it will be allowed.
-
-In this example assume that we have configured a transparent proxy server, it will block the website http://www.facebook.com, we can always block the same for different networks by giving src-address:
-/ip proxy access add src-address=192.168.1.0/24 dst-host=www.facebook.com action=deny
-
-Users from network 192.168.1.0/24 will not be able to access the website www.facebook.com.
-
-You can block also websites that contain specific words in the URL:
-/ip proxy access add dst-host=:mail action=deny
-
-This statement will block all websites which contain the word “mail” in the URL. Like www.mail.com, www.hotmail.com, mail.yahoo.com, etc.
-
-We can also stop downloading specific types of files like .flv, .avi, .mp4, .mp3, .exe, .dat, …etc.
- /ip proxy access
- add path=*.flv action=deny
- add path=*.avi action=deny
- add path=*.mp4 action=deny
- add path=*.mp3 action=deny
- add path=*.zip action=deny
- add path=*.rar action=deny
-
-
-Here are available also different wildcard characters, to create specific conditions and to match them by proxy access list. Wildcard properties (dst-host and dst-path) match a complete string (i.e., they will not match "example.com" if they are set to "example"). Available wildcards are '*' (match any number of any characters) and '?' (match any one character).
-
-Regular expressions are also accepted here, but if the property should be treated as a regular expression, it should start with a colon (':').
-
-To show that no symbols are allowed before the given pattern, we use the ^ symbol at the beginning of the pattern.
-
-To specify that no symbols are allowed after the given pattern, we use the $ symbol at the end of the pattern.
-Enabling RAM or Store-based caching.
-
-In this example, it will presume that you already have the proxy configured and working and you just want to enable caching. If a command/parameter detailed description is required check the reference section which is located right below the example section.
-
-    RAM-based caching:
-        Good if you have a device with a considerable amount of RAM for caching. Enabling this on a device with RAM 256MB or less will not give your network any benefit.
-        Way faster cache writes/read than one that is stored on USB or SATA connected mediums.
-
-    Store-based caching:
-        Larger proxy caches are available simply due to medium capacity differences.
-
-RAM proxy cache:
-
-Important commands:
-
-    max-cache-size=
-    max-cache-object-size=
-    cache-on-disk=
-
-[admin@MikroTik] /ip proxy> set max-cache-size=unlimited max-cache-object-size=50000KiB cache-on-disk=no 
-...
-[admin@MikroTik] /ip proxy> print 
-                 enabled: yes
-             src-address: ::
-                    port: 8080
-               anonymous: no
-            parent-proxy: 0.0.0.0
-       parent-proxy-port: 0
-     cache-administrator: webmaster
-          max-cache-size: unlimited  <-------
-   max-cache-object-size: 500000KiB  <-------
-           cache-on-disk: no  <-------
-  max-client-connections: 600
-  max-server-connections: 600
-          max-fresh-time: 3d
-   serialize-connections: no 
-       always-from-cache: no
-          cache-hit-dscp: 4
-              cache-path: proxy-cache
-Store proxy cache:
-
-Important commands:
-
-    max-cache-size=
-    max-cache-object-size=
-    cache-on-disk=
-    cache-path=
-
-[admin@MikroTik] > ip proxy set cache-on-disk=yes cache-path=/usb1/proxy/cache
-
-[admin@MikroTik] > ip proxy print                                                
-                 enabled: yes
-             src-address: ::
-                    port: 8080
-               anonymous: no
-            parent-proxy: 0.0.0.0
-       parent-proxy-port: 0
-     cache-administrator: webmaster
-          max-cache-size: unlimited  <-------
-   max-cache-object-size: 50000KiB  <-------
-           cache-on-disk: yes  <-------
-  max-client-connections: 600
-  max-server-connections: 600
-          max-fresh-time: 3d
-   serialize-connections: no
-       always-from-cache: no
-          cache-hit-dscp: 4
-              cache-path: usb1/proxy/cache  <-------
-
-[admin@MikroTik] > file print                                                    
- # NAME                                                           TYPE              
- 0 skins                                                          directory        
- 5 usb1/proxy                                                     directory           
- 6 usb1/proxy/cache                                               web-proxy store   <-------      
- 7 usb1/lost+found                                                directory  
-
-Check if a cache is working:
-[admin@MikroTik] > ip proxy monitor 
-                 status: running
-                 uptime: 2w20h28m25s
-     client-connections: 15
-     server-connections: 7
-               requests: 79772
-                   hits: 30513
-             cache-used: 481KiB
-         total-ram-used: 1207KiB
-  received-from-servers: 4042536KiB
-        sent-to-clients: 4399757KiB
-   hits-sent-to-clients: 176934KiB
-Reference
-
-List of all available parameters and commands per menu.
-General
-/ip/proxy
-
-
-always-from-cache (yes | no; Default: no)	ignore client refresh requests if the content is considered fresh
-anonymous (yes | no; Default: no)	If not set, the IP address of the client would be passed X-Forwarded-For header (could be accessed using HTTP_X_FORWARDED_FOR environment variable in remote servers)
-cache-administrator (string; Default: webmaster)	Administrator's e-mail displayed on proxy error page
-cache-hit-dscp (integer: 0..63; Default: 4)	Automatically mark cache hit with the provided DSCP value
-cache-on-disk (yes | no; Default: no)	Whether to store cache on disk
-cache-path (string; Default: web-proxy)	A path where the cache will be stored, when cache-on-disk is enabled.
-max-cache-object-size (integer: 0..4294967295[KiB]; Default: 2048KiB)	Specifies the maximal cache object size, measured in kilobytes
-max-cache-size (none | unlimited | integer: 0..4294967295[KiB]; Default: unlimited)	Specifies the maximal cache size, measured in kilobytes
-max-client-connections (integer: Dynamic ; Default: 600)	Maximal number of connections accepted from clients (any further connections will be rejected)
-max-fresh-time (time; Default: 3d)	Maximal time to store a cached object. The validity period of an object is usually defined by the object itself, but in case it is set too high, you can override the maximal value
-max-server-connections (integer: Dynamic ; Default: 600)	Maximal number of connections made to servers (any further connections from clients will be put on hold until some server connections will terminate)
-parent-proxy (Ip4 | ip6; Default: 0.0.0.0)	IP address and port of another HTTP proxy to redirect all requests to. If set to 0.0.0.0 parent proxy is not used.
-parent-proxy-port (integer: 0..65535; Default: 0)	Port that parent proxy is listening on.
-port (integer: 0..65535; Default: 8080)	TCP port the proxy server will be listening on. This port has to be specified on all clients that want to use the server as an HTTP proxy. A transparent (with zero configuration for clients) proxy setup can be made by redirecting HTTP requests to this port in the IP firewall using the destination NAT feature
-serialize-connections (yes | no; Default: no)	Do not make multiple connections to the server for multiple client connections, if possible (i.e. server supports persistent HTTP connections). Clients will be served on the FIFO principle; the next client is processed when the response transfer to the previous one is completed. If a client is idle for too long (max 5 seconds by default), it will give up waiting and open another connection to the server
-src-address (Ip4 | Ip6; Default: 0.0.0.0)	A proxy will use a specified address when connecting to the parent proxy or website. If set to 0.0.0.0 then the appropriate IP address will be taken from the routing table.
-Access List
-/ip/proxy/access
-
-An access list is configured like regular firewall rules. Rules are processed from the top to the bottom. The first matching rule specifies the decision of what to do with this connection. There is a total of 6 classifiers that specify matching constraints. If none of these classifiers is specified, the particular rule will match every connection.
-
-If a connection is matched by a rule, the action property of this rule specifies whether a connection will be allowed or not. If the particular connection does not match any rule, it will be allowed.
-
-
-action (allow | deny; Default: allow)	Specifies whether to pass or deny matched packets
-dst-address (Ip4[-Ip4 | /0..32] | Ip6/0..128; Default: )	The destination address of the target server.
-dst-host (string; Default: )	IP address or DNS name used to make a connection to the target server (this is the string user wrote in a browser before specifying the port and path to a particular web page
-dst-port (integer[-integer[,integer[,...]]]: 0..65535; Default: )	List or range of ports the packet is destined to
-local-port (integer: 0..65535; Default: )	Specifies the port of the web proxy via which the packet was received. This value should match one of the ports the web proxy is listening on.
-method (any | connect | delete | get | head | options | post | put | trace; Default: )	The HTTP method used in the request (see HTTP Methods section at the end of this document)
-path (string; Default: )	Name of the requested page within the target server (i.e. the name of a particular web page or document without the name of the server it resides on)
-redirect-to (string; Default: )	In case of access is denied by this rule, the user shall be redirected to the URL specified here
-src-address (Ip4[-Ip4 | /0..32] | Ip6/0..128; Default: )	The source address of the connection originator.
-
-
-Read-only properties:
-hits (integer)	Count of requests that were matched by this rule
-
-
-Wildcard properties (dst-host and dst-path) match a complete string (i.e., they will not match "example.com" if they are set to "example"). Available wildcards are '*' (match any number of any characters) and '?' (match any one character). Regular expressions are also accepted here, but if the property should be treated as a regular expression, it should start with a colon (':').
-
-Small hints in using regular expressions:
-
-    \\ symbol sequence is used to enter \ character in the console;
-    \. pattern means. only (in regular expressions single dot in a pattern means any symbol);
-    to show that no symbols are allowed before the given pattern, we use the ^ symbol at the beginning of the pattern;
-    to specify that no symbols are allowed after the given pattern, we use the $ symbol at the end of the pattern;
-    to enter [ or ] symbols, you should escape them with backslash "\.";
-
-It is strongly recommended to deny all IP addresses except those behind the router as the proxy still may be used to access your internal-use-only (intranet) web servers. Also, consult examples in Firewall Manual on how to protect your router.
-Direct Access
-/ip/proxy/direct
-
-If a parent-proxy property is specified, it is possible to tell the proxy server whether to try to pass the request to the parent proxy or to resolve it by connecting to the requested server directly. The direct Access List is managed just like the Proxy Access List described in the previous chapter except for the action argument. Unlike the access list, the direct proxy access list has a default action equal to deny. It takes place when no rules are specified or a particular request did not match any rule.
-
-
-action (allow | deny; Default: allow)	Specifies the action to perform on matched packets:
-
-    allow - always resolve matched requests directly bypassing the parent router
-    deny - resolve matched requests through the parent proxy. If no one is specified this has the same effect as allow.
-
-dst-address (Ip4[-Ip4 | /0..32] | Ip6/0..128; Default: )	The destination address of the target server.
-dst-host (string; Default: )	IP address or DNS name used to make a connection to the target server (this is the string user wrote in a browser before specifying port and path to a particular web page
-dst-port (integer[-integer[,integer[,...]]]: 0..65535; Default: )	List or range of ports used by connection to the target server.
-local-port (integer: 0..65535; Default: )	Specifies the port of the web proxy via which the packet was received. This value should match one of the ports the web proxy is listening on.
-method (any | connect | delete | get | head | options | post | put | trace; Default: )	The HTTP method used in the request (see HTTP Methods section at the end of this document)
-path (string; Default: )	Name of the requested page within the target server (i.e. the name of a particular web page or document without the name of the server it resides on)
-src-address (Ip4[-Ip4 | /0..32] | Ip6/0..128; Default: )	The source address of the connection originator.
-
-
-Read-only properties:
-hits (integer)	Count of requests that were matched by this rule
-Cache Management
-/ip/proxy/cache
-
-The cache access list specifies, which requests (domains, servers, pages) have to be cached locally by web proxy, and which do not. This list is implemented exactly the same way as the web proxy access list. The default action is to cache an object (if no matching rule is found).
-
-
-action (allow | deny; Default: allow)	Specifies the action to perform on matched packets:
-
-    allow - cache objects from matched request
-    deny - do not cache objects from matched request
-
-dst-address (Ip4[-Ip4 | /0..32] | Ip6/0..128; Default: )	The destination address of the target server
-dst-host (string; Default: )	IP address or DNS name used to make a connection to the target server (this is the string user wrote in a browser before specifying port and path to a particular web page
-dst-port (integer[-integer[,integer[,...]]]: 0..65535; Default: )	List or range of ports the packet is destined to.
-local-port (integer: 0..65535; Default: )	Specifies the port of the web proxy via which the packet was received. This value should match one of the ports the web proxy is listening on.
-method (any | connect | delete | get | head | options | post | put | trace; Default: )	The HTTP method used in the request (see HTTP Methods section at the end of this document)
-path (string; Default: )	Name of the requested page within the target server (i.e. the name of a particular web page or document without the name of the server it resides on)
-src-address (Ip4[-Ip4 | /0..32] | Ip6/0..128; Default: )	The source address of the connection originator
-
-
-Read-only properties:
-hits (integer)	Count of requests that were matched by this rule
-
-
-Connections
-/ip/proxy/connections
+The main difference from v6 is that the routing table must be added to the /routing table menu before actually referencing it anywhere in the configuration.  And fib parameter should be specified if the routing table is intended to push routes to the  FIB.
+The routing rule configuration is the same except for the menu location (instead of /ip route rule, now it is /routing rule).
 
-This menu contains the list of current connections the proxy is serving.
+Let's consider a basic example where we want to resolve 8.8.8.8 only in the routing table named myTable to the gateway 172.16.1.1:
+/routing table add name=myTable fib
+/routing rule add dst-address=8.8.8.8 action=lookup-only-in-table table=myTable
+/ip route add dst-address=8.8.8.8 gateway=172.16.1.1@main routing-table=myTable
 
-Read-only properties:
-client ()	
-dst-address (Ip4 | Ip6)	IPv4/Ipv6 destination address of the connection
-protocol (string)	Protocol name
-rx-bytes (integer)	The number of bytes received by the client
-server ()	
-src-address (Ip4 | Ip6)	Ipv4/ipv6 address of the connection originator
-state (closing | connecting | converting | hotspot | idle | resolving | rx-header | tx-body | tx-eof | tx-header | waiting)	Connection state:
 
-    closing - the data transfer is finished, and the connection is being finalized
-    connecting - establishing toe connection
-    converting - replacing header and footer fields in response or request packet
-    hotspot - check if hotspot authentication allows continuing (for hotspot proxy)
-    idle - staying idle
-    resolving - resolving the server's DNS name
-    rx-header - receiving HTTP header
-    tx-body - transmitting HTTP body to the client
-    tx-eof - writing chunk-end (when converting to chunked response)
-    tx-header - transmitting HTTP header to the client
-    waiting - waiting for transmission from a peer
+Instead of routing rules, you could use mangle to mark packets with routing-mark, the same way as it was in ROSv6.
+OSPF Configuration
 
-tx-bytes (integer)	The number of bytes sent by the client
+OSPFv3 and OSPFv2 are now merged into one single menu /routing ospf. At the time of writing this article, there are no default instances and areas.
+To start both OSPFv2 and OSPF v3 instances, first, you need to create an instance for each and then add an area to the instance.
 
+/routing ospf instance 
+add name=v2inst version=2 router-id=1.2.3.4
+add name=v3inst version=3 router-id=1.2.3.4
+/routing ospf area
+add name=backbone_v2 area-id=0.0.0.0 instance=v2inst
+add name=backbone_v3 area-id=0.0.0.0 instance=v3inst
 
-Cache Inserts
-/ip/proxy/inserts
 
-This menu shows statistics on objects stored in a cache (cache inserts).
+At this point, you are ready to start OSPF on the network interface. In the case of IPv6, you add either interface on which you want to run OSPF (the same as ROSv6) or the IPv6 network. In the second case, OSPF will automatically detect the interface. Here are some interface configuration examples:
+/routing ospf interface-template
+add network=192.168.0.0/24 area=backbone_v2
+add network=2001:db8::/64 area=backbone_v3
+add network=ether1 area=backbone_v3
 
-Read-only properties:
-denied (integer)	A number of inserts were denied by the caching list.
-errors (integer)	Number of disk or other system-related errors
-no-memory (integer)	Number of objects not stored because there was not enough memory
-successes (integer)	A number of successful cache inserts.
-too-large (integer)	Number of objects too large to store
-Cache Lookups
-/ip/proxy/lookup
+ROSv7 uses templates to match the interface against the template and apply configuration from the matched template.  OSPF menus interface and neighbor contains read-only entries purely for status monitoring.
 
-This menu shows statistics on objects read from cache (cache lookups).
+All route distribution control is now done purely with routing filter select, no more redistribution knobs in the instance (Since the v7.1beta7 redistribution knob is back, you still need to use routing filters to set route costs and type if necessary). This gives greater flexibility on what routes from which protocols you want to redistribute.
+For example, let's say you want to redistribute only static IPv4 routes from the 192.168.0.0/16 network range.
 
-Read-only properties:
-denied (integer)	Number of requests denied by the access list.
-expired (integer)	Number of requests found in cache, but expired, and, thus, requested from an external server
-no-expiration-info (integer)	Conditional request received for a page that does not have the information to compare the request with
-non-cacheable (integer)	Number of requests requested from the external servers unconditionally (as their caching is denied by the cache access list)
-not-found (integer)	Number of requests not found in the cache, and, thus, requested from an external server (or parent proxy if configured accordingly)
-successes (integer)	Number of requests found in the cache.
-Cache Contents
-/ip/proxy/cache-contents
+/routing ospf instance
+set backbone_v2 out-filter-chain=ospf_out redistribute=static
+/routing filter rule add chain=ospf_out rule="if (dst in 192.168.0.0/16) {accept}"
 
-This menu shows cached contents.
+The default action of the routing filter chain is "drop"
+BGP Configuration
 
-Read-only properties:
-file-size (integer)	Cached object size
-last-accessed (time)	
-last-accessed-time (time)	
-last-modified (time)	
-last-modified-time (time)	
-uri (string)	
+There is a complete redesign of the BGP configuration compared to ROSv6. The first biggest difference is that there is no more instance and peer configuration menus. Instead, we have connection, template and session menus.
+The reason for such a structure is to strictly split parameters that are responsible for connection and parameters that are BGP protocol specific.
 
+Let's start with the Template. It contains all BGP protocol-related configuration options. It can be used as a template for dynamic peers and apply a similar config to a group of peers. Note that this is not the same as peer groups on Cisco devices, where the group is more than just a common configuration.
 
-HTTP Methods
-Options
+By default, there is a default template that requires you to set your own AS.
+/routing/bgp/template set default as=65533
 
-This method is a request for information about the communication options available on the chain between the client and the server identified by the Request-URI. The method allows the client to determine the options and (or) the requirements associated with a resource without initiating any resource retrieval
-GET
+Starting from v7.1beta4 template parameters are exposed in the "connection" configuration. This means that the template is not mandatory anymore, allowing for an easier basic BGP connection setup, similar to what it was in ROSv6.
 
-This method retrieves whatever information identified by the Request-URI. If the Request-URI refers to a data processing process then the response to the GET method should contain data produced by the process, not the source code of the process procedure(-s), unless the source is the result of the process.
+Most of the parameters are similar to ROSv6 except that some are grouped in the output and input section making the config more readable and easier to understand whether the option is applied on input or output. If you are familiar with CapsMan then the syntax is the same, for example, to specify the output selection chain you set output.filter-chain=myBgpChain.
 
-The GET method can become a conditional GET if the request message includes an If-Modified-Since, If-Unmodified-Since, If-Match, If-None-Match, or If-Range header field. The conditional GET method is used to reduce the network traffic specifying that the transfer of the entity should occur only under circumstances described by conditional header field(-s).
+You can even inherit template parameters from another template, for example:
+/routing/bgp/template 
+add name=myAsTemplate as=65500 output.filter-chain=myAsFilter
+set default template=myAsTemplate
 
-The GET method can become a partial GET if the request message includes a Range header field. The partial GET method intends to reduce unnecessary network usage by requesting only parts of entities without transferring data already held by the client.
+Another important aspect of the new routing configuration is the global Router ID, which sets router-id and group peers in one instance. RouterOS adds a default ID which picks instance-id from any interface's highest IP. The default BGP template by default is set to use the "default" ID.
+If for any reason you need to tweak or add new instances it can be done in /routing id menu.
 
-The response to a GET request is cacheable if and only if it meets the requirements for HTTP caching.
-HEAD
+Very interesting parameters are input.affinity and output.affinity, they allow control in which process input and output of active session will be processed:
 
-This method shares all features of GET method except that the server must not return a message-body in the response. This retrieves the metainformation of the entity implied by the request which leads to its wide usage of it for testing hypertext links for validity, accessibility, and recent modification.
+    alone - input and output of each session are processed in its own process, most likely the best option when there are a lot of cores and a lot of peers
+    afi, instance, vrf, remote-as - try to run input/output of new session in process with similar parameters
+    main - run input/output in the main process (could potentially increase performance on single-core even possibly on multicore devices with small amount of cores)
+    input - run output in the same process as input (can be set only for output affinity)
 
-The response to a HEAD request may be cacheable in the way that the information contained in the response may be used to update the previously cached entity identified by that Request-URI.
-POST
+Now that we have parameters set for the template we can add BGP connections. A minimal set of parameters are remote.address, template, connect, listen and local.role
 
-This method requests that the origin server accept the entity enclosed in the request as a new subordinate of the resource identified by the Request-URI.
+Connect and listen to parameters specify whether peers will try to connect and listen to a remote address or just connect or just listen. It is possible that in setups where peer uses the multi-hop connection local.address must be configured too (similar as it was with update-source in ROSv6).
 
-The actual action performed by the POST method is determined by the origin server and usually is Request-URI dependent.
+It is not mandatory to specify a remote AS number. ROS v7 can determine remote ASN from an open message. You should specify the remote AS only when you want to accept a connection from that specific AS.
 
-Responses to POST method are not cacheable, unless the response includes appropriate Cache-Control or Expires header fields.
-PUT
+Peer role is now a mandatory parameter, for basic setups, you can just use ibgp, ebgp (more information on available roles can be found in the corresponding RFC draft https://datatracker.ietf.org/doc/draft-ietf-idr-bgp-open-policy/?include_text=1), keep in mind that at the moment capabilities, communities, and filtering described in the draft is not implemented.
 
-This method requests that the enclosed entity be stored under the supplied Request-URI. If another entity exists under specified Request-URI, the enclosed entity should be considered as an updated (newer) version of that residing on the origin server. If the Request-URI is not pointing to an existing resource, the origin server should create a resource with that URI.
+Very basic iBGP set up to listen on the whole local network for connections:
+/routing/bgp/connection
+add remote.address=10.155.101.0/24 listen=yes template=default local.role=ibgp 
 
-If the request passes through a cache and the Request-URI identifies one or more currently cached entities, those entries should be treated as stale. Responses to this method are not cacheable.
-TRACE
+Now you can monitor the status of all connected and disconnected peers from /routing bgp session menu.
 
-This method invokes a remote, application-layer loop-back of the request message. The final recipient of the request should reflect the message received back to the client as the entity-body of a 200 (OK) response. The final recipient is either the origin server or the first proxy or gateway to receive a Max-Forwards value of 0 in the request. A TRACE request must not include an entity.
+Other great debugging information on all routing processes can be monitored from /routing stats menu
+[admin@v7_ccr_bgp] /routing/stats/process> print interval=1
+Columns: TASKS, PRIVATE-MEM-BLOCKS, SHARED-MEM-BLOCKS, PSS, RSS, VMS, RETIRED, ID, PID, RPID, PROCESS-TIME, KERNEL-TIME, CUR-B>
+# TASKS PRIVATE-M SHARED-ME PSS RSS VMS RET ID PID R PROCESS-TI KERN>
+0 routing tables 12.2MiB 20.0MiB 18.7MiB 42.2MiB 83.4MiB 8 main 319 0 19s750ms 8s50>
+rib >
+connected networks >
+1 fib 512.0KiB 0 7.4MiB 30.9MiB 83.4MiB fib 384 1 5s160ms 22s5>
+2 ospf 1024.0KiB 1024.0KiB 5.9MiB 25.9MiB 83.4MiB 382 ospf 388 1 1m42s170ms 1m31>
+connected networks >
+3 fantasy 512.0KiB 0 2061.0KiB 5.9MiB 83.4MiB fantasy 389 1 1s410ms 870m>
+4 configuration and reporting 40.0MiB 512.0KiB 45.0MiB 64.8MiB 83.4MiB static 390 1 12s550ms 1s17>
+5 rip 768.0KiB 0 5.3MiB 24.7MiB 83.4MiB rip 387 1 1s380ms 1s20>
+connected networks >
+6 routing policy configuration 512.0KiB 256.0KiB 2189.0KiB 6.0MiB 83.4MiB policy 385 1 1s540ms 1s20>
+7 BGP service 768.0KiB 0 2445.0KiB 6.2MiB 83.4MiB bgp 386 1 6s170ms 9s38>
+8 BGP Input 10.155.101.217 8.8MiB 6.0MiB 15.6MiB 38.5MiB 83.4MiB 20 21338 1 25s170ms 3s23>
+BGP Output 10.155.101.217 >
+9 Global memory 256.0KiB global 0 0 >
+-- [Q quit|D dump|C-z pause|right]
 
-Responses to this method MUST NOT be cached.
+Route filtering differs a bit from ROSv6. In the BGP template, you can now specify output.filter-chain, output.filter-select, input.filter as well as several input.accept-* options.
 
+Now input.accept-* allows filtering incoming messages directly before they are even parsed and stored in memory, that way significantly reducing memory usage. Regular input filter chain can only reject prefixes which means that it will still eat memory and will be visible in /routing route table as "not active, filtered", 
 
+A very basic example of a BGP input filter to accept prefixes from 192.168.0.0/16 subnet without modifying any attributes. For other prefixes subtract 1 from the received local pref value and set IGP metric to value from OSPF ext. Additionally, we will accept only specific  prefixes from the address list to reduce memory usage
+/ip/firewall/address-list
+add list=bgp_list dst-address=192.168.1.0/24
+add list=bgp_list dst-address=192.168.0.0/24
+add list=bgp_list dst-address=172.16.0.0/24
 
+/routing/bgp/template
+set default input.filter=bgp_in .accept-nlri=bgp_list
+/routing/filter/rule 
+add chain=bgp_in rule="if (dst in 192.168.0.0/16) {accept}"
+add chain=bgp_in rule="set bgp-local-pref -1; set bgp-igp-metric ospf-ext-metric; accept" 
 
+If the routing filter chain is not specified BGP will try to advertise every active route it can find in the routing table
 
-    Creado por Māris B., actualizado por última vez el feb 10, 2025 7 min de lectura
+The default action of the routing filter chain is "drop"
+Monitoring Advertisements
+
+RouterOS v7 by default disables monitoring of the BGP output. This allows to significantly reduce resource usage on setups with large routing tables.
+
+To be able to see output advertisements several steps should be taken:
+
+    enable "output.keep-sent-attributes" in BGP connection configuration
+    run "dump-saved-advertisements" from BGP session menu
+    view saved output from "/routing/stats/pcap" menu
+
+
+[admin@arm-bgp] /routing/bgp/connection>  set 0 output.keep-sent-attributes=yes
+[admin@arm-bgp] /routing/bgp/session> print 
+Flags: E - established 
+ 0 E remote.address=10.155.101.183 .as=444 .id=192.168.44.2 .refused-cap-opt=no .capabilities=mp,rr,gr,as4 
+     .afi=ip,ipv6 .messages=4 .bytes=219 .eor="" 
+     local.address=10.155.101.186 .as=456 .id=10.155.255.186 .capabilities=mp,rr,gr,as4 .afi=ip,ipv6 
+     .messages=1 .bytes=19 .eor="" 
+     output.procid=66 .filter-chain=bgp_out .network=bgp-nets .keep-sent-attributes=yes 
+     input.procid=66 ebgp 
+     hold-time=3m keepalive-time=1m uptime=4s30ms 
+
+[admin@arm-bgp] /routing/bgp/session> dump-saved-advertisements 0 save-to=test_out.pcap
+
+Networks
+
+Lastly, you might notice that the network menu is missing and probably wondering how to advertise your own networks. Now networks are added to the firewall address-list and referenced in the BGP configuration.
+Following ROSv6 network configuration:
+/routing bgp network add network=192.168.0.0/24 synchronize=yes
+/ip route add dst-address=192.168.0.0/24 type=blackhole
+
+would translate to v7 as:
+/ip/firewall/address-list/
+add list=bgp-networks address=192.168.0.0/24
+
+/ip/route 
+add dst-address=192.168.0.0/24 blackhole
+
+/routing/bgp/connection
+set peer_name output.network=bgp-networks
+
+There is more configuration to be done when adding just one network but offers simplicity when you have to deal with a large number of networks. v7 even allows specifying for each BGP connection its own set of networks. 
+
+In v7 it is not possible to turn off synchronization with IGP routes (the network will be advertised only if the corresponding IGP route is present in the routing table).
+Routing Filters
+
+Starting from ROSv7.1beta4, the routing filter configuration is changed to a script-like configuration. The rule now can have "if .. then" syntax to set parameters or apply actions based on conditions from the "if" statement.
+
+Multiple rules without action are stacked in a single rule and executed in order like a firewall, the reason is that the "set" parameter order is important and writing one "set"s per line, allows for an easier understanding from top to bottom on what actions were applied.
+
+For example, match static default route and apply action accept can be written in one config rule:
+/routing/filter/rule
+add chain=ospf_in rule="if (dst==0.0.0.0/0 && protocol static) { accept }"
+
+
+For example, ROSv6 rule "/routing filter add chain=ospf_in prefix=172.16.0.0/16 prefix-length=24 protocol=static action=accept" converted to ROSv7 would be:
+/routing/filter/rule
+add chain=ospf_in rule="if (dst in 172.16.0.0/16 && dst-len==24 && protocol static) { accept }"
+
+Another example, to match prefixes from the 172.16.0.0/16 range with prefix length equal to 24 and set BGP med and prepend values
+/routing/filter/rule
+add chain=BGP_OUT rule="if (dst-len==24 && dst in 172.16.0.0/16) { \n
+    set bgp-med 20; set bgp-path-prepend 2; accept }"
+
+
+It is also possible to match prefix length range like this
+/routing/filter/rule
+add chain=BGP_OUT rule="if (dst-len>13 && dst-len<31 && dst in 172.16.0.0/16) { accept }"
+
+
+Filter rules now can be used to match or set communities,  large communities, and extended communities from the community list:
+/routing/filter/rule
+add chain=bgp_in rule="set bgp-large-communities 200001:200001:10 "
+
+If there are a lot of community sets, that need to be applied in multiple rules, then it is possible to define community sets and use them to match or set:
+/routing/filter/large-community-set
+add set=myLargeComSet communities=200001:200001:10 
+
+
+/routing/filter/rule
+add chain=bgp_in rule="append bgp-large-communities myLargeComSet "
+
+
+Since route-target is encoded in extended community attribute to change or match RT you need to operate on extended community attribute, for example:
+/routing/filter/rule
+add chain=bgp_in rule="set bgp-ext-communities rt:327824:20 "
+RPKI
+
+RouterOS implements an RTR client. You connect to the server which will send route validity information. This information then can be used to validate routes in route filters against a group with "rpki-validate" and further in filters "match-rpki" can be used to match the exact state.
+
+For more info refer to the RPKI documentation.
+RIP Configuration
+
+To start RIP, the instance should be configured. There you should select which routes will be redistributed by RIP and if it will redistribute the default route.
+/routing/rip/instance
+add name=instance1 originate-default=never redistribute=connected,static 
+
+Then interface-template should be configured. There is no need to define networks in ROS version 7 as it was in version 6.
+/routing/rip/interface-template
+add interfaces=ether1 instance=instance1
+
+Now the basic configuration is completed on one router. RIP neighbor router should be configured in a similar way. 
+
+In ROS v7 the neighbors will appear only when there are routes to be sent or/and to be received.
+
+
+Prefix lists from ROSv6 are deprecated, now all the filtering must be done by the routing filters.
+
+
+
+
+    Creado por Māris B., actualizado por última vez el dic 18, 2024 3 min de lectura
+
 
 Overview
 
-RouterOS supports OpenFlow 1.0 and 1.3 which allows communication between the OpenFlow controller and OpenFlow agent.
+RouterOS v7 is capable of splitting tasks between multiple processes.
+There is one "main" task, which can start/stop sub-tasks and process data between those sub-tasks. Each sub-task can allocate "private" (only accessible by this particular task) and "shared" memory (accessible by all route tasks).
 
-OpenFlow is used to centralize management of network equipment in Software Define Networks (SDNs). 
+List of tasks that run in separate processes (if multiprocess routing is enabled):
 
-Applications on OpenFlow controller have access to switch's data-path and can perform custom tasks, like flow steering, traffic monitoring etc.
+    Handling of "print" command;
+    Entire OSPF protocol handling;
+    Entire RIP protocol handling;
+    Entire ISIS protocol handling;
+    Static configuration handling;
+    Routing Policy configuration;
+    BGP connections and configuration handling;
+    BGP receive (one task per peer or grouped by specific parameters);
+    BGP send (one task per peer or grouped by specific parameters);
+    FIB update.
 
-Controller sends flows to be added in the agent's flow table. Packet lookup, modification and forwarding is done based on flow table on the agent.
+BGP Sub-Tasks
 
+BGP receive and send can be split into sub-tasks by specific parameters, for example, it is possible to run input per each peer or group all peer inputs and run them in the main process. This split by sub-tasks is controlled with input.affinity and output.affinity parameter configuration in /routing/bgp/template.It is possible to boost performance by playing with affinity values on devices with fewer cores since sharing data between tasks is a bit slower than processing the same data within one task. For example, on single-core or two-core devices running input and output in the main or instance process will boost performance.
 
-RouterOS supports OpenFlow fastpath in simple setups where " goto table" flows are not used.
+BGP can have up to 100 unique processes.
 
-OpenFlow feature overrides regular packet processing functionality - packets that are received on interfaces that are OpenFlow switch ports, will not pass through the regular networking stack unless OpenFlow controller sets up flows that enable this. Due to this care must be taken to not disable access to the device when configuring OpenFlow. 
 
+All currently used tasks and their allocated private/shared memory can be monitored using the command:
+/routing/stats/process/print
 
-OpenFlow support is available as standalone openflow package.
 
+Sample Output:
+[admin@BGP_MUM] /routing/stats/process> print interval=1
+Columns: TASKS, PRIVATE-MEM-BLOCKS, SHARED-MEM-BLOCKS, PSS, RSS, VMS, RETIRED, ID, PID, RPID, PROCESS-TIME, KERNEL-TIME, CUR-BUSY, MAX-BUSY, CUR-CALC, MAX-CALC
+   #  TASKS                         PRIVATE-M  SHARED-M  PSS        RSS      VMS      R  ID       PID  R  PROCESS-  KERNEL-TI  CUR-  MAX-BUSY  CUR-  MAX-CALC
+   0  routing tables                11.8MiB    20.0MiB   19.8MiB    42.2MiB  51.4MiB  7  main     195  0  15s470ms  2s50ms     20ms  1s460ms   20ms  35s120ms
+      rib                                                                                                                                                    
+      connected networks                                                                                                                                     
+   1  fib                           2816.0KiB  0         8.1MiB     27.4MiB  51.4MiB     fib      255  1  5s730ms   7m4s790ms        23s350ms        23s350ms
+   2  ospf                          512.0KiB   0         3151.0KiB  14.6MiB  51.4MiB     ospf     260  1  20ms      100ms            20ms            20ms    
+      connected networks                                                                                                                                     
+   3  fantasy                       256.0KiB   0         1898.0KiB  5.8MiB   51.4MiB     fantasy  261  1  40ms      60ms             20ms            20ms    
+   4  configuration and reporting   4096.0KiB  512.0KiB  9.2MiB     28.4MiB  51.4MiB     static   262  1  3s210ms   40ms             220ms           220ms   
+   5  rip                           512.0KiB   0         3151.0KiB  14.6MiB  51.4MiB     rip      259  1  50ms      90ms             20ms            20ms    
+      connected networks                                                                                                                                     
+   6  routing policy configuration  768.0KiB   768.0KiB  2250.0KiB  6.2MiB   51.4MiB     policy   256  1  70ms      50ms             20ms            20ms    
+   7  BGP service                   768.0KiB   0         3359.0KiB  14.9MiB  51.4MiB     bgp      257  1  4s260ms   8s50ms           30ms            30ms    
+      connected networks                                                                                                                                     
+   8  BFD service                   512.0KiB   0         3151.0KiB  14.6MiB  51.4MiB     12       258  1  80ms      40ms             20ms            20ms    
+      connected networks                                                                                                                                     
+   9  BGP Input 10.155.101.232      8.2MiB     6.8MiB    17.0MiB    39.1MiB  51.4MiB     20       270  1  24s880ms  3s60ms           18s550ms        18s550ms
+      BGP Output 10.155.101.232                                                                                                                              
+  10  Global memory                            256.0KiB                                  global     0  0    
 
-Currently supported basic capabilities:
 
-    OFPC_FLOW_STATS
-    OFPC_TABLE_STATS
-    OFPC_PORT_STATS
-    OFPC_GROUP_STATS
 
-Currently unsupported basic capabilities:
+Routing Table Update Mechanism
 
-    OFPC_IP_REASM
-    OFPC_QUEUE_STATS
-    OFPC_PORT_BLOCKED
+Illustration below tries to explain in more user friendly form on how routing table update mechanism is working.
 
+Routing protocols continuously loop through following procedures:
 
-Currently not supported configuration parameters and actions (version 1):
+    "main" process waits for updates from other sub tasks (1);
+    "main" starts to calculate new routes (2..4) if:
+        update from sub task is received;
+        protocol has not published all routes;
+        configuration has changed or link state has changed.
+    during new route calculation (5) following event occur:
+        all received updates are applied to the route;
+        gateway reachability is being determined;
+        recursive route is being resolved;
+    "publish" event is called where "current" routes are being published. During this phase, "current" routes will not change, but protocols can still receive and send updates (6).
+    Do cleanup and free unused memory (7). In this step everything that is no longer used in new "current" table is removed (routes, attributes, etc.).
 
-    OFPT_SET_ASYNC
-    OFPAT_SET_NW_SRC
-    OFPAT_SET_NW_DST
-    OFPAT_SET_NW_TOS
-    OFPAT_SET_TP_SRC
-    OFPAT_SET_TP_DST
-    OFPAT_ENQUEUE
-    OFPAT_VENDOR
+Consider "updated" and "current" as two copies of routing table, where "current" table (2) is the one used at the moment and "updated" (1) is table of candidate routes to be published in the next publish event (3 and 4). This method prevents protocols to fill memory with buffered updates while "main" process is doing "publish", instead protocols sends the newest update directly to "main" process which then copies new update in "updated" table. A bit more complicated is OSPF, it internally has similar process to select current OSPF routes which then are sent to the  "main" for further processing.
 
 
-Currently not supported configuration parameters and actions (version 1.3):
 
-    OFPT_SET_ASYNC
-    OFPAT_SET_NW_TTL
-    OFPAT_DEC_NW_TTL
-    OFPAT_COPY_TTL_OUT
-    OFPAT_COPY_TTL_IN
 
 
-Configuration Example
 
-Example demonstrates very basic L2 untagged packet forwarding between sfp-sfplus1-2 ports. Faucet is used a controller.
-/openflow
-add controllers=tcp/10.155.101.182/6653 datapath-id=1/DC:2C:6E:A4:B4:2E disabled=no name=faucet
 
-/openflow port
-add disabled=no interface=sfp-sfpplus1 port-id=1 switch=faucet
-add disabled=no interface=sfp-sfpplus2 port-id=2 switch=faucet
+    Creado por Māris B., actualizado por última vez el may 06, 2025 4 min de lectura
 
-If you intend to use also Gauge, then add Gauge's IP and port  in the controllers list. Example, where 6654 is Gauge port: controllers=tcp/10.155.101.182/6653,tcp/10.155.101.182/6654
+Overview
 
+Policy routing is the method to steer traffic matching certain criteria to a certain gateway. This can be used to force some customers or specific protocols from the servers (for example HTTP traffic) to always be routed to a certain gateway. It can even be used to steer local and overseas traffic to different gateways.
 
-Faucet configuration. dp_id must be the same as datapath-id from ROS configuration in hex format ( 1/DC:2C:6E:A4:B4:2E →  0x0001dc2c6ea4b42e ):
----
-vlans:
-    100:
-        description: "untagged"
+RouterOS implements several components that can be used to achieve said task:
 
-acls:
-    1:
-        - rule:
-            actions:
-                allow: 1
+    routing tables
+    routing rules
+    firewall mangle marking
 
-dps:
-    test_switch:
-        dp_id: 0x0001dc2c6ea4b42e
-        hardware: "Generic"
-        drop_broadcast_source_address: false
-        drop_spoofed_faucet_mac: false
-        interfaces:
-            1:
-                name: "h1"
-                description: "host1 container"
-                native_vlan: 100
-                acl_in: 1
-            2:
-                name: "h2"
-                description: "host2 container"
-                native_vlan: 100
-                acl_in: 1
 
+Routing Tables
 
-Faucet installed flows can be seen from /openflow/flow menu:
-[admin@CCR2004_2XS_111] /openflow/flow>  print detail 
-Flags: I - inactive 
- 0   switch=faucet version=4 match=" [ { ethdst_m=01000cccccccffffffffffff } ]" actions=" []" 
-     info="priority 8240, idletimeout 0, hardtimeout 0, cookie 1524372928, removenotify 0" table-id=4 
-
- 1   switch=faucet version=4 match=" [ { ethdst_m=01000ccccccdffffffffffff } ]" actions=" []" 
-     info="priority 8240, idletimeout 0, hardtimeout 0, cookie 1524372928, removenotify 0" table-id=4 
-
- 2   switch=faucet version=4 match=" [ { ethdst_m=ffffffffffffffffffffffff }; { vlanvid=1064 } ]" 
-     actions=" [ { apply-actions= [ { popvlan={} }; { output={ port=1; max_len=0 } }; { output={ port=2; max_len=0 } } ] 
-        } ]" 
-     info="priority 8240, idletimeout 0, hardtimeout 0, cookie 1524372928, removenotify 0" table-id=4 
-
- 3   switch=faucet version=4 match=" [ { ethdst_m=0180c2000000fffffffffff0 } ]" actions=" []" 
-     info="priority 8236, idletimeout 0, hardtimeout 0, cookie 1524372928, removenotify 0" table-id=4 
-
- 4   switch=faucet version=4 match=" [ { ethdst_m=0180c2000000ffffff000000 }; { vlanvid=1064 } ]" 
-     actions=" [ { apply-actions= [ { popvlan={} }; { output={ port=1; max_len=0 } }; { output={ port=2; max_len=0 } } ] 
-        } ]" 
-     info="priority 8216, idletimeout 0, hardtimeout 0, cookie 1524372928, removenotify 0" table-id=4 
-
- 5   switch=faucet version=4 match=" [ { ethdst_m=01005e000000ffffff000000 }; { vlanvid=1064 } ]" 
-     actions=" [ { apply-actions= [ { popvlan={} }; { output={ port=1; max_len=0 } }; { output={ port=2; max_len=0 } } ] 
-        } ]" 
-     info="priority 8216, idletimeout 0, hardtimeout 0, cookie 1524372928, removenotify 0" table-id=4 
-
- 6   switch=faucet version=4 match=" [ { ethdst_m=333300000000ffff00000000 }; { vlanvid=1064 } ]" 
-     actions=" [ { apply-actions= [ { popvlan={} }; { output={ port=1; max_len=0 } }; { output={ port=2; max_len=0 } } ] 
-        } ]" 
-     info="priority 8208, idletimeout 0, hardtimeout 0, cookie 1524372928, removenotify 0" table-id=4 
-
- 7   switch=faucet version=4 match=" [ { vlanvid=1064 } ]" 
-     actions=" [ { apply-actions= [ { popvlan={} }; { output={ port=1; max_len=0 } }; { output={ port=2; max_len=0 } } ] 
-        } ]" 
-     info="priority 8192, idletimeout 0, hardtimeout 0, cookie 1524372928, removenotify 0" table-id=4 
-
- 8   switch=faucet version=4 match=" []" actions=" []" 
-     info="priority 0, idletimeout 0, hardtimeout 0, cookie 1524372928, removenotify 0" table-id=4 
-
- 9   switch=faucet version=4 match=" []" actions=" [ { goto=4 } ]" 
-     info="priority 0, idletimeout 0, hardtimeout 0, cookie 1524372928, removenotify 0" table-id=3 
+A router can have multiple routing tables with its own set of routes routing the same destination to different gateways.
 
-10   switch=faucet version=4 match=" [ { ethtype=9000 } ]" actions=" []" 
-     info="priority 20490, idletimeout 0, hardtimeout 0, cookie 1524372928, removenotify 0" table-id=2 
-
-11   switch=faucet version=4 match=" [ { vlanvid=1064 } ]" 
-     actions=" [ { apply-actions= [ { output={ port=4294967293; max_len=96 } } ] }; { goto=3 } ]" 
-     info="priority 4096, idletimeout 0, hardtimeout 0, cookie 1524372928, removenotify 0" table-id=2 
-
-12   switch=faucet version=4 match=" []" actions=" [ { goto=3 } ]" 
-     info="priority 0, idletimeout 0, hardtimeout 0, cookie 1524372928, removenotify 0" table-id=2 
+Tables can be seen and configured from the /routing/table menu.
 
-13   switch=faucet version=4 match=" [ { inport=00000001 }; { vlanvid=0000 } ]" 
-     actions=" [ { apply-actions= [ { pushvlan={ ethertype=33024 } }; { setfield={ vlanvid=1064 } } ] }; { goto=2 } ]" 
-     info="priority 4096, idletimeout 0, hardtimeout 0, cookie 1524372928, removenotify 0" table-id=1 
+By default, RouterOS has only the 'main' routing table:
+[admin@rack1_b33_CCR1036] /routing/table> print 
+Flags: D - dynamic; X - disabled, I - invalid; U - used 
+0 D name="main" fib 
 
-14   switch=faucet version=4 match=" [ { inport=00000002 }; { vlanvid=0000 } ]" 
-     actions=" [ { apply-actions= [ { pushvlan={ ethertype=33024 } }; { setfield={ vlanvid=1064 } } ] }; { goto=2 } ]" 
-     info="priority 4096, idletimeout 0, hardtimeout 0, cookie 1524372928, removenotify 0" table-id=1 
+If a custom routing table is required, it should be defined in this menu prior to using it anywhere in the configuration.
 
-15   switch=faucet version=4 match=" []" actions=" []" 
-     info="priority 0, idletimeout 0, hardtimeout 0, cookie 1524372928, removenotify 0" table-id=1 
+Let's consider a basic example where we have two gateways 172.16.1.1 and 172.16.2.1 and we want to resolve 8.8.8.8 only in the routing table named 'myTable' to the gateway 172.16.2.1:
+/routing table add name=myTable fib
+/ip route add dst-address=8.8.8.8 gateway=172.16.1.1
+/ip route add dst-address=8.8.8.8 gateway=172.16.2.1@main routing-table=myTable
 
-16   switch=faucet version=4 match=" [ { inport=00000001 } ]" actions=" [ { goto=1 } ]" 
-     info="priority 20480, idletimeout 0, hardtimeout 0, cookie 1524372928, removenotify 0" table-id=0 
+For a user-created table to be able to resolve the destination, the main routing table should be able to resolve the destination too.
 
-17   switch=faucet version=4 match=" [ { inport=00000002 } ]" actions=" [ { goto=1 } ]" 
-     info="priority 20480, idletimeout 0, hardtimeout 0, cookie 1524372928, removenotify 0" table-id=0 
+In our example, the main routing table should also have a route to destination 8.8.8.8 or at least a default route, since the default route is dynamically added by the DHCP for safety reasons it is better to add 8.8.8.8 also in the main table.
+[admin@rack1_b33_CCR1036] /ip/route> print detail Flags: D - dynamic; X - disabled, I - inactive, A - active; 
+c - connect, s - static, r - rip, b - bgp, o - ospf, d - dhcp, v - vpn, m - modem, y - cop
+y; 
+H - hw-offloaded; + - ecmp 
+   DAd   dst-address=0.0.0.0/0 routing-table=main pref-src="" gateway=172.16.1.1
+         immediate-gw=172.16.1.1%ether8 distance=1 scope=30 target-scope=10 
+         vrf-interface=ether8 suppress-hw-offload=no 
 
-18   switch=faucet version=4 match=" []" actions=" []" 
-     info="priority 0, idletimeout 0, hardtimeout 0, cookie 1524372928, removenotify 0" table-id=0 
+ 0  As   dst-address=8.8.8.8/32 routing-table=main pref-src="" gateway=172.16.1.1
+         immediate-gw=172.16.1.1%ether8 distance=1 scope=30 target-scope=10 suppress-hw-offload=no 
 
-19   switch=faucet version=4 match=" [ { ethdst=dc2c6ec5a7ff }; { vlanvid=1064 } ]" 
-     actions=" [ { apply-actions= [ { popvlan={} }; { output={ port=1; max_len=0 } } ] } ]" 
-     info="priority 8192, idletimeout 413, hardtimeout 0, cookie 1524372928, removenotify 0" table-id=3 
+    DAc   dst-address=172.16.1.0/24 routing-table=main gateway=ether8 immediate-gw=ether8 
+         distance=0 scope=10 suppress-hw-offload=no local-address=172.16.1.2%ether8 
 
-20   switch=faucet version=4 match=" [ { inport=00000001 }; { ethsrc=dc2c6ec5a7ff }; { vlanvid=1064 } ]" 
-     actions=" [ { goto=3 } ]" info="priority 8191, idletimeout 0, hardtimeout 263, cookie 1524372928, removenotify 0" 
-     table-id=2 
+    DAc   dst-address=172.16.2.0/24 routing-table=main gateway=ether7 immediate-gw=ether7 
+         distance=0 scope=10 suppress-hw-offload=no local-address=172.16.2.2%ether7
+   
+ 1  As   dst-address=8.8.8.8/32 routing-table=myTable pref-src="" gateway=172.16.2.1
+         immediate-gw=172.16.2.1%ether7 distance=1 scope=30 target-scope=10 suppress-hw-offload=no 
+ 
 
-21   switch=faucet version=4 match=" [ { ethdst=dc2c6e46f893 }; { vlanvid=1064 } ]" 
-     actions=" [ { apply-actions= [ { popvlan={} }; { output={ port=2; max_len=0 } } ] } ]" 
-     info="priority 8192, idletimeout 417, hardtimeout 0, cookie 1524372928, removenotify 0" table-id=3 
 
-22   switch=faucet version=4 match=" [ { inport=00000002 }; { ethsrc=dc2c6e46f893 }; { vlanvid=1064 } ]" 
-     actions=" [ { goto=3 } ]" info="priority 8191, idletimeout 0, hardtimeout 267, cookie 1524372928, removenotify 0" 
-     table-id=2 
+But configuration above is not enough, we need a method to force the traffic to actually use our newly created table. RouterOS gives you two options to choose from:
 
+    firewall mangle - it gives more control over the criteria to be used to steer traffic, for example, per connection or per packet balancing, etc. For more info on how to use mangle marking see Firewall Marking examples.
+    routing rules - a basic set of parameters that can be used to quickly steer traffic. This is the method we are going to use for our example.
 
-Statistics of the flows can be seen with stats parameter:
-[admin@CCR2004_2XS_111] /openflow/flow>  print stats 
-Columns: SWITCH, MATCH, BYTES, PACKETS, DURATION
- # SWITCH  MATCH                                                                BYTES  PACKETS  DURATION  
- 0 faucet   [ { ethdst_m=01000cccccccffffffffffff } ]                            3590       25  6m26s890ms
- 1 faucet   [ { ethdst_m=01000ccccccdffffffffffff } ]                               0        0  6m26s890ms
- 2 faucet   [ { ethdst_m=ffffffffffffffffffffffff }; { vlanvid=1064 } ]          5552       26  6m26s890ms
- 3 faucet   [ { ethdst_m=0180c2000000fffffffffff0 } ]                            4917       25  6m26s890ms
- 4 faucet   [ { ethdst_m=0180c2000000ffffff000000 }; { vlanvid=1064 } ]             0        0  6m26s890ms
- 5 faucet   [ { ethdst_m=01005e000000ffffff000000 }; { vlanvid=1064 } ]             0        0  6m26s890ms
- 6 faucet   [ { ethdst_m=333300000000ffff00000000 }; { vlanvid=1064 } ]          5992       25  6m26s890ms
- 7 faucet   [ { vlanvid=1064 } ]                                                  340        5  6m26s890ms
- 8 faucet   []                                                                      0        0  6m26s890ms
- 9 faucet   []                                                                  20391      106  6m26s890ms
-10 faucet   [ { ethtype=9000 } ]                                                    0        0  6m26s890ms
-11 faucet   [ { vlanvid=1064 } ]                                                  530        8  6m26s890ms
-12 faucet   []                                                                      0        0  6m26s890ms
-13 faucet   [ { inport=00000001 }; { vlanvid=0000 } ]                           39135      463  6m26s890ms
-14 faucet   [ { inport=00000002 }; { vlanvid=0000 } ]                           37936      459  6m26s890ms
-15 faucet   []                                                                  17941      100  6m26s890ms
-16 faucet   [ { inport=00000001 } ]                                             48664      515  6m26s890ms
-17 faucet   [ { inport=00000002 } ]                                             46348      507  6m26s890ms
-18 faucet   []                                                                      0        0  6m26s890ms
-19 faucet   [ { ethdst=dc2c6ec5a7ff }; { vlanvid=1064 } ]                       28340      408  6m26s780ms
-20 faucet   [ { ethdst=dc2c6e46f893 }; { vlanvid=1064 } ]                       28340      408  6m26s780ms
-21 faucet   [ { inport=00000001 }; { ethsrc=dc2c6ec5a7ff }; { vlanvid=1064 } ]  12020      142  2m660ms   
-22 faucet   [ { inport=00000002 }; { ethsrc=dc2c6e46f893 }; { vlanvid=1064 } ]  10769      133  1m55s660ms
+It is not recommended to use both methods at the same time or you should know exactly what you are doing. If you really do need to use both mangle and routing rules in the same setup then keep in mind that mangle has higher priority, meaning if the mangle marked traffic can be resolved in the table then route rules will never see this traffic.
 
+Routing table count is limited to 4096 unique tables.
 
-Statistics
 
-Fastpath statistics can be seen from /openflow/print fast-path. We can see that in this example fast path is not functional due to complexity of flows Faucet is installing
-[admin@CCR2004_2XS_111] /openflow> print fast-path 
-  openflow-fast-path-packets: 0 0
-    openflow-fast-path-bytes: 0 0
+Routing Rules
 
+Routing rules allow steering traffic based on basic parameters like a source address, a destination address, or in-interface as well as other parameters.
 
-Port statistics can be seen from /openflow/port menu
-[admin@CCR2004_2XS_111] /openflow/port> print stats
-Columns: INTERFACE, PORT-ID, RX-BYTES, TX-BYTES, RX-PACKETS, TX-PACKETS
-# INTERFACE     PORT-ID  RX-BYTES  TX-BYTES  RX-PACKETS  TX-PACKETS
-0 sfp-sfpplus1        1    115668     81180        1223        1035
-1 sfp-sfpplus2        2    112200     82188        1215        1037
+For our example, we want to select traffic with destination 8.8.8.8 and do not fall back to the main table:
+/routing rule add dst-address=8.8.8.8 action=lookup-only-in-table table=myTable
 
+Lets's say that we know that customer is connected to ether4 and we want only that customer to route 8.8.8.8 to a specific gateway. We can use the following rule:
+/routing rule add dst-address=8.8.8.8 action=lookup-only-in-table table=myTable interface=ether4
 
-Reference
+If for some reason the gateway used in our table goes down, the whole lookup will fail and the destination will not be reachable. In active-backup setups we want the traffic to be able to fall back to the main table. To do that change the action from lookup-only-in-table to lookup.
 
+Also, routing rules can be used as a very "basic firewall". Let's say we do not want to allow a customer connected to ether4 to be able to access the 192.168.1.0/24 network:
+/routing rule add dst-address=192.168.1.0/24 interface=ether4 action=drop 
 
-General
+List of all the parameters that can be used by routing rules:
+action (drop | lookup | lookup-only-in-table | unreachable)	
 
-Sub Menu: /openflow
+An action to take on the matching packet:
 
-This menu lists the configuration of OpenFlow clients.
-certificate (name)	Name of the certificate from certificate list. Used together with verify-peer parameter.
-controllers (list of [protocol/address/port])	Configuration of the connection to the controller. Supported protocols are tcp and tls. Example: tcp/1.2.3.4/6654
-datapath-id (number/mac)	
+    drop - silently drop the packet.
+    lookup - perform a lookup in routing tables.
+    lookup-only-in-table - perform lookup only in the specified routing table (see table parameter).
+    unreachable - generate ICMP unreachable message and send it back to the source.
 
-Datapath ID consisting of two parts (integer number [0..65535] and MAC address) separated with slash.
-name (string)	
+comment (string)	
+disabled (yes | no)	The disabled rule is not used.
+dst-address()	The destination address of the packet to match.
+interface (string)	Incoming interface to match.
+min-prefix (integer [0..4294967295])	
 
-Reference name of the entry
-passive-port (disabled | integer [1..65535])	
+Routes from the routing table with specified prefix length is hidden to packets processed by routing rule.
+
+Equivalent to Linux IP rule suppress_prefixlength . For example to suppress the default route in the routing decision set the value to 0.
+routing-mark (string)	Match specific routing mark.
+src-address (string)	The source address of the packet to match.
+table (name)	Name of the routing table to use for lookup.
+
+
+
+    Creado por Māris B., actualizado por última vez el may 15, 2025 18 min de lectura
+
+    Description
+    Configuration
+    Supported features
+    VRF interfaces in firewall
+    Examples
+        Simple VRF-Lite setup
+        Static inter-VRF routes
+        Static VRF-Lite Connected route leaking
+        Dynamic Vrf-Lite route leaking
+        Dynamic Vrf-Lite route leaking (old workaround)
+        The simplest MPLS VPN setup
+            CE1 Router
+            CE2 Router
+            PE1 Router
+            PE2 Router (Cisco)
+        A more complicated setup (changes only)
+            CE1 Router, cust-one
+            CE2 Router, cust-one
+            PE1 Router
+        Variation: replace the Cisco with another MT
+            PE2 Mikrotik config
+        Unique RD per-site vs unique RD per-customer
+    References
+
+Description
+
+RouterOS allows to create multiple Virtual Routing and Forwarding instances on a single router. This is useful for BGP-based MPLS VPNs. Unlike BGP VPLS, which is OSI Layer 2 technology, BGP VRF VPNs work in Layer 3 and as such exchange IP prefixes between routers. VRFs solve the problem of overlapping IP prefixes and provide the required privacy (via separated routing for different VPNs).
+
+It is possible to set up vrf-lite setups or use multi-protocol BGP with VPNv4 address family to distribute routes from VRF routing tables - not only to other routers, but also to different routing tables in the router itself.
+Configuration
+
+VRF table is created in /ip vrf menu. After the VRF config is created routing table mapping is added (a dynamic table with the same name is created). Each active VRF will always have a mapped routing table.
+[admin@arm-bgp] /ip/vrf> print 
+Flags: X - disabled; * - builtin 
+ 0  * name="main" interfaces=all  
+
+[admin@arm-bgp] /routing/table> print 
+Flags: D - dynamic; X - disabled, I - invalid; U - used 
+ 0 D   name="main" fib 
+
+Note that the order of the added VRFs is significant. To properly match which interface will belong to the VRF care must be taken to place VRFs in the correct order (matching is done starting from the top entry, just like firewall rules).
+
+Since each VRF has mapped routing table, count of max unique VRFs is limited to 1024.
+
+
+Let's look at the following example:
+[admin@arm-bgp] /ip/vrf> print 
+Flags: X - disabled; * - builtin 
+ 0  * name="main" interfaces=all 
+ 1    name="myVrf" interfaces=lo_vrf  
+
+Since the first entry is matching all the interfaces, the second VRF will not have any interfaces added. To fix the problem order of the entries must be changed.
+[admin@arm-bgp] /ip/vrf> move 1 0
+[admin@arm-bgp] /ip/vrf> print 
+Flags: X - disabled; * - builtin 
+ 0    name="myVrf" interfaces=lo_vrf  
+ 1  * name="main" interfaces=all   
+
+Connected routes from the interfaces assigned to the VRF will be installed in the right routing table automatically.
+
+When the interface is assigned to the VRF as well as connected routes it does not mean that RouterOS services will magically know which VRF to use just by specifying the IP address in the configuration. Each service needs VRF support to be added and explicit configuration. Whether the service has VRF support and has VRF configuration options refer to appropriate service documentation.
+
+For example, let's make an SSH service to listen for connections on the interfaces belonging to the VRF:
+[admin@arm-bgp] /ip/service> set ssh vrf=myVrf 
+[admin@arm-bgp] /ip/service> print 
+Flags: X, I - INVALID
+Columns: NAME, PORT, CERTIFICATE, VRF
+#   NAME     PORT  CERTIFICATE  VRF     
+0   telnet     23               main    
+1   ftp        21                       
+2   www        80               main    
+3   ssh        22               myVrf
+4 X www-ssl   443  none         main    
+5   api      8728               main    
+6   winbox   8291               main    
+7   api-ssl  8729  none         main  
+
+Adding routes to the VRF is as simple as specifying the routing-table parameter when adding the route and specifying in which routing table to resolve the gateway by specifying @name after the gateway IP:
+/ip route add dst-address=192.168.1.0/24 gateway=172.16.1.1@myVrf routing-table=myVrf
+
+Traffic leaking between VRFs is possible if the gateway is explicitly set to be resolved in another VRF, for example:
+# add route in the myVrf, but resolve the gateway in the main table
+/ip route add dst-address=192.168.1.0/24 gateway=172.16.1.1@main routing-table=myVrf
+
+# add route in the main table, but resolve the gateway in the myVrf
+/ip route add dst-address=192.168.1.0/24 gateway=172.16.1.1@myVrf
+
+If the gateway configuration does not have an explicitly configured table to be resolved in, then it is considered, that gateway should be resolved in the "main" table.
+Supported features
+
+Different services can be placed in specific VRF on which the service is listening for incoming or creating outgoing connections. By default, all services are using the main table, but it can be changed with a separate vrf parameter or by specifying the VRF name separated by "@" at the end of the IP address.
+
+Below is the list of supported services.
+BGP	+	
+/routing bgp template
+add name=bgp-template1 vrf=vrf1
+/routing bgp vpls
+add name=bgp-vpls1 site-id=10 vrf=vrf1
+/routing bgp vpn
+add label-allocation-policy=per-vrf vrf=vrf1
+E-mail	+	
+/tool e-mail
+set address=192.168.88.1 vrf=vrf1
+IP Services	+	
+
+VRF is supported for telnet, www, ssh, www-ssl, api, winbox, api-ssl services. The ftp service does not support changing the VRF.
+/ip service
+set telnet vrf=vrf1
+L2TP Client	+	
+/interface l2tp-client
+add connect-to=192.168.88.1@vrf1 name=l2tp-out1 user=l2tp-client 
+MPLS	+	
+/mpls ldp
+add vrf=vrf1
+Netwatch	
+
++
+	
+/tool netwatch
+add host=192.168.88.1@vrf1
+NTP	
+
++
+	
+/system ntp client
+set vrf=vrf1
+/system ntp server
+set vrf=vrf1
+OSPF	
+
++
+	
+/routing ospf instance
+add disabled=no name=ospf-instance-1 vrf=vrf1
+ping	
+
++
+	
+/ping 192.168.88.1 vrf=vrf1
+RADIUS	
+
++
+	
+/radius add address=192.168.88.1@vrf1
+/radius incoming set vrf=vrf1
+RIP	
+
++
+	
+/routing rip instance
+add name=rip-instance-1 vrf=vrf1
+RPKI	
+
++
+	
+/routing rpki
+add vrf=vrf1
+SNMP	
+
++
+	
+/snmp
+set vrf=vrf1
+EoIP	
+
++
+	
+/interface eoip
+add remote-address=192.168.1.1@vrf1
+IPIP	
+
++
+	
+/interface ipip 
+add remote-address=192.168.1.1@vrf1
+GRE	
+
++
+	
+/interface gre 
+add remote-address=192.168.1.1@vrf1
+SSTP-client	
+
++
+	
+/interface sstp-client 
+add connect-to=192.168.1.1@vrf1
+OVPN-client	
+
++
+	
+/interface ovpn-client
+add connect-to=192.168.1.1@vrf1
+L2TP-ether	
+
++
+	
+/interface l2tp-ether
+add connect-to=192.168.2.2@vrf
+VXLAN	
+
++
+	
+/interface vxlan
+add vni=10 vrf=vrf1
+Fetch	
+
++
+	
+/tool/fetch
+address=10.155.28.236@vrf1 mode=ftp src-path=my_file.pcap user=admin password=""
+DNS	
+
++
+
+Starting from RouterOS v7.15
+	
+/ip dns set vrf=vrf1
+DHCP-Relay	
+
++
+
+Starting from RouterOS v7.15
+	
+/ip dhcp-relay set dhcp-server-vrf=vrf1
+If dhcp-client is in vrf - special parameter in "ip dhcp-relay" configuration is not needed
+VRF interfaces in firewall
+
+Before RouterOS version 7.14, firewall filter rules with the property in/out-interface would apply to interfaces within a VRF instance. Starting from RouterOS version 7.14, these rules no longer target individual interfaces within a VRF, but rather the VRF interface as a whole.
+
+
+Started from version 7.14 when interfaces are added in VRF - virtual VRF interface is created automatically. If it is needed to match traffic which belongs to VRF interface, VRF virtual interface should be used in firewall filters, for example:
+/ip vrf add interfaces=ether5 name=vrf5
+/ip firewall filter add chain=input in-interface=vrf5 action=accept
+
+If there are several interfaces in one VRF but it is needed to match only one of these interfaces - marks should be used. For example:
+/ip vrf add interface=ether15,ether16 vrf=vrf1516
+/ip firewall mangle
+add action=mark-connection chain=prerouting connection-state=new in-interface=ether15 new-connection-mark=input_allow passthrough=yes 
+/ip firewall filter
+add action=accept chain=input connection-mark=input_allow
+Examples
+Simple VRF-Lite setup
+
+Let's consider a setup where we need two customer VRFs that require access to the internet:
+/ip address
+add address=172.16.1.2/24 interface=public
+add address=192.168.1.1/24 interface=ether1
+add address=192.168.2.1/24 interface=ether2
+
+/ip route
+add gateway=172.16.1.1
+
+# add VRF configuration
+/ip vrf
+add name=cust_a interface=ether1 place-before 0
+add name=cust_b interface=ether2 place-before 0
+
+# add vrf routes
+/ip route
+add gateway=172.16.1.1@main routing-table=cust_a
+add gateway=172.16.1.1@main routing-table=cust_b
+
+# masquerade local source
+/ip firewall nat add chain=srcnat out-interface=public action=masquerade
+
+It might be necessary to ensure that packets coming in the "public" interface can actually reach the correct VRF. 
+This can be solved by marking new connections originated by the VRF customers and steering the traffic by routing marks of incoming packets on the "public" interface.
+# mark new customer connections
+/ip firewall mangle 
+add action=mark-connection chain=prerouting connection-state=new new-connection-mark=\
+    cust_a_conn src-address=192.168.1.0/24 passthrough=no
+add action=mark-connection chain=prerouting connection-state=new new-connection-mark=\
+    cust_b_conn src-address=192.168.2.0/24 passthrough=no 
+
+# mark routing
+/ip firewall mangle  
+add action=mark-routing chain=prerouting connection-mark=cust_a_conn \
+    in-interface=public new-routing-mark=cust_a
+add action=mark-routing chain=prerouting connection-mark=cust_b_conn \
+    in-interface=public new-routing-mark=cust_b
+Static inter-VRF routes
+
+In general, it is recommended that all routes between VRF should be exchanged using BGP local import and export functionality. If that is not enough, static routes can be used to achieve this so-called route leaking.
+
+There are two ways to install a route that has a gateway in a different routing table than the route itself.
+
+The first way is to explicitly specify the routing table in the gateway field when adding a route. This is only possible when leaking a route and gateway from the "main" routing table to a different routing table (VRF). Example:
+# add route to 5.5.5.0/24 in 'vrf1' routing table with gateway in the main routing table 
+add dst-address=5.5.5.0/24 gateway=10.3.0.1@main routing-table=vrf1
+
+
+The second way is to explicitly specify the interface in the gateway field. The interface specified can belong to a VRF instance. Example:
+# add route to 5.5.5.0/24 in the main routing table with gateway at 'ether2' VRF interface 
+add dst-address=5.5.5.0/24 gateway=10.3.0.1%ether2 routing-table=main 
+# add route to 5.5.5.0/24 in the main routing table with 'ptp-link-1' VRF interface as gateway 
+add dst-address=5.5.5.0/24 gateway=ptp-link-1 routing-table=main
+
+
+As can be observed, there are two variations possible - to specify gateway as ip_address%interface or to simply specify an interface. The first should be used for broadcast interfaces in most cases. The second should be used for point-to-point interfaces, and also for broadcast interfaces, if the route is a connected route in some VRF. For example, if you have an address 1.2.3.4/24 on interface ether2 that is put in a VRF, there will be a connected route to 1.2.3.0/24 in that VRF's routing table. It is acceptable to add a static route 1.2.3.0/24 in a different routing table with an interface-only gateway, even though ether2 is a broadcast interface:
 
  
-verify-peer (if-cert-present | none | required)	
+add dst-address=1.2.3.0/24 gateway=ether2 routing-table=main
+Static VRF-Lite Connected route leaking
 
-Verify peer's identity using certificates
-version (1 | 1.3 | default)	Version of the OpenFlow standard to be used.
-
-
-Read-Only Parameters
-openflow-fast-path-bytes (integer)	Amount of bytes set to fastpath
-openflow-fast-path-packets (integer)	Number of packets sent to fastpath
-
-
-Flows
-
-Sub Menu: /openflow/flow
-
-This menu lists installed flows responsible for packet forwarding between openflow ports.
-actions (string)	Action string
-bytes (integer)	Amount of bytes matched by the rule
-duration (time)	
+Sometimes it is necessary to access directly connected resources from another vrf. In our example setup we have two connected networks each in its own VRF. And we want to allow client1 to be able to access client2.
+                   +-----------------+
+                   |+-vrf1-+ +-vrf2-+|
+client1(*.2)-------||ip *.1| |ip *.1||-------client2(*.2)
+   (10.11.0.0/24)  |+------+ +------+|   (10.12.0.0/24)
+                   +-----------------+
 
 
-inactive (yes | no)	
+/ip address
+add address=10.11.0.1/24 interface=sfp-sfpplus1
+add address=10.12.0.1/24 interface=sfp-sfpplus2
+
+# add VRF configuration
+/ip vrf
+add name=vrfTest1 interface=sfp-sfpplus1 place-before 0
+add name=vrfTest2 interface=sfp-sfpplus2 place-before 0
+
+We can say that connected network is reachable on specific vrf by setting gateway "interface@vrf"
+# add vrf routes
+/ip route
+add dst-address=10.11.0.0/24 gateway="sfp-sfpplus1@vrfTest1" routing-table=vrfTest2
+add dst-address=10.12.0.0/24 gateway="sfp-sfpplus2@vrfTest2" routing-table=vrfTest1
+
+Verify routes and reachability:
+[admin@CCR2004_2XS] /ip/route> print detail 
+Flags: D - dynamic; X - disabled, I - inactive, A - active; 
+c - connect, s - static, r - rip, b - bgp, o - ospf, i - is-is, d - dhcp, v - vpn, m - modem, y - bgp-mpls-vpn; H - hw-offloaded; + - ecmp 
+
+   DAc   dst-address=111.11.0.0/24 routing-table=vrfTest1 gateway=sfp-sfpplus1@vrfTest1 immediate-gw=sfp-sfpplus1 distance=0 scope=10 suppress-hw-offload=no 
+         local-address=111.11.0.1%sfp-sfpplus1@vrfTest1 
+
+ 1  As   dst-address=111.12.0.0/24 routing-table=vrfTest1 pref-src="" gateway=vrfTest2 immediate-gw=vrfTest2 distance=1 scope=30 target-scope=10 
+         suppress-hw-offload=no 
+
+ 2  As   dst-address=111.11.0.0/24 routing-table=vrfTest2 pref-src="" gateway=vrfTest1 immediate-gw=vrfTest1 distance=1 scope=30 target-scope=10 
+         suppress-hw-offload=no 
+
+   DAc   dst-address=111.12.0.0/24 routing-table=vrfTest2 gateway=sfp-sfpplus2@vrfTest2 immediate-gw=sfp-sfpplus2 distance=0 scope=10 suppress-hw-offload=no 
+         local-address=111.12.0.1%sfp-sfpplus2@vrfTest2 
+
+
+
+[admin@cl2] > /ping 111.11.0.2 src-address=111.12.0.2
+  SEQ HOST                                     SIZE TTL TIME       STATUS                                                                                         
+    0 111.11.0.2                                 56  64 67us      
+    1 111.11.0.2                                 56  64 61us      
+    sent=2 received=2 packet-loss=0% min-rtt=61us avg-rtt=64u
+
+
+Keep in mind that trying to leak overlapping networks will not work.
+
+But now what if we want to access routers local address located in another vrf?
+[admin@cl2] > /ping 111.11.0.1 src-address=111.12.0.2
+  SEQ HOST                                     SIZE TTL TIME       STATUS                                                                                         
+    0 111.11.0.1                                                   timeout                                                                                        
+    1 111.11.0.1                                                   timeout                                                                                        
+    sent=2 received=0 packet-loss=100% 
+
+Approach with "interface@vrf" gateways works only when router is forwarding packets. To access local vrf addresses we need to route to the vrf interface.
+# add vrf routes
+/ip route
+add dst-address=10.11.0.0/24 gateway=vrfTest1@vrfTest1 routing-table=vrfTest2
+add dst-address=10.12.0.0/24 gateway=vrfTest2@vrfTest2 routing-table=vrfTest1
+
+
+[admin@cl2] > /ping 111.11.0.1 src-address=111.12.0.2
+  SEQ HOST                                     SIZE TTL TIME       STATUS                                                                                         
+    0 111.11.0.1                                 56  64 67us      
+    1 111.11.0.1                                 56  64 61us      
+    sent=2 received=2 packet-loss=0% min-rtt=61us avg-rtt=64u
+
+
+Dynamic Vrf-Lite route leaking
+
+With large enough setups static route leaking is not sufficient. Let's consider we have the same setup as in static route leaking example plus ipv6 addresses, just for demonstration.
+/ip address
+add address=10.11.0.1/24 interface=sfp-sfpplus1
+add address=10.12.0.1/24 interface=sfp-sfpplus2
+
+# add VRF configuration
+/ip vrf
+add name=vrfTest1 interface=sfp-sfpplus1 place-before 0
+add name=vrfTest2 interface=sfp-sfpplus2 place-before 0
+
+/ipv6 address
+add address=2001:1::1 advertise=no interface=sfp-sfpplus1
+add address=2001:2::1 advertise=no interface=sfp-sfpplus2
+
+We can use BGP VPN to leak local routes without actually establishing BGP session.
+/routing bgp vpn
+add export.redistribute=connected .route-targets=1:1 import.route-targets=1:2 label-allocation-policy=per-vrf name=bgp-mpls-vpn-1 \
+    route-distinguisher=1.2.3.4:1 vrf=vrfTest1
+add export.redistribute=connected .route-targets=1:2 import.route-targets=1:1 label-allocation-policy=per-vrf name=bgp-mpls-vpn-2 \
+    route-distinguisher=1.2.3.4:1 vrf=vrfTest2
+
+Be careful with import/export route targets, if not set up properly local vrf routes from itself will be imported.
+
+
+Now we can see that connected routes between VRFs are exchanged
+[admin@CCR2004_2XS] > /routing route print where dst-address in 111.0.0.0/8 && afi=ip4
+...
+ Ac   afi=ip4 contribution=active dst-address=111.11.0.0/24 routing-table=vrfTest1 gateway=sfp-sfpplus1@vrfTest1 immediate-gw=sfp-sfpplus1 distance=0 scope=10 
+       belongs-to="connected" local-address=111.11.0.1%sfp-sfpplus1@vrfTest1 
+       debug.fwp-ptr=0x202421E0 
+ Ay   afi=ip4 contribution=best-candidate dst-address=111.12.0.0/24 routing-table=vrfTest1 label=17 gateway=vrfTest2@vrfTest2 immediate-gw=sfp-sfpplus2 
+       distance=200 scope=40 target-scope=10 belongs-to="bgp-mpls-vpn-1-bgp-mpls-vpn-2-connected-export-import" 
+       bgp.ext-communities=rt:1:2 .atomic-aggregate=no .origin=incomplete 
+       debug.fwp-ptr=0x202425A0 
+ Ay   afi=ip4 contribution=best-candidate dst-address=111.11.0.0/24 routing-table=vrfTest2 label=16 gateway=vrfTest1@vrfTest1 immediate-gw=sfp-sfpplus1 
+       distance=200 scope=40 target-scope=10 belongs-to="bgp-mpls-vpn-2-bgp-mpls-vpn-1-connected-export-import" 
+       bgp.ext-communities=rt:1:1 .atomic-aggregate=no .origin=incomplete 
+       debug.fwp-ptr=0x202424E0 
+ Ac   afi=ip4 contribution=active dst-address=111.12.0.0/24 routing-table=vrfTest2 gateway=sfp-sfpplus2@vrfTest2 immediate-gw=sfp-sfpplus2 distance=0 scope=10 
+       belongs-to="connected" local-address=111.12.0.1%sfp-sfpplus2@vrfTest2 
+       debug.fwp-ptr=0x20242240 
+
+And IPv6 too:
+[admin@CCR2004_2XS] /routing/route> print detail where dst-address in 2001::/8 && afi=ip6
+...
+ Ac   afi=ip6 contribution=active dst-address=2001:1::/64 routing-table=vrfTest1 gateway=sfp-sfpplus1@vrfTest1 immediate-gw=sfp-sfpplus1 distance=0 scope=10 
+       belongs-to="connected" local-address=2001:1::1%sfp-sfpplus1@vrfTest1 
+       debug.fwp-ptr=0x20242300 
+ Ay   afi=ip6 contribution=active dst-address=2001:2::/64 routing-table=vrfTest1 label=17 gateway=vrfTest2@vrfTest2 immediate-gw=sfp-sfpplus2 distance=200 
+       scope=40 target-scope=10 belongs-to="bgp-mpls-vpn-1-bgp-mpls-vpn-2-connected-export-import" 
+       bgp.ext-communities=rt:1:2 .atomic-aggregate=no .origin=incomplete 
+       debug.fwp-ptr=0x202425A0 
+ Ay   afi=ip6 contribution=active dst-address=2001:1::/64 routing-table=vrfTest2 label=16 gateway=vrfTest1@vrfTest1 immediate-gw=sfp-sfpplus1 distance=200 
+       scope=40 target-scope=10 belongs-to="bgp-mpls-vpn-2-bgp-mpls-vpn-1-connected-export-import" 
+       bgp.ext-communities=rt:1:1 .atomic-aggregate=no .origin=incomplete 
+       debug.fwp-ptr=0x202424E0 
+ Ac   afi=ip6 contribution=active dst-address=2001:2::/64 routing-table=vrfTest2 gateway=sfp-sfpplus2@vrfTest2 immediate-gw=sfp-sfpplus2 distance=0 scope=10 
+       belongs-to="connected" local-address=2001:2::1%sfp-sfpplus2@vrfTest2 
+       debug.fwp-ptr=0x20242360 
+
+Dynamic Vrf-Lite route leaking (old workaround)
+
+Before ROS v7.14 there were no mechanism to leak routes from one VRF instance to another within the same router.
+
+As a workaround, it was possible to create a tunnel between two locally configure loopback addresses and assign each tunnel endpoint to its own VRF. Then it is possible to run either dynamic routing protocols or set up static routes to leak between both VRFs.
+
+The downside of this approach is that tunnel must be created between each VRF where routes should be leaked (create a full mesh), which significantly complicates configuration even if there are just several VRFs, not to mention more complicated setups.
+
+For example, to leak routes between 5 VRFs it would require n * ( n – 1) / 2 connections, which will lead to the setup with 20 tunnel endpoints and 20 OSPF instances on one router.
+
+Example config with two VRFs of this method:
+/interface bridge
+add name=dummy_custC
+add name=dummy_custB
+add name=lo1
+add name=lo2
+
+/ip address
+add address=111.255.255.1 interface=lo1 network=111.255.255.1
+add address=111.255.255.2 interface=lo2 network=111.255.255.2
+add address=172.16.1.0/24 interface=dummy_custC network=172.16.1.0
+add address=172.16.2.0/24 interface=dummy_custB network=172.16.2.0
+
+/interface ipip
+add local-address=111.255.255.1 name=ipip-tunnel1 remote-address=111.255.255.2
+add local-address=111.255.255.2 name=ipip-tunnel2 remote-address=111.255.255.1
+
+/ip address
+add address=192.168.1.1/24 interface=ipip-tunnel1 network=192.168.1.0
+add address=192.168.1.2/24 interface=ipip-tunnel2 network=192.168.1.0
+
+/ip vrf
+add interfaces=ipip-tunnel1,dummy_custC name=custC
+add interfaces=ipip-tunnel2,dummy_custB name=custB
+
+/routing ospf instance
+add disabled=no name=i2_custB redistribute=connected,static,copy router-id=192.168.1.1 routing-table=custB vrf=custB
+add disabled=no name=i2_custC redistribute=connected router-id=192.168.1.2 routing-table=custC vrf=custC
+/routing ospf area
+add disabled=no instance=i2_custB name=custB_bb
+add disabled=no instance=i2_custC name=custC_bb
+/routing ospf interface-template
+add area=custB_bb disabled=no networks=192.168.1.0/24
+add area=custC_bb disabled=no networks=192.168.1.0/24
+
+Result:
+[admin@rack1_b36_CCR1009] /routing/ospf/neighbor> print 
+Flags: V - virtual; D - dynamic 
+ 0  D instance=i2_custB area=custB_bb address=192.168.1.1 priority=128 router-id=192.168.1.2 dr=192.168.1.1 bdr=192.168.1.2 
+      state="Full" state-changes=6 adjacency=41m28s timeout=33s 
+
+ 1  D instance=i2_custC area=custC_bb address=192.168.1.2 priority=128 router-id=192.168.1.1 dr=192.168.1.1 bdr=192.168.1.2 
+      state="Full" state-changes=6 adjacency=41m28s timeout=33s 
+
+
+[admin@rack1_b36_CCR1009] /ip/route> print where routing-table=custB
+Flags: D - DYNAMIC; A - ACTIVE; c, s, o, y - COPY
+Columns: DST-ADDRESS, GATEWAY, DISTANCE
+     DST-ADDRESS       GATEWAY                         DISTANCE
+  DAo 172.16.1.0/24     192.168.1.1%ipip-tunnel2@custB       110
+  DAc 172.16.2.0/24     dummy_custB@custB                      0
+  DAc 192.168.1.0/24    ipip-tunnel2@custB                     0
+
+
+[admin@rack1_b36_CCR1009] > /ip route/print where routing-table=custC
+Flags: D - DYNAMIC; A - ACTIVE; c, o, y - COPY
+Columns: DST-ADDRESS, GATEWAY, DISTANCE
+    DST-ADDRESS       GATEWAY                         DISTANCE
+  DAc 172.16.1.0/24     dummy_custC@custC                      0
+  DAo 172.16.2.0/24     192.168.1.2%ipip-tunnel1@custC       110 
+  DAc 192.168.1.0/24    ipip-tunnel1@custC                     0
+
+
+The simplest MPLS VPN setup
+
+In this example, a rudimentary MPLS backbone (consisting of two Provider Edge (PE) routers PE1 and PE2) is created and configured to forward traffic between Customer Edge (CE) routers CE1 and CE2 routers that belong to cust-one VPN.
+CE1 Router
+/ip address add address=10.1.1.1/24 interface=ether1 
+# use static routing 
+/ip route add dst-address=10.3.3.0/24 gateway=10.1.1.2
+
+
+CE2 Router
+/ip address add address=10.3.3.4/24 interface=ether1 
+/ip route add dst-address=10.1.1.0/24 gateway=10.3.3.3
+
+
+PE1 Router
+/interface bridge add name=lobridge 
+/ip address add address=10.1.1.2/24 interface=ether1 
+/ip address add address=10.2.2.2/24 interface=ether2 
+/ip address add address=10.5.5.2/32 interface=lobridge 
+/ip vrf add name=cust-one interfaces=ether1 
+/mpls ldp add enabled=yes transport-address=10.5.5.2 lsr-id=10.5.5.2
+/mpls ldp interface add interface=ether2 
+/routing bgp template set default as=65000 
+
+/routing bgp vpn 
+add vrf=cust-one \
+  route-distinguisher=1.1.1.1:111 \
+  import.route-targets=1.1.1.1:111 \
+  import.router-id=cust-one \
+  export.redistribute=connected \
+  export.route-targets=1.1.1.1:111 \
+  label-allocation-policy=per-vrf
+/routing bgp connection 
+add template=default remote.address=10.5.5.3 address-families=vpnv4 local.address=10.5.5.2
+
+# add route to the remote BGP peer's loopback address 
+/ip route add dst-address=10.5.5.3/32 gateway=10.2.2.3
+
+
+
+PE2 Router (Cisco)
 
  
-info (string)	
+ip vrf cust-one
+rd 1.1.1.1:111
+route-target export 1.1.1.1:111
+route-target import 1.1.1.1:111
+exit
 
- Info string
-match (string)	
+interface Loopback0
+ip address 10.5.5.3 255.255.255.255
 
-Matcher rule string
-packets (integer)	
+mpls ldp router-id Loopback0 force
+mpls label protocol ldp
 
- Number of packets matched by the rule
-switch (name)	
+interface FastEthernet0/0
+ip address 10.2.2.3 255.255.255.0
+mpls ip
 
- Controller name that installed the rule
-table-id (integer)	
+interface FastEthernet1/0
+ip vrf forwarding cust-one
+ip address 10.3.3.3 255.255.255.0
 
- ID of the table where rule is located
-version (integer)	
+router bgp 65000
+neighbor 10.5.5.2 remote-as 65000
+neighbor 10.5.5.2 update-source Loopback0
+address-family vpnv4
+neighbor 10.5.5.2 activate
+neighbor 10.5.5.2 send-community both
+exit-address-family
+address-family ipv4 vrf cust-one
+redistribute connected
+exit-address-family
 
+ip route 10.5.5.2 255.255.255.255 10.2.2.2
 
-Groups
+Results
 
-Sub Menu: /openflow/group
-
- 
-bucket-count ()	 
-bucket-stats ()	
-buckets ()	
-
-
-bytes (integer)	
-
- 
-duration (time)	
-
- 
-flow-count (integer)	
-
- 
-id (integer)	
+Check that VPNv4 route redistribution is working:
 
  
-inactive (yes | no)	
-
- 
-packets (integer)	
-
- 
-switch (name)	
-type ()	
-
-
-Meter
-
-Sub Menu: /openflow/meter
-
- Sub-menu displays installed traffic meters by the controller. Meters allow the rate-monitoring before the output and apply actions instruction.
-
-
-band-count ()	 
-bands ()	
-bytes (integer)	
-
- Number of accounted bytes
-duration (time)	
-
- 
-id (integer)	
-
- 
-inactive (yes | no)	
-
- 
-packets (integer)	
-
-Number of accounted packets 
-switch (name)	 Controller name that installed the rule
-
-
-Ports
-
-Sub Menu: /openflow/port
-
-This menu lists the ports controlled by the OpenFlow. 
-interface (name)	Name of the interface to be controlled by the OpenFlow
-port-id (integer)	Port ID used to identify interface in flow rules
-switch (name)	
-
-Name of the switch that will be able to control the port.
-
-
-Read-Only Parameters
-rx-bytes (integer)	Amount of bytes received on interface
-rx-packets (integer)	Number of packets received on interface
-tx-bytes (integer)	Amount of bytes transmitted on interface
-tx-packets (integer)	Number of packets transmitted on interface
-
-
-
-
-
-Routing
-
-    Creado por Māris B., actualizado por última vez por Usuario desconocido (emils) el may 31, 2022 1 min de lectura
-
-In This Section:
-
-        Routing Protocol Overview
-        Moving from ROSv6 to v7 with examples
-        Routing Protocol Multi-core Support
-        Policy Routing
-        Virtual Routing and Forwarding - VRF
-        OSPF
-        RIP
-        BGP
-        RPKI
-        Route Selection and Filters
-        Multicast
-        Routing Debugging Tools
-        Routing Reference
-        BFD
-        IS-IS
-        EVPN
-
-
-
-
-
-    Creado por Māris B., actualizado por última vez el jun 18, 2025 5 min de lectura
-
-    Feature Status
-    Performance Status
-        One Peer Receive Only
-        Two Peers Receive Only
-        Multi-homing Sim
-        Memory Usage:
-
-Feature Status
-
-N/A - Feature not yet available
-
-OK - Initial tests successful
-
-NOK - initial tests not successful
-
-Highlight Colors:
-
-    Yellow - partially working
-    Green - Working
-    Red - Not working at the moment
-
-Winbox	 	 	 	 	 	 	 	 
-BGP support	
-	
-	
-	
-	
-	
-	
-	
-OSPF support	
-	
-	
-	
-	
-	
-	
-	
-RIP support	
-	
-	
-	
-	
-	
-	
-	
-Router ID support	
-	
-	
-	
-	
-	
-	
-	
-Routing filter support	
-	
-	
-	
-	
-	
-	
-	
-
-	
-	
-	
-	
-	
-	
-	
-	
-Generic	 	 	 	 	 	 	 	 
-/31 address support	
-	
-	
-	
-	
-	
-	
-	
-Convert route rules after upgrade from v6.x	
-	
-	
-	
-	
-	
-	
-	
-Static IPv6 upgrade from ROS v6	
-	
-	
-	
-	
-	
-	
-	
-IPv4 Route Rules	
-	
-	
-	
-	
-	
-	
-	
-IPv6 Route Rules	
-	
-	
-	
-	
-	
-	
-	
-ECMP flags	
-	
-	
-	
-	
-	
-	
-	
-dst@table	
-	
-	
-	
-	
-	
-	
-	
-gateway@table	
-	
-	
-	
-	
-	
-	
-	
-gateway%interface	
-	
-	
-	
-	
-	
-	
-	
-recursive route over ipv6 LL address	
-	
-	
-	
-	
-	
-	
-	
-3 level recursive gateway with ECMP 	
-	
-	
-	
-	
-	
-	
-	
-IPV6 ECMP	
-	
-	
-	
-	
-	
-	
-	
-IPv6 connected ECMP	
-	
-	
-	
-	
-	
-	
-	
-Addresses from same subnet to multiple interfaces	
-	
-	
-	
-	
-	
-	
-	
-Show time when route was last updated	
-	
-	
-	
-	
-	
-	
-	
-Check Gateway	BFD not ready	
-	
-	
-	
-	
-	
-	
-Scope and target scope	
-	
-	
-	
-	
-	
-	
-	
-IPv4 Mangle routing-mark	
-	
-	
-	
-	
-	
-	
-	
-IPv6 Mangle routing-mark	
-	
-	
-	
-	
-	
-	
-	
-Packet SRC address	Does not work correctly with /32 addresses	
-	
-	
-	
-	
-	
-	
-Routing-table parameter for ping and telnet	
-	
-	
-	
-	
-	
-	
-	
-Show if route is hardware accelerated	Shows if route is candidate for HW acceleration	
-	
-	
-	
-	
-	
-	
-Custom route selection policy 	
-	
-	
-	
-	
-	
-	
-	
-IPv4 with IPv6 nexthops for RFC5549	
-	
-	
-	
-	
-	
-	
-	
-
-	
-	
-	
-	
-	
-	
-	
-	
-Routing id	
-	
-	
-	
-	
-	
-	
-	
-VRF	
-	
-	
-	
-	
-	
-	
-	
-Management services support for VRFs 	telnet, ssh, api, www services can be set to listen on specific VRF	
-	
-	
-	
-	
-	
-	
-Dynamically import/export routes from one vrf to another within the same router	
-	
-	
-	
-	
-	
-	
-	
-BFD	
-	Initial support	
-	
-	
-	
-	
-	
-
-	
-	
-	
-	
-	
-	
-	
-	
-OSPF	 	 	 	 	 	 	 	 
-Convert OSPF config from v6 to v7 after upgrade	
-
-Known conversion problems:
-
-    NBMA neighbors place in backbone
-
-    ospf-v2 networks + interface may have issues
-
-    dynamic interfaces may have issues
-
-    MPLS PE CE features are not converted
-
-	
-
-
-	
-
-
-	
-
-
-	
-
-
-	
-
-
-	
-
-
-	
-
-
-OSPF neighbors in NSSA Area	
-	
-	
-	
-	
-	
-	
-	
-OSPF in broadcast network	
-	
-	
-	
-	
-	
-	
-	
-OSPF with routing filters	
-	
-	
-	
-	
-	
-	
-	
-OSPF Virtual Link	
-	
-	
-	
-	
-	
-	
-	
-OPSF input filtering	
-	
-	
-	
-	
-	
-	
-	
-HMAC-SHA auth RFC5709	Initial support	
-	
-	
-	
-	
-	
-	
-OSPF SNMP monitoring	
-	
-	
-	
-	
-	
-	
-	
-BGP SNMP monitoring	
-	For ipv4 sessions	
-	
-	
-	
-	
-	
-
-	
-	
-	
-	
-	
-	
-	
-	
-IS-IS	
-	
-	
-	
-	
-	
-	
-	
-IPv4	
-	
-	Initial support	
-	
-	
-	
-	
-IPv6	
-	
-	
-	
-	
-	
-	
-	
-Traffic Engineering	
-	
-	
-	
-	
-	
-	
-	
-
-	
-	
-	
-	
-	
-	
-	
-	
-BGP	 	 	 	 	 	 	 	 
-Convert BGP config from v6 to v7 after upgrade	
-	
-	
-	
-	
-	
-	
-	
-BGP Templates and dynamic peers	
-	
-	
-	
-	
-	
-	
-	
-BGP connect listen on a network	
-	
-	
-	
-	
-	
-	
-	
-BGP guess remote.as	
-	
-	
-	
-	
-	
-	
-	
-Show from which peer route received	
-	
-	
-	
-	
-	
-	
-	
-BGP Address Families	
-	
-	
-	
-	
-	
-	
-	
-BGP input.accept-*	
-	
-	
-	
-	
-	
-	
-	
-eBGP nexthop self	
-	
-	
-	
-	
-	
-	
-	
-Input Filter	
-	
-	
-	
-	
-	
-	
-	
-Output Filter	
-	
-	
-	
-	
-	
-	
-	
-BGP Local address auto selection	
-	
-	
-	
-	
-	
-	
-	
-BGP route reflect	
-	
-	
-	
-	
-	
-	
-	
-BGP route server	
-	
-	
-	
-	
-	
-	
-	
-BGP Roles
-https://datatracker.ietf.org/doc/draft-ietf-idr-bgp-open-policy/?include_text=1	rfc roles not fully implemented	
-	
-	
-	
-	
-	
-	
-BGP session uptime in "established" state	
-	
-	
-	
-	
-	
-	
-	
-BGP session last established time	
-	
-	
-	
-	
-	
-	
-	
-
-	
-	
-	
-	
-	
-	
-	
-	
-BGP Flow Spec	Flow spec attributes are forwarded	
-	
-	
-	
-	
-	
-	
-BGP Selection	
-	
-	
-	
-	
-	
-	
-	
-
-	
-	
-	
-	
-	
-	
-	
-	
-BGP Selection (Multipath)	
-	
-	
-	
-	
-	
-	
-	
-BGP Confederation	
-	
-	
-	
-	
-	
-	
-	
-BGP Aggregation	
-	
-	
-	
-	
-	
-	
-	
-BGP ORF	
-	
-	
-	
-	
-	
-	
-	
-Discard prefix RTBH  RFC 6666	
-	
-	
-	
-	
-	
-	
-	
-AS-wide Unique BGP Identifier RFC 6286	
-	
-	
-	
-	
-	
-	
-	
-Exported PDU PCAP saver	
-	
-	
-	
-	
-	
-	
-	
-Exported PDU PCAP loader	
-	
-	
-	
-	
-	
-	
-	
-BGP Advertisement monitoring	Advertisements rework	
-	
-	
-	
-	
-	
-	
-BGP Prefix limit	
-	
-	
-	
-	
-	
-	
-	
-BGP advertise IPv4 prefix with IPv6 nexthop (RFC5549, RFC8950)	
-	
-	
-	
-	
-	
-	
-	AFI/SAFI 1/1
-BGP VPNv6 support	
-	Prerequisites are made, need to add actual BGP Afi	
-	
-	
-	
-	
-	
-BGP Instance config	
-	
-	
-	
-	
-	
-	
-	
-EVPN	
-	
-	
-	
-	
-	
-	
-	Initial support
-
-	
-	
-	
-	
-	
-	
-	
-	
-MPLS	 	 	 	 	 	 	 	 
-Static label mapping	
-	
-	
-	
-	
-	
-	
-	
-Static mapping upgrade from v6	
-	
-	
-	
-	
-	
-	
-	
-LDP IPv4 mapping	
-	
-	
-	
-	
-	
-	
-	
-LDP IPv6 mapping	
-	
-	
-	
-	
-	
-	
-	
-LDP signaled VPLS	
-	
-	
-	
-	
-	
-	
-	
-LDP config upgrade from v6	
-	
-	
-	
-	
-	
-	
-	
-LDP Dual Stack	
-	
-	
-	
-	
-	
-	
-	
-TE	
-	
-	
-	
-	
-	
-	
-	
-TE Config upgrade from v6	
-	
-	
-	
-	
-	
-	
-	
-VPLS Encap to TE	
-	
-	
-	
-	
-	
-	
-	
-BGP signaled VPLS	
-	
-	
-	
-	
-	
-	
-	
-VPLS config upgrade from v6	
-	
-	
-	
-	
-	
-	
-	
-RSVP Fast reroute	
-	
-	
-	
-	
-	
-	
-	
-FRR/RI-RSVP (RFC 8370)
-	
-	
-	
-	
-	
-	
-	
-	
-MPLS ECMP	
-	
-	
-	
-	
-	
-	
-	
-One label per VRF	
-	
-	
-	
-	
-	
-	
-	
-Ability to use MPLS EXP-bit in Queues	
-	
-	
-	
-	
-	
-	
-	
-MPLS Fast-Path	
-	
-	
-	
-	
-	
-	
-	
-
-	
-	
-	
-	
-	
-	
-	
-	
-RPKI session	
-	
-	
-	
-	
-	
-	
-	
-RPKI possibility to view received info of specific prefix	
-	
-	
-	
-	
-	
-	
-	
-RPKI show connection status	
-	
-	
-	
-	
-	
-	
-	
-
-	
-	
-	
-	
-	
-	
-	
-	
-Filters	 	 	 	 	 	 	 	 
-Convert routing filters after upgrade from v6.x	
-	
-	
-	
-	
-	
-	
-	
-Syntax completion	
-	
-	
-	
-	
-	
-	
-	
-Routing filter chain drop by default without rules	
-	
-	
-	
-	
-	
-	
-	
-Routing filter prefix match	
-	
-	
-	
-	
-	
-	
-	
-Routing filter protocol match	
-	
-	
-	
-	
-	
-	
-	
-Routing filter append communities	
-	
-	
-	
-	
-	
-	
-	
-Routing filter append large community	
-	
-	
-	
-	
-	
-	
-	
-Routing filter set weight	
-	
-	
-	
-	
-	
-	
-	
-Routing filter set local pref	
-	
-	
-	
-	
-	
-	
-	
-Routing filter set MED	
-	
-	
-	
-	
-	
-	
-	
-Routing filter set origin	
-	
-	
-	
-	
-	
-	
-	
-Routing filter set igp metric from OSPF cost	
-	
-	
-	
-	
-	
-	
-	
-Routing filter match prefix with address list	
-	
-	
-	
-	
-	
-	
-	
-Routing filter match community/large community lists	
-	
-	
-	
-	
-	
-	
-	
-Routing filter add a prefix to address list	
-	
-	
-	
-	
-	
-	
-	
-Routing filter validate prefix with RPKI	
-	
-	
-	
-	
-	
-	
-	
-
-	
-	
-	
-	
-	
-	
-	
-	
-Multicast	 	 	 	 	 	 	 	 
-IGMP-Proxy	
-	
-	
-	
-	
-	
-	
-	
-PIM-SM	
-	
-	
-	
-	
-	
-	
-	
-Performance Status
-
-
-Used hardware:
-
-    CCR1036, 16GB RAM (tile)
-    CCR2004(arm64)
-    CCR1100AHx4(arm)
-    Intel(R) Core(TM) i7-4790 CPU @ 3.60GHz 32GB RAM (as a host for CHRs)
-
-
-The simulated upstream peer is a CHR router running ROSv6 with a copy of the global IPv4 routing table (585K routes loaded from MRT dump).
-One Peer Receive Only
-
-DUT establishes a connection to simulated upstream peers, receives routes, and installs them in FIB.
-CCR	0:40 - 2:12	0:46	
-	
-	
-RB1100x4 1.4GHz	0:32-0:38	0:23	
-	
-	
-CCR2004	0:32	0:18	
-	
-	
-x86 (CHR)	0:20	
-	
-	
-	
-RB450G (in/out affinity=alone)	after trying for 9min - ran out of memory at 558K routes	2:02 (121MB free)	
-	
-	
-RB450G (in/out affinity=main)	-	1:54	
-	
-	
-RB450G (affinity in=alone out=input)	-	2:12	
-	
-	
-CCR2116	
-	
-	
-	0:36	0:34
-CCR2216	
-	
-	
-	0:39	0:34
-CCR2216 (150 regexp as-path rules)	
-	
-	
-	
-	2:09
-
-
-Two Peers Receive Only
-
-DUT establishes a connection to two simulated upstream peers, receives routes, picks the best route, and installs in FIB. On ROSv7 affinity settings are set to "alone".
-CCR	1:01 - 2:45	
-	1:11	
-RB1100x4 1.4GHz	0:51	
-	0:30	
-CCR2004	0:51	
-	0:29	0:33
-router x	
-	
-	
-	0:40
-x86 (CHR)	0:25	
-	
-	
-x86 (virtual)	
-	0:26(4cores)	
-	
-
-	
-	0:46(2cores)	
-	
-
-	
-	0:30(2cores no LDP)	
-	
-
-
-Multi-homing Sim
-
-Two DUT devices establish eBGP sessions to simulated x86 upstream routers. Both DUTs are interconnected with the iBGP session. Each DUT receives routes from upstream and readvertises routes over iBGP. On ROSv7 affinity, settings are set to "alone" and early-cut disabled.
-
-    Route Provider: CHR (ROSv6 585K routes)
-    DUT_1: CCR1036
-    DUT_2: CCR1036
-
-v7.1beta3	1:11
-v7.1beta2	1:29
-v6.xx	1:02 - 8:30
-
-
-    Route Provider: CHR (ROSv6 585K routes)
-    DUT_1: CCR2004
-    DUT_2: RB1100AHx2
-
-v7.1beta3	0:36
-v6.xx	0:59
-
-
-    Route Provider: CCR2216 (ROSv7.16 1008427 routes) 
-    DUT_1: CCR2216
-    DUT_2: CCR2116
-
-
-	Time	Mem
-v7.15.3	0:59	285MB
-v7.16	0:48	297MB
-
-Route Server
-
-	Time	Mem
-v7.15.3	-	-MB
-v7.16	-	
-
--MB
-Memory Usage:
-Columns: TASKS, PRIVATE-MEM-BLOCKS, SHARED-MEM-BLOCKS, PSS, RSS, VMS, RETIRED, ID, PID, RPID, PROCESS-TIME, KERNEL-TIME, CUR-BUSY, MAX-BU>
-   #  TASKS                         PRIVATE-M  SHARED-M  P  R  V  RE  ID       PID  R  PROCESS-  KERNEL-  CUR  MAX-BUS  CUR  MAX-CALC
-   0  routing tables                12.0MiB    30.2MiB   0  0  0  12  main     111  0  8s980ms   2s60ms   0ms  1s320ms  0ms  10s700ms
-      rib                                                                                                                            
-      connected networks                                                                                                             
-   1  fib                           2816.0KiB  0         0  0  0      fib      130  1  3s        4s660ms       7s220ms       7s220ms 
-   2  ospf                          512.0KiB   256.0KiB  0  0  0      ospf     137  1  1s220ms   130ms         980ms         1s40ms  
-      connected networks                                                                                                             
-   3  fantasy                       256.0KiB   0         0  0  0      fantasy  138  1  60ms      80ms          40ms          40ms    
-   4  configuration and reporting   3840.0KiB  512.0KiB  0  0  0      static   139  1  1s270ms   110ms         260ms         260ms   
-   5  rip                           512.0KiB   0         0  0  0      rip      136  1  120ms     70ms          60ms          120ms   
-      connected networks                                                                                                             
-   6  routing policy configuration  768.0KiB   768.0KiB  0  0  0      policy   133  1  2s290ms   3s170ms       80ms          80ms    
-   7  BGP service                   768.0KiB   0         0  0  0      bgp      134  1  2s760ms   5s480ms       20ms          60ms    
-      connected networks                                                                                                             
-   8  BFD service                   512.0KiB   0         0  0  0      12       135  1  100ms     90ms          40ms          120ms   
-      connected networks                                                                                                             
-   9  BGP Input 10.155.101.186      3072.0KiB  6.2MiB    0  0  0      20       183  1  1s350ms   1s190ms       20ms          20ms    
-  10  BGP Output 10.155.101.186     5.5MiB     0         0  0  0      21       184  1  5s400ms   500ms         3s880ms       3s880ms 
-  11  BGP Input 10.155.101.232      3072.0KiB  6.2MiB    0  0  0      22       187  1  970ms     740ms         20ms          20ms    
-  12  BGP Output 10.155.101.232     8.2MiB     0         0  0  0      23       188  1  10s830ms  960ms         7s            7s      
-  13  Global memory                            256.0KiB               global     0  0    
+[admin@PE1] /routing/route> print detail where afi="vpn4" 
+Flags: X - disabled, F - filtered, U - unreachable, A - active; 
+c - connect, s - static, r - rip, b - bgp, o - ospf, d - dhcp, v - vpn, m - modem, a - ldp-address, l - l
+dp-mapping, g - slaac, y - bgp-mpls-vpn; 
+H - hw-offloaded; + - ecmp, B - blackhole 
+ Ab   afi=vpn4 contribution=active dst-address=111.16.0.0/24&1.1.1.1:111 routing-table=main label=16 
+       gateway=111.111.111.4 immediate-gw=111.13.0.2%ether9 distance=200 scope=40 target-scope=30 
+       belongs-to="bgp-VPN4-111.111.111.4" 
+       bgp.peer-cache-id=*2C00011 .as-path="65511" .ext-communities=rt:1.1.1.1:111 .local-pref=100 
+       .atomic-aggregate=yes .origin=igp 
+       debug.fwp-ptr=0x202427E0 
+
+[admin@PE1] /routing/bgp/advertisements> print 
+ 0 peer=to-pe2-1 dst=10.1.1.0/24 local-pref=100 origin=2 ext-communities=rt:1.1.1.1:111 atomic-aggregate=yes 
   
-  
+
+Check that the 10.3.3.0 is installed in IP routes, in the cust-one route table:
+[admin@PE1] > /ip route print where routing-table="cust-one" 
+Flags: D - DYNAMIC; A - ACTIVE; c, b, y - BGP-MPLS-VPN
+Columns: DST-ADDRESS, GATEWAY, DISTANCE
+# DST-ADDRESS     GATEWAY         DISTANCE 
+0 ADC 10.1.1.0/24 ether1@cust-one        0 
+1 ADb 10.3.3.0/24 10.5.5.3              20 
+
+
+Let's take a closer look at IP routes in cust-one VRF. The 10.1.1.0/24 IP prefix is a connected route that belongs to an interface that was configured to belong to cust-one VRF. The 10.3.3.0/24 IP prefix was advertised via BGP as a VPNv4 route from PE2 and is imported in this VRF routing table, because our configured import-route-targets matched the BGP extended communities attribute it was advertised with.
+[admin@PE1] /routing/route> print detail where routing-table="cust-one"
+Flags: X - disabled, F - filtered, U - unreachable, A - active; 
+c - connect, s - static, r - rip, b - bgp, o - ospf, d - dhcp, v - vpn, m - modem, a - ldp-address, l - l
+dp-mapping, g - slaac, y - bgp-mpls-vpn; 
+H - hw-offloaded; + - ecmp, B - blackhole 
+ Ac   afi=ip4 contribution=active dst-address=10.1.1.0/24 routing-table=cust-one 
+       gateway=ether1@cust-one immediate-gw=ether1 distance=0 scope=10 belongs-to="connected" 
+       local-address=10.1.1.2%ether1@cust-one
+       debug.fwp-ptr=0x202420C0 
+
+ Ay   afi=ip4 contribution=active dst-address=10.3.3.0/24 routing-table=cust-one label=16 
+       gateway=10.5.5.3 immediate-gw=10.2.2.3%ether2 distance=20 scope=40 target-scope=30 
+       belongs-to="bgp-mpls-vpn-1-bgp-VPN4-10.5.5.3-import" 
+       bgp.peer-cache-id=*2C00011 .ext-communities=rt:1.1.1.1:111 .local-pref=100 
+       .atomic-aggregate=yes .origin=igp 
+       debug.fwp-ptr=0x20242840 
+
+
+[admin@PE1] /routing/route> print detail where afi="vpn4"                 
+Flags: X - disabled, F - filtered, U - unreachable, A - active; 
+c - connect, s - static, r - rip, b - bgp, o - ospf, d - dhcp, v - vpn, m - modem, a - ldp-address, l - l
+dp-mapping, g - slaac, y - bgp-mpls-vpn; 
+H - hw-offloaded; + - ecmp, B - blackhole 
+ Ay   afi=vpn4 contribution=active dst-address=10.1.1.0/24&1.1.1.1:111 routing-table=main label=19 
+       gateway=ether1@cust-one immediate-gw=ether1 distance=200 scope=40 target-scope=10 
+       belongs-to="bgp-mpls-vpn-1-connected-export" 
+       bgp.ext-communities=rt:1.1.1.1:1111 .atomic-aggregate=no .origin=incomplete 
+       debug.fwp-ptr=0x202426C0 
+
+ Ab   afi=vpn4 contribution=active dst-address=10.3.3.0/24&1.1.1.1:111 routing-table=main label=16 
+       gateway=10.5.5.3 immediate-gw=10.2.2.3%ether2 distance=200 scope=40 target-scope=30 
+       belongs-to="bgp-VPN4-10.5.5.3" 
+       bgp.peer-cache-id=*2C00011 .ext-communities=rt:1.1.1.1:111 .local-pref=100 
+       .atomic-aggregate=yes .origin=igp 
+       debug.fwp-ptr=0x202427E0 
+
+
+
+The same for Cisco:
+PE2#show ip bgp vpnv4 all 
+BGP table version is 5, local router ID is 10.5.5.3 
+Status codes: s suppressed, d damped, h history, * valid, > best, i - internal, 
+r RIB-failure, S Stale 
+Origin codes: i - IGP, e - EGP, ? - incomplete 
+Network Next Hop Metric LocPrf Weight Path 
+Route Distinguisher: 1.1.1.1:111 (default for vrf cust-one) 
+*>i10.1.1.0/24 10.5.5.2 100 0 ? 
+*> 10.3.3.0/24 0.0.0.0 0 32768 ? 
+
+PE2#show ip route vrf cust-one 
+Routing Table: cust-one 
+Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP 
+D - EIGRP, EX - EIGRP external, O - OSPF, IA - OSPF inter area 
+N1 - OSPF NSSA external type 1, N2 - OSPF NSSA external type 2 
+E1 - OSPF external type 1, E2 - OSPF external type 2 
+i - IS-IS, su - IS-IS summary, L1 - IS-IS level-1, L2 - IS-IS level-2 
+ia - IS-IS inter area, * - candidate default, U - per-user static route 
+o - ODR, P - periodic downloaded static route 
+
+Gateway of last resort is not set 
+10.0.0.0/24 is subnetted, 1 subnets
+B 10.1.1.0 [200/0] via 10.5.5.2, 00:05:33 
+10.0.0.0/24 is subnetted, 1 subnets 
+C 10.3.3.0 is directly connected, FastEthernet1/0
+
+
+You should be able to ping from CE1 to CE2 and vice versa.
+[admin@CE1] > /ping 10.3.3.4 
+10.3.3.4 64 byte ping: ttl=62 time=18 ms 
+10.3.3.4 64 byte ping: ttl=62 time=13 ms 
+10.3.3.4 64 byte ping: ttl=62 time=13 ms 
+10.3.3.4 64 byte ping: ttl=62 time=14 ms 
+4 packets transmitted, 4 packets received, 0% packet loss 
+round-trip min/avg/max = 13/14.5/18 ms
+
+
+A more complicated setup (changes only)
+
+As opposed to the simplest setup, in this example, we have two customers: cust-one and cust-two.
+
+We configure two VPNs for them, cust-one and cust-two respectively, and exchange all routes between them. (This is also called "route leaking").
+
+Note that this could be not the most typical setup, because routes are usually not exchanged between different customers. In contrast, by default, it should not be possible to gain access from one VRF site to a different VRF site in another VPN. (This is the "Private" aspect of VPNs.) Separate routing is a way to provide privacy, and it is also required to solve the problem of overlapping IP network prefixes. Route exchange is in direct conflict with these two requirements but may sometimes be needed (e.g. temp. solution when two customers are migrating to a single network infrastructure).
+CE1 Router, cust-one
+/ip route add dst-address=10.4.4.0/24 gateway=10.1.1.2
+
+
+CE2 Router, cust-one
+
+ 
+/ip route add dst-address=10.4.4.0/24 gateway=10.3.3.3
+
+CE1 Router,cust-two
+/ip address add address=10.4.4.5 interface=ether1 
+/ip route add dst-address=10.1.1.0/24 gateway=10.3.3.3 
+/ip route add dst-address=10.3.3.0/24 gateway=10.3.3.3
+
+
+PE1 Router
+# replace the old BGP VPN with this:
+/routing bgp vpn 
+add vrf=cust-one \
+  export.redistribute=connected \
+  route-distinguisher=1.1.1.1:111 \
+  import.route-targets=1.1.1.1:111,2.2.2.2:222  \
+  export.route-targets=1.1.1.1:111
+
+PE2 Router (Cisco)
+ip vrf cust-one 
+rd 1.1.1.1:111 
+route-target export 1.1.1.1:111 
+route-target import 1.1.1.1:111 
+route-target import 2.2.2.2:222 
+exit 
+
+ip vrf cust-two 
+rd 2.2.2.2:222 
+route-target export 2.2.2.2:222 
+route-target import 1.1.1.1:111 
+route-target import 2.2.2.2:222 
+exit 
+
+interface FastEthernet2/0 
+ip vrf forwarding cust-two 
+ip address 10.4.4.3 255.255.255.0 
+
+router bgp 65000 
+address-family ipv4 vrf cust-two 
+redistribute connected 
+exit-address-family
+
+
+Variation: replace the Cisco with another MT
+PE2 Mikrotik config
+
+ 
+/interface bridge add name=lobridge
+/ip address
+add address=10.2.2.3/24 interface=ether1
+add address=10.3.3.3/24 interface=ether2
+add address=10.4.4.3/24 interface=ether3
+add address=10.5.5.3/32 interface=lobridge
+/ip vrf
+add name=cust-one interfaces=ether2
+add name=cust-two interfaces=ether3
+/mpls ldp add enabled=yes transport-address=10.5.5.3
+/mpls ldp interface add interface=ether1
+
+/routing bgp template set default as=65000 
+/routing bgp vpn 
+add vrf=cust-one \
+  export.redistribute=connected \
+  route-distinguisher=1.1.1.1:111 \
+  import.route-targets=1.1.1.1:111,2.2.2.2:222 \
+  export.route-targets=1.1.1.1:111 \
+add vrf=cust-two \
+  export.redistribute=connected \
+  route-distinguisher=2.2.2.2:222 \
+  import.route-targets=1.1.1.1:111,2.2.2.2:222 \
+  export.route-targets=2.2.2.2:222 \
+
+/routing bgp connection 
+add template=default remote.address=10.5.5.2 address-families=vpnv4 local.address=10.5.5.3
+
+# add route to the remote BGP peer's loopback address
+/ip route add dst-address=10.5.5.2/32 gateway=10.2.2.2
+
+Results
+
+The output of /ip route print now is interesting enough to deserve detailed observation.
+
+ 
+[admin@PE2] /ip route> print
+Flags: X - disabled, A - active, D - dynamic,
+C - connect, S - static, r - rip, b - bgp, o - ospf, m - mme,
+B - blackhole, U - unreachable, P - prohibit
+# DST-ADDRESS PREF-SRC GATEWAY DISTANCE
+0 ADb 10.1.1.0/24 10.5.5.2 recurs... 20
+1 ADC 10.3.3.0/24 10.3.3.3 ether2 0
+2 ADb 10.4.4.0/24 20
+3 ADb 10.1.1.0/24 10.5.5.2 recurs... 20
+4 ADb 10.3.3.0/24 20
+5 ADC 10.4.4.0/24 10.4.4.3 ether3 0
+6 ADC 10.2.2.0/24 10.2.2.3 ether1 0
+7 A S 10.5.5.2/32 10.2.2.2 reacha... 1
+8 ADC 10.5.5.3/32 10.5.5.3 lobridge 0
+
+The route 10.1.1.0/24 was received from a remote BGP peer and is installed in both VRF routing tables.
+
+The routes 10.3.3.0/24 and 10.4.4.0/24 are also installed in both VRF routing tables. Each is a connected route in one table and a BGP route in another table. This has nothing to do with their being advertised via BGP. They are simply being "advertised" to the local VPNv4 route table and locally reimported after that. Import and export route-targets determine in which tables they will end up.
+
+This can be deduced from its attributes - they don't have the usual BGP properties. (Route 10.4.4.0/24.)
+
+ 
+[admin@PE2] /routing/route> print detail where routing-table=cust-one
+...
+
+
+Unique RD per-site vs unique RD per-customer
+
+Let's consider BGP VPN setup where two CUST_A sites announce the same network (111.12.0.0/24).
+                         +----------+               +----------+ 
+                         |+-vrf-+   |               |   +-vrf-+|
+CUST_A(10.12.0.0/24)-----|+-----+   |---(BGP VPN)---|   +-----+|-------CUST_A(10.12.0.0/24)
+                         +----------+               +----------+ 
+
+There are two ways to handle setups like this:
+
+    per-customer (CUST_A VPN on Router 1 have the same route distinguisher (lets assume RD=1:1) as CUST_A VPN on Router 2)
+    per-site (each CUST_A site  have unique Route Distinguisher)
+
+In first case CUST_A sites on Router1  have exported the VPNv4 route and advertise it to remote PE.  
+ Ay   afi=vpnv4 contribution=active dst-address=111.12.0.0/24&1:1 routing-table=main label=16 gateway=vrf-dummy@vrfTest 
+       immediate-gw=vrf-dummy distance=200 scope=40 target-scope=10 belongs-to="bgp-mpls-vpn-1-connected-export" 
+       bgp.ext-communities=rt:1:1 .origin=incomplete 
+       debug.fwp-ptr=0x20302600 
+
+
+CUST_A site on Router2 also exports VPNv4 route and has received VPNv4 route from another site as well:
+ Ab + afi=vpnv4 contribution=active dst-address=111.12.0.0/24&1:1 routing-table=main label=16 gateway=111.11.0.2 
+       immediate-gw=111.11.0.2%sfp-sfpplus1 distance=200 scope=40 target-scope=30 belongs-to="bgp-VPNv4-111.11.0.2" 
+       bgp.session=to-tested-1 .ext-communities=rt:1:1 .local-pref=100 .origin=igp 
+       debug.fwp-ptr=0x203421E0 
+
+ Ay + afi=vpnv4 contribution=active dst-address=111.12.0.0/24&1:1 routing-table=main label=32 gateway=vrf-dummy@vrfTest 
+       immediate-gw=vrf-dummy distance=200 scope=40 target-scope=10 belongs-to="bgp-mpls-vpn-1-connected-export" 
+       bgp.ext-communities=rt:1:1 .origin=incomplete 
+       debug.fwp-ptr=0x20342540 
+
+Currently RouterOS advertises only one best route. In case of ECMP by default it picks the first one from the list which happens to be BGP VPNv4 route received from remote site, and of course remote site will not get the second route. This leads to situation that one site has two redundant routes in the VRF but other site does not. On that site where VRF does not have installed VPN route and local route becomes inactive, BGP needs to send withdraw, recalculate main table, receive update from remote site and import new best route into CUST_A VRF, leading to slower convergence.
+
+ This behavior of course could be changed with route selection filters, but it is outside the scope of this example.
+
+Similar situation happens if exported to VPNV4 route is also BGP route received from customers CE-PE session, except that now instead of ECMP, BGP best-path selection process is applied to VPNv4 routes and only one best is selected.
+
+
+Now if we assign unique route-distinguisher per site, lets say (1.1.1.1:1 on first site and 1.1.1.2:1 on second site), there is no longer selection on VPNv4 routes because these are now considered unique destinations and both destinations are imported into VRF.
+
+CUST_A on Router1
+[admin@CCR2004_2XS_111] /routing/route> print detail 
+...
+ Ay   afi=vpnv4 contribution=active dst-address=111.12.0.0/24&1.1.1.1:1 routing-table=main label=17 gateway=vrf-dummy@vrfTest 
+       immediate-gw=vrf-dummy distance=200 scope=40 target-scope=10 belongs-to="bgp-mpls-vpn-1-connected-export" 
+       bgp.ext-communities=rt:1:1 .origin=incomplete 
+       debug.fwp-ptr=0x20302240 
+
+ Ab   afi=vpnv4 contribution=active dst-address=111.12.0.0/24&1.1.1.2:1 routing-table=main label=33 gateway=111.11.0.1 
+       immediate-gw=111.11.0.1%sfp-sfpplus1 distance=200 scope=40 target-scope=30 belongs-to="bgp-VPNv4-111.11.0.1" 
+       bgp.session=to-tester-1 .ext-communities=rt:1:1 .local-pref=100 .origin=igp 
+       debug.fwp-ptr=0x20302480 
+
+
+[admin@CCR2004_2XS_111] /ip/route> print 
+...
+  DAc  111.12.0.0/24       vrf-dummy@vrfTest  vrfTest               0
+  D y  111.12.0.0/24       111.11.0.1         vrfTest             200
+
+
+
+CUST_A on Router2
+[admin@CCR2004_2XS_111] /routing/route> print detail 
+...
+ Ab   afi=vpnv4 contribution=active dst-address=111.12.0.0/24&1.1.1.1:1 routing-table=main label=17 gateway=111.11.0.2 
+       immediate-gw=111.11.0.2%sfp-sfpplus1 distance=200 scope=40 target-scope=30 belongs-to="bgp-VPNv4-111.11.0.2" 
+       bgp.session=to-tested-1 .ext-communities=rt:1:1 .local-pref=100 .origin=igp 
+       debug.fwp-ptr=0x203421E0 
+
+ Ay   afi=vpnv4 contribution=active dst-address=111.12.0.0/24&1.1.1.2:1 routing-table=main label=33 gateway=vrf-dummy@vrfTest 
+       immediate-gw=vrf-dummy distance=200 scope=40 target-scope=10 belongs-to="bgp-mpls-vpn-1-connected-export" 
+       bgp.ext-communities=rt:1:1 .origin=incomplete 
+       debug.fwp-ptr=0x20342240 
+
+
+[admin@CCR2004_2XS_111] /ip/route> print 
+...
+ DAc 111.12.0.0/24       vrf-dummy@vrfTest  vrfTest               0
+ D y 111.12.0.0/24       111.11.0.2         vrfTest             200
+
+In this case compared to previous setup, when local route from any of sites becomes inactive, switch to alternative route happens momentarily.
+
+
+References
+
+RFC 4364: BGP/MPLS IP Virtual Private Networks (VPNs)
+
+MPLS Fundamentals, chapter 7, Luc De Ghein, Cisco Press 2006
+
+
+
+
+
+
+    Creado por Māris B., actualizado por última vez el jun 02, 2025 32 min de lectura
+
+    Overview
+    OSPF Terminology
+    Basic Configuration Example
+    Routing Table Calculation
+        SPT Calculation
+        Forwarding Address
+    Neighbour Relationship and Adjacency
+        Communication Between OSPF Routers
+        Neighbors Discovery
+            Discovery on Broadcast Subnets
+            Discovery on NBMA Subnets
+            Discovery on PTMP Subnets
+        Master-Slave Relation
+        Database Synchronization
+            Synchronization on Broadcast Subnets
+                DR Election
+            Synchronization on NBMA Subnets
+            Synchronization on PTMP Subnets
+    Understanding OSPF Areas
+        LSA Types
+        Standard Area
+        Stub Area
+        Totally Stubby Area
+        NSSA
+        External Routing Information and Default Route
+        Route Summarisation
+        Virtual Link
+            Partitioned Backbone
+            No physical connection to a backbone
+    Property Reference
+        Instance
+            Notes
+        Area
+        Area Range
+        Interface
+        Interface Templates
+            Matchers
+            Assigned Parameters
+        Lsa
+        Neighbors
+        Static Neighbour configuration
+
+Overview
+
+OSPF is Interior Gateway Protocol (IGP) designed to distribute routing information between routers belonging to the same Autonomous System (AS).
+
+The protocol is based on link-state technology that has several advantages over distance-vector protocols such as RIP:
+
+    no hop count limitations;
+    multicast addressing is used to send routing information updates;
+    updates are sent only when network topology changes occur;
+    the logical definition of networks where routers are divided into areas
+    transfers and tags external routes injected into AS.
+
+However, there are a few disadvantages:
+
+    OSPF is quite CPU and memory intensive due to the SPF algorithm and maintenance of multiple copies of routing information;
+    more complex protocol to implement compared to RIP;
+
+RouterOS implements the following standards:
+
+    RFC 2328 - OSPF Version 2
+    RFC 3101 - The OSPF Not-So-Stubby Area (NSSA) Option
+    RFC 3630 - Traffic Engineering (TE) Extensions to OSPF Version 2
+    RFC 4577 - OSPF as the Provider/Customer Edge Protocol for BGP/MPLS IP Virtual Private Networks (VPNs)
+    RFC 5329 - Traffic Engineering Extensions to OSPF Version 3
+    RFC 5340 - OSPF for IPv6
+    RFC 5643 - Management Information Base for OSPFv3
+    RFC 6549 - OSPFv2 Multi-Instance Extensions
+    RFC 6565 - OSPFv3 as a Provider Edge to Customer Edge (PE-CE) Routing Protocol
+    RFC 6845 - OSPF Hybrid Broadcast and Point-to-Multipoint Interface Type
+    RFC 7471 - OSPF Traffic Engineering (TE) Metric Extensions
+
+OSPF Terminology
+
+Before we move on let's familiarise ourselves with terms important for understanding the operation of the OSPF. These terms will be used throughout the article.
+
+    Neighbor - connected (adjacent) router that is running OSPF with the adjacent interface assigned to the same area. Neighbors are found by Hello packets (unless manually configured).
+    Adjacency - logical connection between a router and its corresponding DR and BDR. No routing information is exchanged unless adjacencies are formed.
+    Link - link refers to a network or router interface assigned to any given network.
+    Interface - physical interface on the router. The interface is considered a link when it is added to OSPF. Used to build link database.
+    LSA - Link State Advertisement, data packet contains link-state and routing information, that is shared among OSPF Neighbors.
+    DR - Designated Router, chosen router to minimize the number of adjacencies formed. The option is used in broadcast networks.
+    BDR -Backup Designated Router, hot standby for the DR. BDR receives all routing updates from adjacent routers, but it does not flood LSA updates.
+    Area - areas are used to establish a hierarchical network.
+    ABR - Area Border Router, router connected to multiple areas. ABRs are responsible for summarization and update suppression between connected areas.
+    ASBR - Autonomous System Boundary Router, router connected to an external network (in a different AS). If you import other protocol routes into OSPF from the router it is now considered ASBR.
+    NBMA - Non-broadcast multi-access, networks allow multi-access but have no broadcast capability. Additional OSPF neighbor configuration is required for those networks.
+    Broadcast - Network that allows broadcasting, for example, Ethernet.
+    Point-to-point - Network type eliminates the need for DRs and BDRs
+    Router-ID - IP address used to identify the OSPF router. If the OSPF Router-ID is not configured manually, a router uses one of the IP addresses assigned to the router as its Router-ID.
+    Link State - The term link-state refers to the status of a link between two routers. It defines the relationship between a router's interface and its neighboring routers.
+    Cost - Link-state protocols assign a value to each link called cost. the cost value depends on the speed of the media. A cost is associated with the outside of each router interface. This is referred to as interface output cost.
+    Autonomous System - An autonomous system is a group of routers that use a common routing protocol to exchange routing information.
+
+Basic Configuration Example
+
+To start OSPF v2 and v3 instances, the first thing to do is to add the instance and the backbone area:
+/routing ospf instance
+add name=v2inst version=2 router-id=1.2.3.4
+add name=v3inst version=3 router-id=1.2.3.4
+/routing ospf area
+add name=backbone_v2 area-id=0.0.0.0 instance=v2inst
+add name=backbone_v3 area-id=0.0.0.0 instance=v3inst
+
+At this point, we can add a template. The template is used to match interfaces on which OSPF should be running, it can be done either by specifying the network or interface directly.
+/routing ospf interface-template
+add networks=192.168.0.0/24 area=backbone_v2
+add networks=2001:db8::/64 area=backbone_v3
+add interfaces=ether1 area=backbone_v3
+
+
+Routing Table Calculation
+
+Link state database describes the routers and links that interconnect them and are appropriate for forwarding. It also contains the cost (metric) of each link. This metric is used to calculate the shortest path to the destination network.
+Each router can advertise a different cost for the router's own link direction, making it possible to have asymmetric links (packets to the destination travel over one path, but the response travels a different path). Asymmetric paths are not very popular, because it makes it harder to find routing problems.
+The value of the cost can be changed in the OSPF interface template configuration menu, for example, to add an ether2 interface with a cost of 100:
+/routing ospf interface-template 
+add interfaces=ether2 cost=100 area=backbone_v2
+
+
+The cost of an interface on Cisco routers is inversely proportional to the bandwidth of that interface. A higher bandwidth indicates a lower cost. If similar costs are necessary on RouterOS, then use the following formula:
+
+Cost = 100000000/bw in bps.
+
+
+OSPF router is using Dijkstra's Shortest Path First (SPF) algorithm to calculate the shortest path. The algorithm places the router at the root of a tree and calculates the shortest path to each destination based on the cumulative cost required to reach the destination. Each router calculates its own tree even though all routers are using the same link-state database.
+
+
+SPT Calculation
+
+Assume we have the following network. The network consists of 4(four) routers. OSPF costs for outgoing interfaces are shown near the line that represents the link. In order to build the shortest-path tree for router R1, we need to make R1 the root and calculate the smallest cost for each destination.
+
+As you can see from the image above multiple shortest paths have been found to the 172.16.1.0 network, allowing load balancing of the traffic to that destination called equal-cost multipath (ECMP). After the shortest-path tree is built, a router starts to build the routing table accordingly. Networks are reached consequently to the cost calculated in the tree.
+
+Routing table calculation looks quite simple, however, when some of the OSPF extensions are used or OSPF areas are calculated, routing calculation gets more complicated.
+Forwarding Address
+
+OSPF router can set the forwarding-address to something other than itself which indicates that an alternate next-hop is possible. Mostly forwarding address is set to 0.0.0.0 suggesting that the route is reachable only via the advertising router.
+
+The forwarding address is set in LSA if the following conditions are met:
+
+    OSPF must be enabled on the next-hop interface
+    Next-hop address falls into the network provided by OSPF networks
+
+A router that receives such LSA can use a forwarding address if OSPF is able to resolve the forwarding address. If forwarding address is not resolved directly - router sets nexthop for forwading address from LSA as a gateway, if forwarding address is not resolved at all - the gateway will be originator-id. Resolve happens only using OSPF instance routes, not the whole routing table.
+
+
+Let's look at the example setup below:
+
+Router R1 has a static route to the external network 192.168.0.0/24. OSPF is running between R1, R2, and R3, and the static route is distributed across the OSPF network.
+
+The problem in such a setup is obvious, R2 can not reach the external network directly. Traffic going to the LAN network from R2 will be forwarded over the router R1, but if we look at the network diagram we can see that more R2 can directly reach the router where the LAN network i located.
+
+
+So knowing the forwarding address conditions, we can make router R1 to set the forwarding address. We simply need to add 10.1.101.0/24 network to OSPF networks in the router's R1 configuration:
+/routing/ospf/interface-template add area=backbone_v2 networks=10.1.101.0/24
+
+Now lets verify that forwarding address is actually working: 
+[admin@r2] /ip/route> print where dst-address=192.168.0.0/24
+Flags: D - DYNAMIC; A - ACTIVE; o, y - COPY
+Columns: DST-ADDRESS, GATEWAY, DISTANCE
+    DST-ADDRESS       GATEWAY            DISTANCE
+DAo 192.168.0.0/24    10.1.101.1%ether1       110
+
+
+
+On all OSPF routers you will see LSA set with forwarding address other than 0.0.0.0 
+[admin@r2] /routing/ospf/lsa> print where id=192.168.0.0
+Flags: S - self-originated, F - flushing, W - wraparound; D - dynamic 
+
+ 1  D instance=default_ip4 type="external" originator=10.1.101.10 id=192.168.0.0 
+      sequence=0x80000001 age=19 checksum=0xF336 body=
+        options=E
+        netmask=255.255.255.0
+        forwarding-address=10.1.101.1
+        metric=10 type-1
+        route-tag=0
+
+OSPF adjacency between routers in the 10.1.101.0/24 network is not required
+
+
+
+Neighbour Relationship and Adjacency
+
+OSPF is a link-state protocol that assumes that the interface of the router is considered an OSPF link. Whenever OSPF is started, it adds the state of all the links in the local link-state database.
+
+There are several steps before the OSPF network becomes fully functional:
+
+    Neighbors discovery
+    Database Synchronization
+    Routing calculation
+
+
+Link-state routing protocols are distributing and replicating database that describes the routing topology. The link-state protocol's flooding algorithm ensures that each router has an identical link-state database and the routing table is calculated based on this database.
+
+After all the steps above are completed link-state database on each neighbor contains full routing domain topology (how many other routers are in the network, how many interfaces routers have, what networks link between router connects, cost of each link, and so on).
+Communication Between OSPF Routers
+
+OSPF operates over the IP network layer using protocol number 89.
+A destination IP address is set to the neighbor's IP address or to one of the OSPF multicast addresses AllSPFRouters (224.0.0.5) or AllDRRouters (224.0.0.6). The use of these addresses is described later in this article.
+Every OSPF packet begins with a standard 24-byte header.
+
+Packet type	There are several types of OSPF packets: Hello packet, Database Description (DD) packet, Link state request packet, Link State Update packet, and Link State Acknowledgement packet. All of these packets except the Hello packet are used in link-state database synchronization.
+Router ID	one of the router's IP addresses unless configured manually
+Area ID	Allows OSPF router to associate the packet to the proper OSPF area.
+Checksum	Allows receiving router to determine if a packet was damaged in transit.
+Authentication fields	These fields allow the receiving router to verify that the packet's contents were not modified and that packet really came from the OSPF router whose Router ID appears in the packet.
+
+
+
+There are five different OSPF packet types used to ensure proper LSA flooding over the OSPF network.
+
+    Hello packet - used to discover OSPF neighbors and build adjacencies.
+    Database Description (DD) - check for Database synchronization between routers. Exchanged after adjacencies are built.
+    Link-State Request (LSR) - used to request up-to-date pieces of the neighbor's database. Out-of-date parts of the routing database are determined after the DD exchange.
+    Link-State Update (LSU) - carries a collection of specifically requested link-state records.
+    Link-State Acknowledgment (LSack) - is used to acknowledge other packet types that way introducing reliable communication.
+
+Neighbors Discovery
+
+OSPF discovers potential neighbors by periodically sending Hello packets out of configured interfaces. By default Hello packets are sent out at 10-second intervals which can be changed by setting hello-interval in OSPF interface settings. The router learns the existence of a neighboring router when it receives the neighbor's Hello in return with matching parameters.
+
+The transmission and reception of Hello packets also allow a router to detect the failure of the neighbor. If Hello packets are not received within dead-interval (which by default is 40 seconds) router starts to route packets around the failure. "Hello" protocol ensures that the neighboring routers agree on the Hello interval and Dead interval parameters, preventing situations when not in time received Hello packets mistakenly bring the link down.
+
+network mask	The IP mask of the originating router's interface IP address.
+hello interval	the period between Hello packets (default 10s)
+options	OSPF options for neighbor information
+router priority	an 8-bit value used to aid in the election of the DR and BDR. (Not set in p2p links)
+router dead interval	time interval has to be received before considering the neighbor is down. ( By default four times bigger than the Hello interval)
+DR	the router-id of the current DR
+BDR	the router-id of the current BDR
+Neighbor router IDs	a list of router ids for all the originating router's neighbors
+
+
+On each type of network segment Hello protocol works a little differently. It is clear that on point-to-point segments only one neighbor is possible and no additional actions are required. However, if more than one neighbor can be on the segment additional actions are taken to make OSPF functionality even more efficient.
+
+Two routers do not become neighbors unless the following conditions are met.
+
+    Two-way communication between routers is possible. Determined by flooding Hello packets.
+    The interface should belong to the same area;
+    The interface should belong to the same subnet and have the same network mask unless it has network-type configured as point-to-point;
+    Routers should have the same authentication options, and have to exchange the same password (if any);
+    Hello and Dead intervals should be the same in Hello packets;
+    External routing and NSSA flags should be the same in Hello packets.
+
+Network mask, Priority, DR, and BDR fields are used only when the neighbors are connected by a broadcast or NBMA network segment.
+Discovery on Broadcast Subnets
+
+The attached node to the broadcast subnet can send a single packet and that packet is received by all other attached nodes. This is very useful for auto-configuration and information replication. Another useful capability in broadcast subnets is multicast. This capability allows sending a single packet which will be received by nodes configured to receive multicast packets. OSPF is using this capability to find OSPF neighbors and detect bidirectional connectivity.
+
+Each OSPF router joins the IP multicast group AllSPFRouters (224.0.0.5), then the router periodically multicasts its Hello packets to the IP address 224.0.0.5. All other routers that joined the same group will receive a multicasted Hello packet. In that way, OSPF routers maintain relationships with all other OSPF routers by sending a single packet instead of sending a separate packet to each neighbor on the segment.
+
+This approach has several advantages:
+
+Automatic neighbor discovery by multicasting or broadcasting Hello packets. Less bandwidth usage compared to other subnet types. On the broadcast segment, there are n*(n-1)/2 neighbor relations, but those relations are maintained by sending only n Hellos. If the broadcast has the multicast capability, then OSPF operates without disturbing non-OSPF nodes on the broadcast segment. If the multicast capability is not supported all routers will receive broadcasted Hello packets even if the node is not an OSPF router.
+
+
+Discovery on NBMA Subnets
+
+Non-broadcast multiaccess (NBMA) segments are similar to broadcast. Support more than two routers, the only difference is that NBMA does not support a data-link broadcast capability. Due to this limitation, OSPF neighbors must be discovered initially through configuration. On RouterOS static neighbor configuration is set in the /routing ospf static-neighbor menu. To reduce the amount of Hello traffic, most routers attached to the NBMA subnet should be assigned a Router Priority of 0 (set by default in RouterOS). Routers that are eligible to become Designated Routers should have priority values other than 0. It ensures that during the election of DR and BDR Hellos are sent only to eligible routers.
+
+
+Discovery on PTMP Subnets
+
+Point-to-MultiPoint treats the network as a collection of point-to-point links.
+
+By design, PTMP networks should not have broadcast capabilities, which means that OSPF neighbors (the same way as for NBMA networks) must be discovered initially through configuration and all communication happens by sending unicast packets directly between neighbors. On RouterOS static neighbor configuration is set in the /routing ospf static-neighbor menu. Designated Routers and Backup Designated Routers are not elected on Point-to-multipoint subnets.
+
+For PTMP networks that do support broadcast, a hybrid type named "ptmp-broadcast" can be used. This network type uses multicast Hellos to discover neighbors automatically and detect bidirectional communication between neighbors. After neighbor detection "ptmp-broacast" sends unicast packets directly to the discovered neighbors. This mode is compatible with the RouterOS v6 "ptmp" type.
+Master-Slave Relation
+
+Before database synchronization can begin, a hierarchy order of exchanging information must be established, which determines which router sends Database Descriptor (DD) packets first (Master). The master router is elected based on the highest priority and if priority is not set then the router ID will be used. Note that it is a router priority-based relation to arranging the exchanging data between neighbors which does not affect DR/BDR election (meaning that DR does not always have to be Master).
+Database Synchronization
+
+Link-state Database synchronization between OSPF routers is very important. Unsynchronized databases may lead to incorrectly calculated routing tables which could cause routing loops or black holes.
+
+There are two types of database synchronizations:
+
+    initial database synchronization
+    reliable flooding.
+
+When the connection between two neighbors first comes up, initial database synchronization will happen. OSPF is using explicit database download when neighbor connections first come up. This procedure is called Database exchange. Instead of sending the entire database, the OSPF router sends only its LSA headers in a sequence of OSPF Database Description (DD) packets. The router will send the next DD packet only when the previous packet is acknowledged. When an entire sequence of DD packets has been received, the router knows which LSAs it does not have and which LSAs are more recent. The router then sends Link-State Request (LSR) packets requesting desired LSAs, and the neighbor responds by flooding LSAs in Link-State Update (LSU) packets. After all the updates are received neighbors are said to be fully adjacent.
+
+Reliable flooding is another database synchronization method. It is used when adjacencies are already established and the OSPF router wants to inform other routers about LSA changes. When the OSPF router receives such Link State Update, it installs a new LSA in the link-state database, sends an acknowledgment packet back to the sender, repackages LSA in new LSU, and sends it out to all interfaces except the one that received the LSA in the first place.
+
+OSPF determines if LSAs are up to date by comparing sequence numbers. Sequence numbers start with 0×80000001, the larger the number, the more recent the LSA is. A sequence number is incremented each time the record is flooded and the neighbor receiving the update resets the Maximum age timer. LSAs are refreshed every 30 minutes, but without a refresh, LSA remains in the database for the maximum age of 60 minutes.
+
+Databases are not always synchronized between all OSPF neighbors, OSPF decides whether databases need to be synchronized depending on the network segment, for example, on point-to-point links databases are always synchronized between routers, but on Ethernet networks databases are synchronized between certain neighbor pairs.
+
+
+Synchronization on Broadcast Subnets
+
+
+On the broadcast segment, there are n*(n-1)/2 neighbor relations, it will be a huge amount of Link State Updates and Acknowledgements sent over the subnet if the OSPF router will try to synchronize with each OSPF router on the subnet.
+
+This problem is solved by electing one Designated Router and one Backup Designated Router for each broadcast subnet. All other routers are synchronizing and forming adjacencies only with those two elected routers. This approach reduces the number of adjacencies from n*(n-1)/2 to only 2n-3.
+
+The image on the right illustrates adjacency formations on broadcast subnets. Routers R1 and R2 are Designated Routers and Backup Designated routers respectively. For example, if R3 wants to flood Link State Update (LSU) to both R1 and R2, a router sends LSU to the IP multicast address AllDRouters (224.0.0.6) and only DR and BDR listen to this multicast address. Then Designated Router sends LSU addressed to AllSPFRouters, updating the rest of the routers.
+DR Election
+
+DR and BDR routers are elected from data received in the Hello packet. The first OSPF router on a subnet is always elected as Designated Router, when a second router is added it becomes Backup Designated Router. When an existing DR or BDR fails new DR or BDR is elected to take into account configured router priority. The router with the highest priority becomes the new DR or BDR.
+
+Being Designated Router or Backup Designated Router consumes additional resources. If Router Priority is set to 0, then the router is not participating in the election process. This is very useful if certain slower routers are not capable of being DR or BDR.
+Synchronization on NBMA Subnets
+
+Database synchronization on NBMA networks is similar to that on broadcast networks. DR and BDR are elected, databases initially are exchanged only with DR and BDR routers and flooding always goes through the DR. The only difference is that Link State Updates must be replicated and sent to each adjacent router separately.
+Synchronization on PTMP Subnets
+
+On PTMP subnets OSPF router becomes adjacent to all other routes with which it can communicate directly.
+
+
+Understanding OSPF Areas
+
+A distinctive feature of OSPF is the possibility to divide AS into multiple routing Areas which contain their own set of neighbors.
+Imagine a large network with 300+ routers and multiple links between them. Whenever link flaps or some other topology change happens in the network, this change will be flooded to all OSPF devices in the network resulting in a quite heavy load on the network and even downtime since network convergence may take some time for such a large network. 
+
+A large single-area network can produce serious issues:
+
+    Each router recalculates the database every time whenever network topology change occurs, the process takes CPU resources.
+    Each router holds an entire link-state database, which shows the topology of the entire network, it takes memory resources.
+    A complete copy of the routing table and a number of routing table entries may be significantly greater than the number of networks, which can take even more memory resources.
+    Updating large databases requires more bandwidth.
+
+The introduction of areas allows for better resource management since topology change inside one area is not flooded to other areas in the network. The concept of areas enables simplicity in network administration as well as routing summarization between areas significantly reducing the database size that needs to be stored on each OSPF neighbor. This means that each area has its own link-state database and corresponding shortest-path tree.
+
+The structure of an area is invisible to other areas. This isolation of knowledge makes the protocol more scalable if multiple areas are used; routing table calculation takes fewer CPU resources and routing traffic is reduced.
+
+However, multi-area setups create additional complexity. It is not recommended to separate areas with fewer than 50 routers. The maximum number of routers in one area is mostly dependent on the CPU power you have for routing table calculation.
+
+
+OSPF area has unique 32-bit identification (Area ID) and the area with an Area ID of 0.0.0.0 (called the Backbone area) is the main one where any other area should connect. Routers that connect to more than one area are called ABR (Area Border Routers), and their main responsibility is summarization and update suppression between connected areas. The router connecting to another routing domain is called ASBR (Autonomous System Boundary Router).
+
+Each area has its own link-state database, consisting of router-LSAs and network-LSAs describing how all routers within that area are interconnected. Detailed knowledge of the area's topology is hidden from all other areas; router-LSAs and network-LSAs are not flooded beyond the area's borders. Area Border Routers (ABRs) leak addressing information from one area into another in OSPF summary-LSAs. This allows one to pick the best area border router when forwarding data to destinations from another area and is called intra-area routing.
+
+Routing information exchange between areas is essentially a Distance Vector algorithm and to prevent algorithm convergence problems, such as counting to infinity, all areas are required to attach directly to the backbone area making a simple hub-and-spoke topology. The area-ID of the backbone area is always 0.0.0.0 and can not be changed.
+
+RouterOS area configuration is done in the /routing/ospf/area menu.  For example, a configuration of an ABR router with multiple attached areas, one Stub area, and one default area:
+/routing ospf area
+add name=backbone_v2 area-id=0.0.0.0 instance=v2inst
+add name=stub_area area-id=1.1.1.1 instance=v2inst type=stub
+add name=another_area area-id=2.2.2.2 instance=v2inst type=default
+
+OSPF can have 5 types of areas. Each area type defines what type of LSAs the area supports:
+
+    standard/default - OSPF packets can normally be transmitted in this area, it supports types 1,2,3,4 and 5 LSAs
+    backbone - as already mentioned this is the main area where any other area connects. It is basically the same as the standard area but identified with ID 0.0.0.0
+    stub - this area does not accept any external routes
+    totally stubby - a variation of the stub area
+    not-so-stubby (NSSA) - a variation of the stub area
+
+LSA Types
+
+Before we continue a detailed look at each area type, let's get familiar with LSA types:
+
+    type 1 - (Router LSA) Sent by routers within the Area, including the list of directly attached links. Do not cross the ABR or ASBR.
+    type 2 - (Network LSA) Generated for every "transit network" within an area. A transit network has at least two directly attached OSPF routers. Ethernet is an example of a Transit Network. A Type 2 LSA lists each of the attached routers that make up the transit network and is generated by the DR.
+    type 3 - (Summary LSA) The ABR sends Type 3 Summary LSAs. A Type 3 LSA advertises any networks owned by an area to the rest of the areas in the OSPF AS. By default, OSPF advertises Type 3 LSAs for every subnet defined in the originating area, which can cause flooding problems, so it´s a good idea to use a manual summarization at the ABR.
+    type 4 - (ASBR-Summary LSA) It announces the ASBR address, it shows “where” the ASBR is located, announcing its address instead of its routing table.
+    type 5 - (External LSA) Announces the Routes learned through the ASBR, are flooded to all areas except Stub areas. This LSA divides into two sub-types: external type 1 and external type 2.
+    type 6 - (Group Membership LSA) This was defined for Multicast extensions to OSPF and is not used by RouterOS.
+    type 7 - type 7 LSAs are used to tell the ABRs about these external routes imported into the NSSA area. Area Border Router then translates these LSAs to type 5 external LSAs and floods as normal to the rest of the OSPF network
+    type 8 - External Attributes LSA (OSPFv2) / link-local LSA (OSPFv3)
+    type 9 - Link-Local Scope Opaque (OSPFv2) / Intra Area Prefix LSA (OSPFv3). LSA of this type is not flooded beyond the local (sub)network.
+    type 10 - Area Local Scope Opaque. LSA of this type is not flooded beyond the scope of its associated area.
+    type 11 - Opaque LSA which is flooded throughout the AS (scope is the same as type 5). It is not flooded in stub areas and NSSAs.
+
+
+If we do not have any ASBR, there are no LSA Types 4 and 5 in the network.
+
+
+Standard Area
+
+This area supports 1, 2, 3, 4, and 5 LSAs.
+
+Simple multi-area network using default area. In this example, all networks from area1 are flooded to the backbone and all networks from the backbone are flooded to area1.
+R1:
+/ip address add address=10.0.3.1/24 interface=ether1
+/ip address add address=10.0.2.1/24 interface=ether2
+/routing ospf instance
+add name=v2inst version=2 router-id=1.0.0.1
+/routing ospf area
+add name=backbone_v2 area-id=0.0.0.0 instance=v2inst
+add name=area1 area-id=1.1.1.1 type=default instance=v2inst
+/routing ospf interface-template
+add networks=10.0.2.0/24 area=backbone_v2
+add networks=10.0.3.0/24 area=area1
+
+R2:
+/ip address add address=10.0.1.1/24 interface=ether2
+/ip address add address=10.0.2.2/24 interface=ether1
+/routing ospf instance
+add name=v2inst version=2 router-id=1.0.0.2
+/routing ospf area
+add name=backbone_v2 area-id=0.0.0.0
+/routing ospf interface-template
+add networks=10.0.2.0/24 area=backbone_v2
+add networks=10.0.1.0/24 area=backbone_v2
+
+R3:
+/ip address add address=10.0.3.2/24 interface=ether2
+/ip address add address=10.0.4.1/24 interface=ether1
+/routing ospf instance
+add name=v2inst version=2 router-id=1.0.0.3
+/routing ospf area
+add name=area1 area-id=1.1.1.1 type=stub instance=v2inst
+/routing ospf interface-template
+add networks=10.0.3.0/24 area=area1
+add networks=10.0.4.0/24 area=area1
+
+
+Stub Area
+
+The main purpose of stub areas is to keep such areas from carrying external routes. Routing from these areas to the outside world is based on a default route. A stub area reduces the database size inside an area and reduces the memory requirements of routers in the area.
+
+The stub area has a few restrictions, ASBR routers cannot be internal to the area, stub area cannot be used as a transit area for virtual links. The restrictions are made because the stub area is mainly configured not to carry external routes.
+
+This area supports 1, 2, and 3 LSAs.
+
+
+Let's consider the example above. Area1 is configured as a stub area meaning that routers R2 and R3 will not receive any routing information from the backbone area except the default route.
+
+
+R1:
+/routing ospf instance
+add name=v2inst version=2 router-id=1.0.0.1
+/routing ospf area
+add name=backbone_v2 area-id=0.0.0.0 instance=v2inst
+add name=area1 area-id=1.1.1.1 type=stub instance=v2inst
+ 
+/routing ospf interface-template
+add networks=10.0.0.0/24 area=backbone_v2
+add networks=10.0.1.0/24 area=area1
+add networks=10.0.3.0/24 area=area1
+
+R2:
+/routing ospf instance
+add name=v2inst version=2 router-id=1.0.0.2
+/routing ospf area
+add name=area1 area-id=1.1.1.1 type=stub instance=v2inst
+/routing ospf interface-template
+add networks=10.0.1.0/24 area=area1
+
+R3:
+/routing ospf instance
+add name=v2inst version=2 router-id=1.0.0.3
+/routing ospf area
+add name=area1 area-id=1.1.1.1 type=stub instance=v2inst
+/routing ospf interface-template
+add networks=10.0.3.0/24 area=area1
+
+
+Totally Stubby Area
+
+Totally stubby area is an extension of the stub area. A totally stubby area blocks external routes and summarized (inter-area) routes from going into the area. Only intra-area routes are injected into the area. Totally stubby area is configured as a stub area with an additional no-summaries flag. This area supports Type 1, Type 2 LSAs, and Type 3 LSAs with default routes.
+/routing ospf area
+add name=totally_stubby_area area-id=1.1.1.1 instance=v2inst type=stub no-summaries
+
+
+NSSA
+
+Not-so-stubby area (NSSA) is useful when it is required to inject external routes, but injection of type 5 LSA routes is not required.
+
+The illustration shows two areas (backbone and area1) and RIP connection to the router located in "area1". We need "area1" to be configured as a stub area, but it is also required to inject external RIP routes in the backbone. Area1 should be configured as NSSA in this case.
+
+The configuration example does not cover RIP configuration.
+
+
+R1:
+/routing ospf instance
+add name=v2inst version=2 router-id=1.0.0.1
+/routing ospf area
+add name=backbone_v2 area-id=0.0.0.0 instance=v2inst
+add name=area1 area-id=1.1.1.1 type=nssa instance=v2inst
+/routing ospf interface-template
+add networks=10.0.0.0/24 area=backbone_v2
+add networks=10.0.1.0/24 area=area1
+
+R2:
+/routing ospf instance
+add name=v2inst version=2 router-id=1.0.0.2
+/routing ospf area
+add name=area1 area-id=1.1.1.1 type=nssa instance=v2inst
+/routing ospf interface-template
+add networks=10.0.1.0/24 area=area1
+
+
+Virtual links cannot be used over NSSA areas.
+External Routing Information and Default Route
+
+On the edge of an OSPF routing domain, you can find routers called AS boundary routers (ASBRs) that run one of the other routing protocols. The job of those routers is to import routing information learned from other routing protocols into the OSPF routing domain. External routes can be imported at two separate levels depending on the metric type.
+
+    type1 - OSPF metric is the sum of the internal OSPF cost and the external route cost
+    type2 - OSPF metric is equal only to the external route cost.
+
+External routes can be imported via the instance redistribute parameter. The example below will pick and redistribute all static and RIP routes:
+/routing ospf instance
+add name=v2inst version=2 router-id=1.2.3.4 redistribute=static,rip
+
+Redistribution of default route is a special case where the originate-default the parameter should be used:
+/routing ospf instance
+set v2inst originate-default=if-installed
+
+Since redistribution is controlled by "originate-default" and "redistribute" parameter, it introduces some corner-cases for default route filtering. 
+
+    if redistribute is enabled, then pick all routes matching redistribute parameters
+    If originate-default=never, a default route will be rejected
+    run selected routes (or all routes if redistribute parameter is not set) through out-select-chain (if configured)
+    run selected routes through out-filter-chain (if configured)
+    if originate-default is set to always or if-installed:
+        OSPF creates a fake default route without attributes;
+        runs this route through out-filter-chain where attributes can be applied, but action is ignored (always accept);
+
+
+For a complete list of redistribution values, see the reference manual.
+Route Summarisation
+
+Route summarization is a consolidation of multiple routes into one single advertisement. It is normally done at the area boundaries (Area Border Routers).
+
+It is better to summarise in the direction of the backbone. That way the backbone receives all the aggregated routes and injects them into other areas already summarized. There are two types of summarization: inter-area and external route summarization.
+
+Inter-area route summarization works on area boundaries (ABRs), it does not apply to external routes injected into OSPF via redistribution. By default, ABR creates a summary LSA for each route in a specific area and advertises it in adjacent areas.
+
+Using ranges allows for creating only one summary LSA for multiple routes and sending only a single advertisement into adjacent areas, or suppressing advertisements altogether.
+
+If a range is configured with the 'advertise' parameter, a single summary LSA is advertised for each range if there are any routes under the range in the specific area. Otherwise (when 'advertise' parameter disabled) no summary LSAs are created and advertised outside area boundaries at all.
+
+Inter-area route summarization can be configured from the OSPF area range menu.
+
+Let's consider that we have two areas backbone and area1, area1 has several /24 routes from the 10.0.0.0/16 range and there is no need to flood the backbone area with each /24 subnet if it can be summarized. On the router connecting area1 with the backbone we can set up the area range:
+/routing ospf area range
+add prefix=10.0.0.0/16 area=area1 advertise=yes cost=10
+
+For an active range (i.e. one that has at least one OSPF route from the specified area falling under it), a route with the type 'blackhole' is created and installed in the routing table.
+
+
+External route summarization can be achieved using routing filters.  Let's consider the same example as above except that area1 has redistributed /24 routes from other protocols. To send a single summarised LSA, a blackhole route must be added and an appropriate routing filter to accept only summarised route:
+/ip route add dst-address=10.0.0.0/16 blackhole
+/routing ospf instance
+set v2inst out-filter-chain=ospf_out
+/routing filter rule
+add chain=ospf_out rule="if (dst == 10.0.0.0/16) {accept} else {reject}"
+Virtual Link
+
+As it was mentioned previously all OSPF areas have to be attached to the backbone area, but sometimes the physical connection is not possible. To overcome this, areas can be attached logically by using virtual links.
+
+There are two common scenarios when virtual links can be used:
+
+    to glue together the fragmented backbone area
+    to connect remote are without direct connection to the backbone
+
+Partitioned Backbone
+
+OSPF allows to linking of discontinuous parts of the backbone area using virtual links. This might be required when two separate OSPF networks are merged into one large network. Virtual links can be configured between separate ABRs that touch the backbone area from each side and have a common area.
+
+The additional area could be created to become a transit area when a common area does not exist, it is illustrated in the image above.
+
+Virtual Links are not required for non-backbone areas when they get partitioned. OSPF does not actively attempt to repair area partitions, each component simply becomes a separate area, when an area becomes partitioned. The backbone performs routing between the new areas. Some destinations are reachable via intra-area routing, the area partition requires inter-area routing.
+
+However, to maintain full routing after the partition, an address range has not to be split across multiple components of the area partition.
+
+No physical connection to a backbone
+
+The area may not have a physical connection to the backbone, a virtual link is used to provide a logical path to the backbone of the disconnected area. A link has to be established between two ABRs that have a common area with one ABR connected to the backbone.
+
+We can see that both R1 and R2 routers are ABRs and R1 is connected to the backbone area. Area2 will be used as a transit area and R1 is the entry point into the backbone area. A virtual link has to be configured on both routers.
+
+Virtual link configuration is added in OSPF interface templates. If we take the example setup from the "no physical connection" illustration, then the virtual link configuration would look like this:
+
+R1:
+/routing ospf interface-template
+add vlink-transit-area=area2 area=backbone_v2 type=virtual-link vlink-neighbor-id=2.2.2.2
+
+R2:
+/routing ospf interface-template
+add vlink-transit-area=area2 area=backbone_v2 type=virtual-link vlink-neighbor-id=1.1.1.1
+Property Reference
+Instance
+
+Sub-menu: /routing/ospf/instance
+domain-id (Hex | Address)	MPLS-related parameter. Identifies the OSPF domain of the instance. This value is attached to OSPF routes redistributed in BGP as VPNv4 routes as BGP extended community attribute and used when BGP VPNv4 routes are redistributed back to OSPF to determine whether to generate inter-area or AS-external LSA for that route. By default Null domain-id is used, as described in RFC 4577.
+domain-tag (integer [0..4294967295])	if set, then used in route redistribution (as route-tag in all external LSAs generated by this router), and in route calculation (all external LSAs having this route tag are ignored). Needed for interoperability with older Cisco systems. By default not set.
+in-filter (string)	name of the routing filter chain used for incoming prefixes
+mpls-te-address (string)	the area used for MPLS traffic engineering. TE Opaque LSAs are generated in this area. No more than one OSPF instance can have mpls-te-area configured.
+mpls-te-area (string)	the area used for MPLS traffic engineering. TE Opaque LSAs are generated in this area. No more than one OSPF instance can have mpls-te-area configured.
+originate-default (always | if-installed | never; )	Specifies default route (0.0.0.0/0) distribution method.
+out-filter-chain (name)	name of the routing filter chain used for outgoing prefixes filtering. Output operates only with "external" routes.
+out-filter-select (name)	name of the routing filter select chain, used for output selection. Output operates only with "external" routes.
+redistribute (bgp,connected,copy,dhcp,fantasy,modem,ospf,rip,static,vpn; )	Enable redistribution of specific route types.
+router-id (IP | name; Default: main)	OSPF Router ID. Can be set explicitly as an IP address, or as the name of the router-id instance.
+version (2 | 3; Default: 2)	OSPF version this instance will be running (v2 for IPv4, v3 for IPv6).
+vrf (name of a routing table; Default: main)	the VRF table this OSPF instance operates on
+use-dn (yes | no)	Forces to use or ignore DN bit. Useful in some CE PE scenarios to inject intra-area routes into VRF. If a parameter is unset then the DN bit is used according to RFC. Available since v6rc12.
+
+
+Notes
+
+OSPF protocol supports two types of metrics:
+
+    type1 - OSPF metric is the sum of the internal OSPF cost and the external route cost
+    type2 - OSPF metric is equal only to the external route cost.
+
+Type 1 external paths are always preferred over type 2 external paths. When all paths are type 2 external paths, the paths with the smallest advertised type 2 metric are always preferred. (RFC2328)
+
+
+Area
+
+Sub-menu: /routing/ospf/area
+area-id (IP address; Default: 0.0.0.0)	OSPF area identifier. If the router has networks in more than one area, then an area with area-id=0.0.0.0 (the backbone) must always be present. The backbone always contains all area border routers. The backbone is responsible for distributing routing information between non-backbone areas. The backbone must be contiguous, i.e. there must be no disconnected segments. However, area border routers do not need to be physically connected to the backbone - connection to it may be simulated using a virtual link.
+default-cost (integer; unset)	Default cost of injected LSAs into the area. If the value is not set, then stub area type-3 default LSA will not be originated.
+instance (name; mandatory)	Name of the OSPF instance this area belongs to.
+no-summaries ()	Flag parameter, if set then the area will not flood summary LSAs in the stub area.
+name (string)	the name of the area
+nssa-translate (yes | no | candidate)	The parameter indicates which ABR will be used as a translator from type7 to type5 LSA. Applicable only if area type is NSSA
+
+    yes - the router will be always used as a translator
+    no - the router will never be used as a translator
+    candidate - OSPF elects one of the candidate routers to be a translator
+
+type (default | nssa | stub; Default: default)	The area type. Read more on the area types in the OSPF case studies.
+
+
+Area Range
+
+Sub-menu: /routing/ospf/area/range
+advertise (yes | no; Default: yes)	Whether to create a summary LSA and advertise it to the adjacent areas.
+area (name; mandatory)	the OSPF area associated with this range
+cost (integer [0..4294967295])	the cost of the summary LSA this range will create
+
+default - use the largest cost of all routes used (i.e. routes that fall within this range)
+prefix (IP prefix; mandatory)	the network prefix of this range
+
+
+Interface
+
+Sub-menu: /routing/ospf/interface
+
+Read-only matched interface menu
+Interface Templates
+
+Sub-menu: /routing/ospf/interface-template
+
+The interface template defines common network and interface matches and what parameters to assign to a matched interface.
+Matchers
+
+interfaces (name)
+	
+
+Interfaces to match. Accepts specific interface names or the name of the interface list.
+network (IP prefix)	the network prefix associated with the area. OSPF will be enabled on all interfaces that have at least one address falling within this range. Note that the network prefix of the address is used for this check (i.e. not the local address). For point-to-point interfaces, this means the address of the remote endpoint.
+Assigned Parameters
+area (name; mandatory)	The OSPF area to which the matching interface will be associated.
+auth (simple | md5 | sha1 | sha256 | sha384 | sha512)	Specifies authentication method for OSPF protocol messages.
+
+    simple - plain text authentication
+    md5 - keyed Message Digest 5 authentication
+    sha - HMAC-SHA authentication RFC5709
+
+If the parameter is unset, then authentication is not used.
+auth-id (integer)	The key id is used to calculate message digest (used when MD5 or SHA authentication is enabled). The value should match all OSPF routers from the same region.
+authentication-key (string)	The authentication key to be used, should match on all the neighbors of the network segment.
+comment(string)	
+cost(integer [0..65535])	Interface cost expressed as link state metric.
+dead-interval (time; Default: 40s)	Specifies the interval after which a neighbor is declared dead. This interval is advertised in hello packets. This value must be the same for all routers on a specific network, otherwise, adjacency between them will not form
+disabled(yes | no)	
+hello-interval (time; Default: 10s)	The interval between HELLO packets that the router sends out this interface. The smaller this interval is, the faster topological changes will be detected, the tradeoff is more OSPF protocol traffic. This value must be the same for all the routers on a specific network, otherwise, adjacency between them will not form.
+instance-id (integer [0..255]; Default: 0)	
+passive ()	If enabled, then do not send or receive OSPF traffic on the matching interfaces
+prefix-list (name)	Name of the address list containing networks that should be advertised to the v3 interface.
+priority (integer: 0..255; Default: 128)	
+
+Router's priority. Used to determine the designated router in a broadcast network. The router with the highest priority value takes precedence. Priority value 0 means the router is not eligible to become a designated or backup designated router at all.
+
+ROS v7 default value is 128 (defined in RFC), and the default value in ROS v6 was 1, keep this in mind when if you had strict priorities set for DR/BDR election.
+retransmit-interval (time; Default: 5s)	Time interval the lost link state advertisement will be resent. When a router sends a link state advertisement (LSA) to its neighbor, the LSA is kept until the acknowledgment is received. If the acknowledgment was not received in time (see transmit-delay), the router will try to retransmit the LSA.
+transmit-delay (time; Default: 1s)	Link-state transmit delay is the estimated time it takes to transmit a link-state update packet on the interface.
+type (broadcast | nbma | ptp | ptmp | ptp-unnumbered | virtual-link; Default: broadcast)	the OSPF network type on this interface. Note that if interface configuration does not exist, the default network type is 'point-to-point' on PtP interfaces and 'broadcast' on all other interfaces.
+
+    broadcast - network type suitable for Ethernet and other multicast capable link layers. Elects designated router
+    nbma - Non-Broadcast Multiple Access. Protocol packets are sent to each neighbor's unicast address. Requires manual configuration of neighbors. Elects designated router
+    ptp - suitable for networks that consist only of two nodes. Do not elect designated router
+    ptmp - Point-to-Multipoint. Easier to configure than NBMA because it requires no manual configuration of a neighbor. Do not elect a designated router. This is the most robust network type and as such suitable for wireless networks, if 'broadcast' mode does not work well enough for them
+    ptp-unnumbered - works the same as ptp, except that the remote neighbor does not have an associated IP address to a specific PTP interface. For example, in case an IP unnumbered is used on Cisco devices.
+    virtual-link - for virtual link setups.
+
+vlink-neighbor-id (IP)	Specifies the router-id of the neighbor which should be connected over the virtual link.
+vlink-transit-area (name)	A non-backbone area the two routers have in common over which the virtual link will be established. Virtual links can not be established through stub areas.
+Lsa
+
+Sub-menu: /routing/ospf/lsa
+
+Read-only list of all the LSAs currently in the LSA database.
+age (integer)	How long ago (in seconds) the last update occurred
+area (string)	The area this LSA belongs to.
+body (string)	
+checksum (string)	LSA checksum
+dynamic (yes | no)	
+flushing (yes | no)	
+id (IP)	LSA record ID
+instance (string)	The instance name this LSA belongs to.
+link (string)	
+link-instance-id (IP)	
+originator (IP)	An originator of the LSA record.
+self-originated (yes | no)	Whether LSA originated from the router itself.
+sequence (string)	A number of times the LSA for a link has been updated.
+type (string)	
+wraparound (string)	
+Neighbors
+
+Sub-menu: /routing/ospf/neighbor
+
+Read-only list of currently active OSPF neighbors.
+address (IP)	An IP address of the OSPF neighbor router
+adjacency (time)	Elapsed time since adjacency was formed
+area (string)	
+bdr (string)	An IP address of the Backup Designated Router
+comment (string)	
+db-summaries (integer)	
+dr (IP)	An IP address of the Designated Router
+dynamic (yes | no)	
+inactive (yes | no)	
+instance (string)	
+ls-requests (integer)	
+ls-retransmits (integer)	
+priority (integer)	Priority configured on the neighbor
+router-id (IP)	neighbor router's RouterID
+state (down | attempt | init | 2-way | ExStart | Exchange | Loading | full)	
+
+    Down - No Hello packets have been received from a neighbor.
+    Attempt - Applies only to NBMA clouds. The state indicates that no recent information was received from a neighbor.
+    Init - Hello packet received from the neighbor, but bidirectional communication is not established (Its own RouterID is not listed in the Hello packet).
+    2-way - This state indicates that bi-directional communication is established. DR and BDR elections occur during this state, routers build adjacencies based on whether the router is DR or BDR, and the link is point-to-point or a virtual link.
+    ExStart - Routers try to establish the initial sequence number that is used for the packet information exchange. The router with a higher ID becomes the master and starts the exchange.
+    Exchange - Routers exchange database description (DD) packets.
+    Loading - In this state actual link state information is exchanged. Link State Request packets are sent to neighbors to request any new LSAs that were found during the Exchange state.
+    Full - Adjacency is complete, and neighbor routers are fully adjacent. LSA information is synchronized between adjacent routers. Routers achieve the full state with their DR and BDR only, an exception is P2P links.
+
+state-changes (integer)	Total count of OSPF state changes since neighbor identification
+Static Neighbour configuration
+
+Sub-menu: /routing/ospf/static-neighbor
+
+Static configuration of the OSPF neighbors. Required for non-broadcast multi-access networks.
+address (IP%iface; mandatory )	The unicast IP address and an interface, that can be used to reach the IP of the neighbor. For example, address=1.2.3.4%ether1 indicates that a neighbor with IP 1.2.3.4 is reachable on the ether1 interface.
+area (name; mandatory )	Name of the area the neighbor belongs to.
+comment (string)	
+disabled (yes | no)	
+instance-id (integer [0..255]; Default: 0)	
+poll-interval (time; Default: 2m)	How often to send hello messages to the neighbors which are in a "down" state (i.e. there is no traffic from them)
