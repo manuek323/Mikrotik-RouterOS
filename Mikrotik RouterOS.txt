@@ -1,1701 +1,781 @@
-[admin@MikroTik] > /certificate/import file-name=certificate_file_name name=name_example passphrase=file_passphrase
-     certificates-imported: 2
-     private-keys-imported: 1
-            files-imported: 1
-       decryption-failures: 0
-  keys-with-no-certificate: 0
-
-[admin@MikroTik] > /certificate/print 
-Flags: K - PRIVATE-KEY; T - TRUSTED
-Columns: NAME, COMMON-NAME
-#    NAME            COMMON-NAME                                                  
-0 KT name_example    cert    
-1  T name_example_1  ca   
-Settings
-
-/certificate settings allows configuring Certificate Revocation List (CRL) settings.
-
-By default, CRL is not utilized, and certificates are not verified for revocation status.
-builtin-trust-anchors (trusted | not-trusted Default: see description)	
-
-Allows to trust built-in root certificate authorities
-
-Default builtin-trust-anchors after upgrade from older RouterOS version: not-trusted
-
-Default builtin-trust-anchors after configuration reset: trusted
-crl-download (yes | no Default: no)	Whether to automatically download/update CRL
-crl-store (ram | sytem Default: ram)	
-
-Where to store downloaded CRL information
-
-CRL will be automatically renewed every hour for certificates which have "trusted=yes" using http protocol (ldap and ftp is currently unsupported)
-crl-use (yes | no Default: no)	Whether to use CRL
-
-If /certificate/settings/set crl-use is set to yes, RouterOS will check CRL for each certificate in a certificate chain, therefore, an entire certificate chain should be installed into a device - starting from Root CA, intermediate CA (if there are such), and certificate that is used for specific service.
-
-An example on importing a root certificate.
-Let's Encrypt certificates
-
-RouterOS v7 has Let's Encrypt (letsencrypt) certificate support for the 'www-ssl' service. To enable the Let's Encrypt certificate service with automatic certificate renewal, use the 'enable-ssl-certificate' command:
-/certificate enable-ssl-certificate dns-name=my.domain.com
-
-Note that the DNS name must point to the router. If the dns-name is not specified, it will default to the automatically generated /ip cloud name (ie. http://example.sn.mynetname.net)
-
-If the used DNS name is not the default http://example.sn.mynetname.net, port TCP/80 must be available from the WAN.
-
-The certificate is automatically renewed when 80% of its validity period had passed.
-
-Different acme servers
-
-It is possible to use not only Let's Encrypt certificate service, but any other you like.
-
-The DNS name must point to the router and port TCP/80 must be available from the WAN.
-
-The certificate is automatically renewed when 80% of its validity period had passed.
-Server properties
-directory-url (string)	ACME directory url.
-eab-hmac-key (string)	HMAC key for ACME External Account Binding (optional).
-eab-kid (string)	
-
-Key identifier (optional).
-Example:
-/certificate/enable-ssl-certificate directory-url=https://acme.zerossl.com/v2/DV90 dns-name=mydomain.abc eab-hmac-key=4ac7xuxAdV4mIncwIIEhLjExsFZ4v1rWgDkX4SKXD25pMVtF85GZJYSF8UKXUOjzSr2g3-v4lhL57NHFaQ42Ff eab-kid=GHWaP2_Ghx73vcU8ricAKU 
-SCEP
-
-SCEP is using HTTP protocol and base64 encoded GET requests. Most of the requests are without authentication and cipher, however, important ones can be protected if necessary (ciphered or signed using a received public key).
-
-SCEP client in RouterOS will:
-
-    get CA certificate from CA server or RA (if used);
-    user should compare the fingerprint of the CA certificate or if it comes from the right server;
-    generate a self-signed certificate with a temporary key;
-    send a certificate request to the server;
-    if the server responds with status x, then the client keeps requesting until the server sends an error or approval.
-
-The SCEP server supports the issuance of one certificate only. RouterOS supports also renew and next-ca options:
-
-    renew - the possibility to renew the old certificate automatically with the same CA.
-    next-ca - possibility to change the current CA certificate to the new one.
-
-The client polls the server for any changes, if the server advertises that the next-ca is available, then the client may request the next CA or wait until CA almost expires and then request the next-ca.
-
-The RouterOS client by default will try to use POST, AES, and SHA256 if the server advertises that. If the above algorithms are not supported, then the client will try to use 3DES, DES and SHA1, MD5.
-
-SCEP certificates are renewed when 3/4 of their validity time has passed.
-
-
-Built-in root certificate authorities
-
-Starting from RouterOS 7.19, RouterOS contains list of built-in root certificate authorities that can be used for host certificate verification. 
-
-Now it is possible to use DoH, download Adlist from URL or use fetch tool with certificate validation without the need to manually import the relevant root certificate.
-
-The list of built-in root certificate authorities is accessible in System → Certificates → Built In CA
-
-
-When upgrading from older RouterOS version, by default built-in root certificates are not trusted.
-
-Execute /certificate/settings/set builtin-trust-anchors=trusted to change trust settings for these certificates
-
-
-
-
-
-
-
-    Creado por Normunds R., actualizado por última vez por GG el mar 06, 2024 9 min de lectura
+    Creado por Māris B., actualizado por última vez por Matīss O. el mar 27, 2025 6 min de lectura
 
     Summary
-    Client
-    Server
-    Examples
-        RouterOS Authenticator configuration
-            Port based VLAN ID assignment
-            Dynamic switch rule configuration
-        RouterOS Supplicant configuration
-
-
-Summary
-
-Dot1X is implementation of IEEE 802.1X standard in RouterOS. Main purpose is to provide port-based network access control using EAP over LAN also known as EAPOL. 802.1X consists of a supplicant (client), an authenticator (server) and an authentication server (RADIUS server). Both authenticator and supplicant sides are supported in RouterOS, as well as authentication server when User Manager package is installed. Supported EAP methods for supplicant are EAP-TLS, EAP-TTLS, EAP-MSCHAPv2 and PEAPv0/EAP-MSCHAPv2.
-
-Feature is not supported on SMIPS devices (hAP lite, hAP lite TC and hAP mini).
-Client
-
-Supplicant configuration settings.
-
-Sub-menu: /interface dot1x client
-anon-identity (string; Default: )	Identity for outer layer EAP authentication. Used only with eap-ttls and eap-peap methods. If not set, value from identity parameter will be used for outer layer EAP authentication.
-client-certificate (string; Default: )	Name of a certificate listed in System/Certificates. Necessary when eap-tls method is used.
-comment (string; Default: )	Short description of the entry.
-disabled (yes | no; Default: no)	Whether client is enabled or not.
-eap-methods (eap-tls | eap-ttls | eap-peap | eap-mschapv2; Default: )	Ordered list of EAP methods used for authentication.
-identity (string; Default: )	Supplicant identity used for EAP authentication.
-interface (string; Default: )	Name of the interface the client will run on.
-password (string; Default: )	Cleartext password for supplicant.
-
-
-Read only properties
-status (authenticated | authenticating | disabled)	Possible statuses:
-
-    authenticated - the client has successfully authenticated;
-    authenticated without server - access to the port is granted without communication with server;
-    authenticating - the server is reached and authentication process is ongoing;
-    connecting - initial stage of the authentication process;
-    disabled - the client is disabled;
-    error - an internal error has occurred;
-    interface is down - the parent interface is not running;
-    rejected - the server denied the authentication.
-
-Server
-
-A RouterOS dot1x server acts as an authenticator. An interface where dot1x server is enabled will block all traffic except for EAPOL packets which is used for the authentication. After client is successfully authenticated, the interface will accept all received traffic on the port. If the interface is connected to a shared medium with multiple hosts, the traffic will be accepted from all hosts when at least one client is successfully authenticated. However, it is possible to configure dynamic switch rules to accept only the authenticated user source MAC address and drop all other source MAC addresses. In case of failed authentication, it is possible to accept the traffic with a dedicated port VLAN ID. 
-
-When a dot1x server is created on a bridge port, the bridge should be running (R/M)STP, otherwise EAP packets from the client will not be correctly accepted. Bridge interface is created with protocol-mode=rstp by default. If the bridge port should not send any BPDUs or any received BPDUs should be ignored, use edge=yes configuration on bridge ports. 
-
-Sub-menu: /interface dot1x server
-accounting (yes | no; Default: yes)	Whether to send RADIUS accounting requests to authentication server.
-auth-timeout (time; Default: 1m)	Total time available for EAP authentication.
-auth-types (dot1x | mac-auth; Default: dot1x)	Used authentication type on a server interface. When both options are selected at the same time, the server will prefer dot1x authentication type and only after 3 retrans-timeout periods, the authentication type will fall back to mac-auth. In order for mac-auth authentication type to work, the server interface should receive at least one frame containing a client's device source MAC address.
-comment (string; Default: )	Short description of the entry.
-disabled (yes | no; Default: no)	Whether server config is enabled or not.
-guest-vlan-id (integer: 1..4094; Default: !guest-vlan-id)	Assigned VLAN when end devices does not support dot1x authentication and no mac-auth fall back is configured. The setting will apply after 3 retrans-timeout periods. Once dot1x enabled client is created and successful re-authentication happened, the port is removed from the guest VLAN. This setting is available since RouterOS 7.2 version and has an effect when bridge vlan-filtering is enabled. By default, guest VLAN is disabled.
-interface (string; Default: )	Name of the interface or interface list the server will run on.
-interim-update (time; Default: 0s)	Interval between scheduled RADIUS Interim-Update messages.
-mac-auth-mode (mac-as-username | mac-as-username-and-password; Default: mac-as-username)	Allows to control User-Name and User-Password RADIUS attributes when using MAC authentication.
-radius-mac-format (XX-XX-XX-XX-XX-XX | XX:XX:XX:XX:XX:XX | XXXXXXXXXXXX | xx-xx-xx-xx-xx-xx | xx:xx:xx:xx:xx:xx | xxxxxxxxxxxx; Default: XX:XX:XX:XX:XX:XX)	Controls how the MAC address of the client is encoded in the User-Name and User-Password attributes when using MAC authentication.
-reauth-timeout (time; Default: !reauth-timeout)	Enables server port re-authentication. When enabled with dot1x authentication type, server will try to re-authenticate a client by sending EAP-Request Identity to the client. When enabled with mac-auth authentication type, server will try to re-authenticate client with RADIUS server by using the last seen MAC address. This setting is available since RouterOS 7.2 version. By default, re-authentication is disabled.  
-reject-vlan-id (integer: 1..4094; Default: !reject-vlan-id)	Assigned VLAN when authentication failed and a RADIUS server responded with an Access-Reject message. This property will not apply if the RADIUS server is not responding at all, the client authentication will simply timeout and the service will be unavailable. This property only has an effect when bridge vlan-filtering is enabled. By default, reject VLAN is disabled.
-retrans-timeout (time; Default: 30s)	Time interval between message re-transmissions if no response is received from supplicant.
-server-fail-vlan-id (integer: 1..4094; Default: !server-fail-vlan-id)	Assigned VLAN when RADIUS server is not responding and request timeout has elapsed. This setting is available since RouterOS 7.2 version and has an effect when bridge vlan-filtering is enabled. By default, server-fail VLAN is disabled.
-
-
-Currently authenticated clients are listed in the active menu (read only properties).
-
-Sub-menu: /interface dot1x server active
-auth-info (string)	
-
-Authentication information:
-
-    dot1x
-    dot1x (guest vlan)
-    dot1x (reject vlan)
-    dot1x (server fail vlan)
-    mac-auth
-    mac-auth (reject vlan)
-    mac-auth (server fail vlan)
-
-client-mac (mac-address)	MAC Address of the supplicant.
-interface (string)	Name of the interface.
-session-id (string)	Unique session identifier.
-username (string)	Identity of the supplicant.
-vlan-id (string)	Untagged VLAN ID that is assigned to the interface. VLAN ID filtering must be enabled on bridge.
-
-
-Statuses of all active dot1x server interfaces are listed in the state menu (read only properties).
-
-Sub-menu: /interface dot1x server state
-interface (string)	Name of the interface.
-status (string)	Possible interface statuses:
-
-    authorized - access to interface is granted;
-    iface-down - interface is not running;
-    rejected-holding - access was rejected by the RADIUS server;
-    un-authorized - access to interface is not granted.
-
-Examples
-
-Below are described the most common configuration examples for dot1x server and client.
-RouterOS Authenticator configuration
-
-Start off by adding a new RADIUS client. The authentication server (RADIUS) does not necessary have to be in the same LAN as authenticator, but it must be reachable from the authenticator, so any firewall limitations must be considered.
-/radius 
-add address=10.1.2.3 secret=radiussecret service=dot1x
-
- If RADIUS communication is done over public network, it is advised to use RadSec for RADIUS communication. More information: RADIUS
-
-Add new dot1x server instances.
-/interface dot1x server
-add interface=ether2 interim-update=30s comment=accounted
-add interface=ether12 accounting=no comment=notaccounted
-Port based VLAN ID assignment
-
-It is possible to assign an authenticated interface to a specific VLAN ID using bridge VLAN filtering. This can be done using RADIUS Tunnel-Type, Tunnel-Medium-Type and Tunnel-Private-Group-ID attributes. Note that only devices with hardware offloaded VLAN filtering will be able to do this in switch chip. 
-
-First of all, make sure the interface is added to a bridge which has VLAN filtering enabled.
-/interface bridge
-add name=bridge1 vlan-filtering=yes
-/interface bridge port
-add bridge=bridge1 interface=ether1
-add bridge=bridge1 interface=ether2
-add bridge=bridge1 interface=ether12
-
-It is necessary to add static VLAN configuration for tagged VLAN traffic to be sent over ether1 interface.
-/interface bridge vlan
-add bridge=bridge1 tagged=ether1 vlan-ids=2
-add bridge=bridge1 tagged=ether1 vlan-ids=12
-
-With enabled RADIUS debug logs it is possible to see complete RADIUS message packets with all attributes. In our example, Tunnel attributes are received in Access-Accept message from RADIUS server:
-09:51:45 radius,debug,packet received Access-Accept with id 64 from 10.1.2.3:1812
-09:51:45 radius,debug,packet     Tunnel-Type = 13 
-09:51:45 radius,debug,packet     Tunnel-Medium-Type = 6 
-09:51:45 radius,debug,packet     Tunnel-Private-Group-ID = "12" 
-(..)
-09:51:45 radius,debug,packet     User-Name = "dot1x-user" 
-
-The VLAN ID is now present in active session list and untagged ports are added to previously created static VLAN configuration.
-/interface dot1x server active print 
- 0 interface=ether12 username="dot1x-user" user-mac=00:0C:42:EB:71:F6 session-id="86b00006" vlan=12 
-
-/interface bridge vlan print detail 
-Flags: X - disabled, D - dynamic 
- 0 D bridge=bridge1 vlan-ids=1 tagged="" untagged="" current-tagged="" current-untagged=bridge1,ether3 
-
- 1   bridge=bridge1 vlan-ids=2 tagged=ether1 untagged="" current-tagged=ether1 current-untagged=ether2 
-
- 2   bridge=bridge1 vlan-ids=12 tagged=ether1 untagged="" current-tagged=ether1 current-untagged=ether12 
-Dynamic switch rule configuration
-
-In some network configurations, additional access rules are needed for a particular supplicant to restrict or allow certain network services. This can be done using a Mikrotik-Switching-Filter attribute, please see the RADIUS vendor dictionary. When a client is successfully authenticated by an authentication server, the server can pass back the Mikrotik-Switching-Filter attribute. Based on the received information, the authenticator will create dynamic access rules on a switch port where the client resides. These rules will be active as long as the client session is active and the interface is running. There are certain order and restrictions regarding correct switch rule implementation:
-
-    The mac-protocol, src-mac-address (available only since RouterOS 7.2 version), src-address (IPv4/mask, available only since RouterOS 7.2 version), dst-address (IPv4/mask), protocol (IPv4) src-port (L4, available only since RouterOS 7.2 version), dst-port (L4) conditional parameters are supported
-    Hexadecimal or decimal representation can be used for mac-protocol and protocol parameters (e.g. protocol 17 or protocol 0x11)
-    The src-port and dst-port support single or range values (e.g. src-port 10 or src-port 10-20)
-    The src-mac-address support "xx:xx:xx:xx:xx:xx" or "xxxxxxxxxxxx" formats, and switch rule without any source MAC address can be set with "none" keyword (e.g. src-mac-address none)
-    The src-mac-address (if not already set by the attribute), switch and ports conditional parametrs are automatically set for each rule
-    Each rule should end with an action property, supported values are either drop or allow. If no action property is set, the default allow value will be used.
-    Multiple rules are supported for a single supplicant and they must be separated by a comma ","
-
-Below are some examples of Mikrotik-Switching-Filter attributes and dynamic switch rules they create:
-# Drop ARP frames (EtherType: 0x0806 or 2054)
-Mikrotik-Switching-Filter = "mac-protocol 2054 action drop"
-
-/interface ethernet switch rule print
-Flags: X - disabled, I - invalid, D - dynamic 
- 0  D ;;; dot1x dynamic
-      switch=switch1 ports=ether1 src-mac-address=CC:2D:E0:11:22:33/FF:FF:FF:FF:FF:FF mac-protocol=arp copy-to-cpu=no redirect-to-cpu=no mirror=no new-dst-ports=""
-
-# Allow UDP (IP protocol: 0x11 or 17) destination port 100 and drop all other packets
-Mikrotik-Switching-Filter = "protocol 17 dst-port 100 action allow, action drop"
-
-/interface ethernet switch rule print
-Flags: X - disabled, I - invalid, D - dynamic 
- 0  D ;;; dot1x dynamic
-      switch=switch1 ports=ether1 src-mac-address=CC:2D:E0:11:22:33/FF:FF:FF:FF:FF:FF protocol=udp dst-port=100 copy-to-cpu=no redirect-to-cpu=no mirror=no 
-
- 1  D ;;; dot1x dynamic
-      switch=switch1 ports=ether1 src-mac-address=CC:2D:E0:11:22:33/FF:FF:FF:FF:FF:FF copy-to-cpu=no redirect-to-cpu=no mirror=no new-dst-ports=""
-
-# Allow only authenticated source MAC address, drop all other packets
-Mikrotik-Switching-Filter = "action allow, src-mac-address none action drop"
-
-/interface ethernet switch rule print 
-Flags: X - disabled, I - invalid; D - dynamic 
- 0  D ;;; dot1x dynamic
-      switch=switch1 ports=ether1 src-mac-address=CC:2D:E0:01:6D:EB/FF:FF:FF:FF:FF:FF copy-to-cpu=no redirect-to-cpu=no mirror=no 
-
- 1  D ;;; dot1x dynamic
-      switch=switch1 ports=ether1 copy-to-cpu=no redirect-to-cpu=no mirror=no new-dst-ports="" 
-
-
-In our example, Supplicant2 on ether2 is only allowed to access the 192.168.50.0/24 network with UDP destination port 50, all other traffic should be dropped. First, make sure that hardware offloading is working on bridge ports, otherwise switch rules might not work properly.
-/interface bridge port print
-Flags: X - disabled, I - inactive, D - dynamic, H - hw-offload 
- #     INTERFACE                   BRIDGE                   HW  PVID PRIORITY  PATH-COST INTERNAL-PATH-COST    HORIZON
- 0   H ether1                      bridge1                  yes    1     0x80         10                 10       none
- 1   H ether2                      bridge1                  yes    1     0x80         10                 10       none
- 2   H ether12                     bridge1                  yes    1     0x80         10                 10       none
-
-
-With enabled RADIUS debug logs it is possible to see complete RADIUS message packets with all attributes. In our example, Mikrotik-Switching-Filter attribute is received in Access-Accept message from Radius server:
-02:35:38 radius,debug,packet received Access-Accept with id 121 from 10.1.2.3:1812 
-(..)
-02:35:38 radius,debug,packet     MT-Switching-Filter = "mac-protocol 2048 dst-address 192.168.50.0/24 dst-port 50 protocol 17 action allow,action drop"
-
-
-The dynamic switch rules are now present under the switch menu:
-/interface ethernet switch rule print
-Flags: X - disabled, I - invalid, D - dynamic 
- 0  D ;;; dot1x dynamic
-      switch=switch1 ports=ether2 src-mac-address=CC:2D:E0:11:22:33/FF:FF:FF:FF:FF:FF mac-protocol=ip dst-address=192.168.50.0/24 protocol=udp dst-port=50 copy-to-cpu=no redirect-to-cpu=no mirror=no 
-
- 1  D ;;; dot1x dynamic
-      switch=switch1 ports=ether2 src-mac-address=CC:2D:E0:11:22:33/FF:FF:FF:FF:FF:FF copy-to-cpu=no redirect-to-cpu=no mirror=no new-dst-ports="" 
-
-Dynamic switch rules will only apply to RouterBoards with switch rule support - CRS3xx, CRS5xx series switches, CCR2116, CCR2216, and devices with QCA8337, Atheros8327 and Atheros8316 switch chips. CRS1xx/2xx series switches do no support this functionality. Take into consideration the maximum number of rules for each device, see CRS3xx, CRS5xx, CCR2116, CCR2216 table and basic switch chip table
-RouterOS Supplicant configuration
-
-CA certificates are required for eap-tls, eap-ttls and eap-peap authentication methods. Additionally a client certificate is required for eap-tls method. For this example we have already imported a P12 certificate bundle with self signed client and CA certificates. For more information how to import certificates in RouterOS, please visit System/Certificates.
-/certificate print 
-Flags: K - private-key, L - crl, C - smart-card-key, A - authority, I - issued, R - revoked, E - expired, T - trusted 
- #         NAME                                            COMMON-NAME                                         SUBJECT-ALT-NAME                             FINGERPRINT                                        
- 0 K  A  T dot1x-client                                    ez_dot1x-client                                     IP:10.1.2.34
- 1  L A  T dot1x CA                                        ca            
-
-Simply add a new dot1x client instance that will initiate authentication process.
-/interface dot1x client
-add anon-identity=anonymous client-certificate=dot1x-client eap-methods=eap-tls identity=dot1x-user interface=ether1 password=dot1xtest
-
-If authentication was successful, the interface should have status authenticated.
-/interface dot1x client print 
-Flags: I - inactive, X - disabled 
- 0   interface=ether1 eap-methods=eap-peap identity="dot1x-user" password="dot1xtest" anon-identity="anonymous" client-certificate=dot1x-client status="authenticated" 
- 
- 
-
-    Creado por Artūrs C., actualizado por última vez por Normunds R. el oct 03, 2024 8 min de lectura
-
-    Introduction
-        HotSpot Gateway features:
-    Example
-        Parameters asked during the setup process
-    IP HotSpot
-    IP HotSpot Active
-    IP HotSpot Host
-    IP Binding
-    Cookies
-    Using DHCP option to advertise HotSpot URL
-
-Introduction
-
-The MikroTik HotSpot Gateway provides authentication for clients before access to public networks.
-
-Hotspot (captive portal) - uses web-proxy and it is capable of using only the default routing table, at the moment. Making the PCC(per connection-classifier) not a valid method, due to the, multiple routing tables used.
-HotSpot Gateway features:
-
-    different authentication methods of clients, using a local client database on the router, or remote RADIUS server;
-    users accounting in a local database on the router, or on remote RADIUS server;
-    a walled-garden system, access to some web pages without authorization;
-    login page modification, where you can put information about the company;
-    automatic and transparent change any IP address of a client to a valid address;
-    HotSpot can inform DHCP clients that they are behind a captive portal (RFC7710);
-
-A hotspot can work reliably only when IPv4 is used. Hotspot relies on Firewall NAT rules which currently are not supported for IPv6.
-Example
-[admin@MikroTik] /ip hotspot> setup 
-Select interface to run HotSpot on 
-
-hotspot interface: ether3
-Set HotSpot address for interface 
-
-local address of network: 10.5.50.1/24
-masquerade network: yes
-Set pool for HotSpot addresses 
-
-address pool of network: 10.5.50.2-10.5.50.254
-Select hotspot SSL certificate 
-
-select certificate: none
-Select SMTP server 
-
-ip address of smtp server: 0.0.0.0
-Setup DNS configuration 
-
-dns servers: 10.1.101.1
-DNS name of local hotspot server 
-
-dns name: myhotspot
-Create local hotspot user 
-
-name of local hotspot user: admin
-password for the user: 
-[admin@MikroTik] /ip hotspot>
-
-Verify HotSpot configuration:
-[admin@MikroTik] /ip hotspot> print 
-Flags: X - disabled, I - invalid, S - HTTPS 
-# NAME INTERFACE ADDRESS-POOL PROFILE IDLE-TIMEOUT
-0 hotspot1 ether3 hs-pool-3 hsprof1 5m 
-[admin@MikroTik] /ip hotspot> 
-[admin@MikroTik] /ip pool> print 
-# NAME RANGES 
-0 hs-pool-3 10.5.50.2-10.5.50.254 
-[admin@MikroTik] /ip pool> /ip dhcp-server 
-[admin@MikroTik] /ip dhcp-server> print 
-Flags: X - disabled, I - invalid 
-# NAME INTERFACE RELAY ADDRESS-POOL LEASE-TIME ADD-ARP
-0 dhcp1 ether3 hs-pool-3 1h 
-[admin@MikroTik] /ip dhcp-server> /ip firewall nat 
-[admin@MikroTik] /ip firewall nat> print 
-Flags: X - disabled, I - invalid, D - dynamic 
-0 X ;;; place hotspot rules here
-chain=unused-hs-chain action=passthrough 
-
-1 ;;; masquerade hotspot network
-chain=srcnat action=masquerade src-address=10.5.50.0/24 
-[admin@MikroTik] /ip firewall nat> 
-Parameters asked during the setup process
-hotspot interface (string; Default: allow)	Interface name on which to run HotSpot. To run HotSpot on a bridge interface, make sure public interfaces are not included in the bridge ports.
-local address of network (IP; Default: 10.5.50.1/24)	HotSpot gateway address
-masquerade network (yes | no; Default: yes)	Whether to masquerade HotSpot network, when yes rule is added to /ip firewall nat with action=masquerade
-address pool of network (string; Default: yes)	Address pool for HotSpot network, which is used to change user IP address to a valid address. Useful if providing network access to mobile clients that are not willing to change their networking settings.
-select certificate (none | import-other-certificate; Default: )	Choose SSL certificate, when HTTPS authorization method is required.
-ip address of smtp server (IP; Default: 0.0.0.0)	The IP address of the SMTP server, where to redirect HotSpot's network SMTP requests (25 TCP port)
-dns servers (IP; Default: 0.0.0.0)	DNS server addresses used for HotSpot clients, configuration taken from /ip dns menu of the HotSpot gateway
-dns name (string; Default: "")	the domain name of the HotSpot server, a full qualified domain name is required, for example, www.example.com
-name of local hotspot user (string; Default: "admin")	username of one automatically created HotSpot user, added to /ip hotspot user
-password for the user' (string; Default: )	Password for automatically created HotSpot user
-IP HotSpot
-/ip/hotspot
-
-The menu is designed to manage the HotSpot servers of the router. It is possible to run HotSpot on Ethernet, wireless, VLAN, and bridge interfaces. One HotSpot server is allowed per interface. When HotSpot is configured on the bridge interface, set HotSpot interface as bridge interface, not as bridge port, do not add public interfaces to bridge ports. You can add HotSpot servers manually to the /ip/hotspot menu, but it is advised to run /ip/hotspot/setup, which adds all necessary settings.
-name (text)	HotSpot server's name or identifier
-address-pool (name/none; default: none)	address space used to change HotSpot client any IP address to a valid address. Useful for providing public network access to mobile clients that are not willing to change their networking settings
-idle-timeout (time/none; default: 5m) 	period of inactivity for unauthorized clients. When there is no traffic from this client (literally client computer should be switched off), once the timeout is reached, a user is dropped from the HotSpot host list, its used address becomes available
-keepalive-timeout (time/none; default: none)	Value of how long host can stay out of reach to be removed from the HotSpot
-login-timeout (time/none; default: none)	Period of time after which if a host hasn't been authorized itself with a system the host entry gets deleted from host table. Loop repeats until the host logs in the system. Enable if there are situations where a host cannot log in after being too long in the host table unauthorized.
-interface (name of an interface)	Interface to run HotSpot on
-addresses-per-mac (integer/unlimited; default: 2)	Number of IP addresses allowed to be bind with the MAC address, when multiple HotSpot clients connected with one MAC-address
-profile (name; default: default)	HotSpot server default HotSpot profile, which is located in /ip/hotspot/profile
-
-Read-only
-keepalive-timeout (read-only; time)	The exact value of the keepalive-timeout, that is applied to the user. Value shows how long the host can stay out of reach to be removed from the HotSpot
-IP HotSpot Active
-/ip/hotspot/active
-
-HotSpot active menu shows all clients authenticated in HotSpot, the menu is informational (read-only) it is not possible to change anything here.
-server (read-only; name)	HotSpot server name client is logged in
-user (read-only; name)	name of the HotSpot user
-domain (read-only; text)	the domain of the user (if split from the username), a parameter is used only with RADIUS authentication
-address (read-only; IP address)	The IP address of the HotSpot user
-mac-address (read-only; MAC-address)	MAC-address of the HotSpot user
-login-by (read-only; multiple-choice: cookie / http-chap / http-pap / https / mac / mac-cookie / trial)	the authentication method used by the HotSpot client
-uptime (read-only; time)	current session time of the user, it is showing how long the user has been logged in
-idle-time (read-only; time)	the amount of time the user has been idle
-session-time-left (read-only; time)	the exact value of session-time, that is applied for the user. Value shows how long user is allowed to be online to be logged off automatically by uptime reached
-idle-timeout (read-only; time)	the exact value of the user's idle-timeout
-keepalive-timeout (read-only; time)	the exact value of the keepalive-timeout, that is applied for the user. Value shows how long the host can stay out of reach to be removed from the HotSpot
-limit-bytes-in (read-only; integer)	value shows how many bytes received from the client, an option is active when the appropriate parameter is configured for HotSpot user
-limit-bytes-out (read-only; integer) 	value shows how many bytes send to the client, an option is active when the appropriate parameter is configured for HotSpot user
-limit-bytes-total (read-only; integer)	value shows how many bytes total were send/received from the client, an option is active when the appropriate parameter is configured for HotSpot user
-IP HotSpot Host
-/ip/hotspot/host
-
-The host table lists all computers connected to the HotSpot server. The host table is informational and it is not possible to change any value there:
-mac-address (read-only; MAC-address)	HotSpot user MAC-address
-address (read-only; IP address)	HotSpot client original IP address
-to-address (read-only; IP address)	The new client address assigned by HotSpot might be the same as the original address
-server (read-only; name)	HotSpot server name client is connected to
-bridge-port (read-only; name)	"/interface bridge port" the client is connected to, value is unknown when HotSpot is not configured on the bridge
-uptime (read-only; time)	value shows how long the user is online (connected to the HotSpot)
-idle-time (read-only; time)	time user has been idle
-
-idle-timeout (read-only; time) 
-	value of the client idle-timeout (unauthorized client)
-keepalive-timeout (read-only; time)	keepalive-timeout value of the unauthorized client
-bytes-in (read-only; integer)	amount of bytes received from an unauthorized client
-packet-in (read-only; integer)	amount of packets received from an unauthorized client
-bytes-out (read-only; integer)	amount of bytes sent to an unauthorized client
-packet-out (read-only; integer) 	amount of packets sent to an unauthorized client
-IP Binding
-/ip/hotspot/ip-binding
-
-IP-Binding HotSpot menu allows to the setup of static One-to-One NAT translations, allows to bypass specific HotSpot clients without any authentication, and also allows to block specific hosts and subnets from the HotSpot network
-address (IP Range; Default: "")	The original IP address of the client
-mac-address (MAC; Default: "")	MAC address of the client
-server (string | all; Default: "all")	Name of the HotSpot server.
-
-    all - will be applied to all hotspot servers
-
-to-address (IP; Default: "")	New IP address of the client, translation occurs on the router (client does not know anything about the translation)
-type (blocked | bypassed | regular; Default: "")	Type of the IP-binding action
-
-    regular - performs One-to-One NAT according to the rule, translates the address to to-address
-    bypassed - performs the translation, but excludes client from login to the HotSpot
-    blocked - translation is not performed and packets from a host are dropped
-
-Cookies
-
-The menu contains all cookies sent to the HotSpot clients, which are authorized by cookie method, all the entries are read-only.
-/ip/hotspot/cookie
-
-
-domain (string)	The domain name (if split from the username)
-expires-in (time)	How long the cookie is valid
-mac-address (MAC)	Client's MAC-address
-user (string)	HotSpot username
-Using DHCP option to advertise HotSpot URL
-
-Most devices, such as modern smartphones, do some kind of background checking to see if they are behind a captive portal. They do this by requesting a known webpage and comparing the contents of that page, to what they should be. If contents are different, the device assumes there is a login page and creates a popup with this login page.
-
-This does not always happen, as this "known webpage" could be blocked, whitelisted, or not accessible in internal networks. To improve on this mechanism, RFC 7710 was created, allowing the HotSpot to inform all DHCP clients that they are behind a captive-portal device and that they will need to authenticate to get Internet access, regardless of what webpages they do or do not request.
-
-This DHCP option field is enabled automatically, but only if the router has a DNS name configured and has a valid SSL certificate (so that the login page can be accessed over HTTPS). When these requirements are met, a special DHCP option will be sent, containing a link to https://<dns-name-of-hotspot>/api. This link contains information in JSON format, instructing the client device of the captive portal status, and the location of the login page.
-
-Contents of https://<dns-name-of-hotspot>/api are as follows:
-{
-"captive": $(if logged-in == 'yes')false$(else)true$(endif),
-"user-portal-url": "$(link-login-only)",
-$(if session-timeout-secs != 0)
-"seconds-remaining": $(session-timeout-secs),
-$(endif)
-$(if remain-bytes-total)
-"bytes-remaining": $(remain-bytes-total),
-$(endif)
-"can-extend-session": true
-}
-
-Some devices require venue-info URL as well, so you are free to modify the api.json file to your liking, just like any other hotspot files. It is located in the router files menu. 
-
-Important
-
-If you have set up Hotspot before RouterOS v7.3 when RFC 7710 was implemented, you will have to use "Reset HTML" function, or manually add/edit the api.json file to have the above contents, for Hotspot detection to work. 
-
-
-
-    Creado por Normunds R., actualizado por última vez por GG el mar 08, 2024 19 min de lectura
-
-Requirements
-
-    HotSpot captive portal
-
-Introduction
-
-You can create a completely different set of servlet pages for each HotSpot server you have, specifying the directory in the "html-override-directory" property of a HotSpot server profile /ip hotspot profile. The default servlet pages are copied in the directory "hotspot" directory right after you create the server profile. This directory can be accessed by connecting to the router with an FTP client. You can copy this directory and modify the pages as you like using the information from this section of the manual. Note that it is suggested to edit the files manually, as automated HTML editing tools may corrupt the pages by removing variables or other vital parts. After you are finished with content modification you need to upload this modified content to some custom directory on the hotspot router and point previously mentioned property "html-override-directory" value as path to this new custom HTML directory.
-
-Note: If "html-override-directory" value path is missing or empty then the hotspot server will revert to default HTML files.
-Available Pages
-
-Main HTML servlet pages, which are shown to the user:
-
-    redirect.html - redirects the user to another URL (for example, to the login page)
-    login.html - login page shown to a user to ask for a username and password. This page may take the following parameters:
-        username - username
-        password - either plain-text password (in case of PAP authentication) or MD5 hash of chap-id variable, password, and CHAP challenge (in case of CHAP authentication). This value is used as e-mail address for trial users
-        dst - original URL requested before the redirect. This will be opened on successful login
-        popup - whether to pop-up a status window on successful login
-        radius<id> - send the attribute identified with <id> in text string form to the RADIUS server (in case RADIUS authentication is used; lost otherwise)
-        radius<id>u - send the attribute identified with <id> in unsigned integer form to the RADIUS server (in case RADIUS authentication is used; lost otherwise)
-        radius<id>-<vnd-id> - send the attribute identified with <id> and vendor ID <vnd-id> in text string form to the RADIUS server (in case RADIUS authentication is used; lost otherwise)
-        radius<id>-<vnd-id>u - send the attribute identified with <id> and vendor ID <vnd-id> in unsigned integer form to the RADIUS server (in case RADIUS authentication is used; lost otherwise)
-    md5.js - JavaScript for MD5 password hashing. Used together with http-chap login method
-    alogin.html - page shown after a client has logged in. It pops-up status page and redirects the browser to the originally requested page (before he/she was redirected to the HotSpot login page)
-    status.html - status page, shows statistics for the client. It is also able to display advertisements automatically
-    logout.html - logout page, shown after a user is logged out. Shows final statistics about the finished session. This page may take the following additional parameters:
-        erase-cookie - whether to erase cookies from the HotSpot server on logout (makes it impossible to log in with cookie next time from the same browser, might be useful in multiuser environments)
-    error.html - error page, shown on fatal errors only
-
-Some other pages are available as well, if more control is needed:
-
-    rlogin.html - page, which redirects the client from some other URL to the login page, if authorization of the client is required to access that URL
-    rstatus.html - similar to rlogin.html, only in case if the client is already logged in and the original URL is not known
-    radvert.html - redirects the client to the scheduled advertisement link
-    flogin.html - shown instead of login.html, if some error has happened (invalid username or password, for example)
-    fstatus.html - shown instead of redirect, if a status page is requested, but the client is not logged in
-    flogout.html - shown instead of redirect, if logout page is requested, but the client is not logged in
-
-Serving Servlet Pages
-
-The HotSpot servlet recognizes 5 different request types:
-
-    request for a remote host
-        if user is logged in and advertisement is due to be displayed, radvert.html is displayed. This page redirects to the scheduled advertisement page
-        if user is logged in and advertisement is not scheduled for this user, the requested page is served
-        if user is not logged in, but the destination host is allowed by the walled garden, then the request is also served
-        if user is not logged in, and the destination host is disallowed by the walled garden, rlogin.html is displayed; if rlogin.html is not found, redirect.html is used to redirect to the login page
-
-
-    request for "/" on the HotSpot host
-        if user is logged in, rstatus.html is displayed; if rstatus.html is not found, redirect.html is used to redirect to the status page
-        if user is not logged in, rlogin.html is displayed; if rlogin.html is not found, redirect.html is used to redirect to the login page
-
-
-    request for "/login" page
-        if user has successfully logged in (or is already logged in), alogin.html is displayed; if alogin.html is not found, redirect.html is used to redirect to the originally requested page or the status page (in case, the original destination page was not given)
-        if user is not logged in (username was not supplied, no error message appeared), login.html is showed
-        if login procedure has failed (an error message is supplied), flogin.html is displayed; if flogin.html is not found, login.html is used
-        in case of fatal errors, error.html is showed
-
-
-    request for "/status" page
-        if user is logged in, status.html is displayed
-        if user is not logged in, fstatus.html is displayed; if fstatus.html is not found, redirect.html is used to redirect to the login page
-
-
-    request for '/logout' page
-        if user is logged in, logout.html is displayed
-        if user is not logged in, flogout.html is displayed; if flogout.html is not found, redirect.html is used to redirect to the login page
-
-Note: If it is not possible to meet a request using the pages stored on the router's FTP server, Error 404 is displayed
-
-There are many ways to customize what the HotSpot authentication pages look like:
-
-    The pages are easily modifiable. They are stored on the router's FTP server in the directory you choose for the respective HotSpot server profile.
-    By changing the variables, which client sends to the HotSpot servlet, it is possible to reduce the keyword count to one (username or password; for example, the client's MAC address may be used as the other value) or even to zero (License Agreement; some predefined values general for all users or client's MAC address may be used as username and password)
-    Registration may occur on a different server (for example, on a server that is able to charge Credit Cards). Client's MAC address may be passed to it, so that this information doesn't have to be entered manually. After the registration, the server should change RADIUS database enabling client to log in for some amount of time.
-
-To insert a variable in some place in the HTML file, the $(var_name) syntax is used, where the "var_name" is the name of the variable (without quotes). This construction may be used in any HotSpot HTML file accessed as '/', '/login', '/status' or '/logout', as well as any text or HTML (.txt, .htm or .html) file stored on the HotSpot server (with the exception of traffic counters, which are available in status page only, and error, error-orig, chap-id, chap-challenge and popup variables, which are available in login page only). For example, to show a link to the login page, following construction can be used:
-
-<a href="$(link-login)">login</a>
-
-Variables
-
-All of the Servlet HTML pages use variables to show user specific values. Variable names appear only in the HTML source of the servlet pages - they are automatically replaced with the respective values by the HotSpot Servlet. For most variables, there is an example of their possible value included in brackets. All the described variables are valid in all servlet pages, but some of them just might be empty at the time they are accessed (for example, there is no uptime before a user has logged in).
-List of available variables
-
-Note: Some of the variables use hard-coded http URL, if you are using https, you can construct the link in some other way, for example for $link-status, you can use https://$(hostname)/$(target-dir)status
-
-Common server variables:
-
-    hostname - DNS name or IP address (if DNS name is not given) of the HotSpot Servlet ("hotspot.example.net")
-    identity - RouterOS identity name ("MikroTik")
-    login-by - authentication method used by user
-    plain-passwd - a "yes/no" representation of whether HTTP-PAP login method is allowed ("no")
-    server-address - HotSpot server address ("10.5.50.1:80")
-    ssl-login - a "yes/no" representation of whether HTTPS method was used to access that servlet page ("no")
-    server-name - HotSpot server name (set in the /ip hotspot menu, as the name property)
-
-Links:
-
-    link-login - link to login page including original URL requested ("http://10.5.50.1/login?dst=http://www.example.com/")
-    link-login-only - link to login page, not including original URL requested ("http://10.5.50.1/login")
-    link-logout - link to logout page ("http://10.5.50.1/logout")
-    link-status - link to status page ("http://10.5.50.1/status")
-    link-orig - original URL requested ("http://www.example.com/")
-
-General client information:
-
-    domain - domain name of the user ("example.com")
-    interface-name - physical HotSpot interface name (in case of bridged interfaces, this will return the actual bridge port name)
-    ip - IP address of the client ("10.5.50.2")
-    logged-in - "yes" if the user is logged in, otherwise - "no" ("yes")
-    mac - MAC address of the user ("01:23:45:67:89:AB")
-    trial - a "yes/no" representation of whether the user has access to trial time. If user's trial time has expired, the value is "no"
-    username - the name of the user ("John")
-    host-ip - client IP address from /ip hotspot host table
-    vlan-id - Represents ID of a VLAN interface from which the client is connected
-
-User status information:
-
-    idle-timeout - idle timeout ("20m" or "" if none)
-    idle-timeout-secs - idle timeout in seconds ("88" or "0" if there is such timeout)
-    limit-bytes-in - byte limit for send ("1000000" or "---" if there is no limit)
-    limit-bytes-out - byte limit for receive ("1000000" or "---" if there is no limit)
-    refresh-timeout - status page refresh timeout ("1m30s" or "" if none)
-    refresh-timeout-secs - status page refresh timeout in seconds ("90s" or "0" if none)
-    session-timeout - session time left for the user ("5h" or "" if none)
-    session-timeout-secs - session time left for the user, in seconds ("3475" or "0" if there is such timeout)
-    session-time-left - session time left for the user ("5h" or "" if none)
-    session-time-left-secs - session time left for the user, in seconds ("3475" or "0" if there is such timeout)
-    uptime - current session uptime ("10h2m33s")
-    uptime-secs - current session uptime in seconds ("125")
-
-Traffic counters, which are available only on the status page:
-
-    bytes-in - number of bytes received from the user ("15423")
-    bytes-in-nice - user-friendly form of number of bytes received from the user ("15423")
-    bytes-out - number of bytes sent to the user ("11352")
-    bytes-out-nice - user-friendly form of number of bytes sent to the user ("11352")
-    packets-in - number of packets received from the user ("251")
-    packets-out - number of packets sent to the user ("211")
-    remain-bytes-in - remaining bytes until limit-bytes-in will be reached ("337465" or "---" if there is no limit)
-    remain-bytes-out - remaining bytes until limit-bytes-out will be reached ("124455" or "---" if there is no limit)
-
-Miscellaneous variables:
-
-    session-id - value of 'session-id' parameter in the last request
-    var - value of 'var' parameter in the last request
-    error - error message, if something failed ("invalid username or password")
-    error-orig - original error message (without translations retrieved from errors.txt), if something failed ("invalid username or password")
-    chap-id - value of chap ID ("\371")
-    chap-challenge - value of chap challenge ("\357\015\330\013\021\234\145\245\303\253\142\246\133\175\375\316")
-    popup - whether to pop-up checkbox ("true" or "false")
-    advert-pending - whether an advertisement is pending to be displayed ("yes" or "no")
-    http-status - allows the setting of the http status code and message
-    http-header - allows the setting of the http header
-
-RADIUS-related variables:
-
-    radius<id> - show the attribute identified with <id> in text string form (in case RADIUS authentication was used; "" otherwise)
-    radius<id>u - show the attribute identified with <id> in unsigned integer form (in case RADIUS authentication was used; "0" otherwise)
-    radius<id>-<vnd-id> - show the attribute identified with <id> and vendor ID <vnd-id> in text string form (in case RADIUS authentication was used; "" otherwise)
-    radius<id>-<vnd-id>u - show the attribute identified with <id> and vendor ID <vnd-id> in unsigned integer form (in case RADIUS authentication was used; "0" otherwise)
-
-Working with variables
-
-$(if <var_name>) statements can be used in these pages. The following content will be included, if value of <var_name> will not be an empty string. It is an equivalent to $(if <var_name> != "") It is possible to compare on equivalence as well: $(if <var_name> == <value>) These statements have effect until $(elif <var_name>), $(else) or $(endif). In general case it looks like this:
-
-some content, which will always be displayed
-$(if username == john)
-Hey, your username is john
-$(elif username == dizzy)
-Hello, Dizzy! How are you? Your administrator.
-$(elif ip == 10.1.2.3)
-You are sitting at that old computer, which is so slow...
-$(elif mac == 00:01:02:03:04:05)
-This is an ethernet card, which was stolen few months ago...
-$(else)
-I don't know who you are, so lets live in peace.
-$(endif)
-other content, which will always be displayed
-
-Only one of those expressions will be shown. Which one - depends on the values of those variables for each client.
-Redirects and custom Headers
-
-	$(if http-status == 302)Hotspot login required$(endif)
-	$(if http-header == "Location")$(link-redirect)$(endif)
-
-Note: Although the above appears to use the conditional expression 'if' it is in fact setting the 'http-status' to '302' not testing for it. Also the same for the variable 'http-header'. Once again, even though it uses an 'if' it is in fact setting the variable to 'Location' followed by the URL set from the variable 'link-redirect'.
-
-For example, in the case where $(link-redirect) evaluates to "http://192.168.88.1/login", then the HTTP response returned to the client will be changed to:
-
-HTTP/1.0 302 Hotspot login required
-<regular HTTP headers>
-Location: http://192.168.88.1/login
-
-
-http-status syntax:
-
-	$(if http-status == XYZ)HTTP_STATUS_MESSAGE$(endif)
-
-    XYZ - The status code you wish to return. Should be 3 decimal digits, the first one must not be 0
-    HTTP_STATUS_MESSAGE - any text you wish to return to the client that will follow the above status code in the HTTP reply
-
-In any HTTP response it will be on the first line and will be as follows:
-
-HTTP/1.0 XYZ HTTP_STATUS_MESSAGE
-
-
-http-header syntax:
-
-$(if http-header == HTTP_HEADER_NAME)HTTP_HEADER_VALUE$(endif)
-
-    HTTP_HEADER_NAME - name of the HTTP header to be sent in the response
-    HTTP_HEADER_VALUE - the value of the HTTP header with the name HTTP_HEADER_NAME to be sent in the response
-
-The HTTP response will appear as:
-
-HTTP_HEADER_NAME: HTTP_HEADER_VALUE
-
-
-All variables and conditional expressions within HTTP_HEADER_VALUE and HTTP_STATUS_MESSAGE are processed as usual.
-
-In case multiple headers with the same name are added, then only the last one will be used (previous ones will be discarded). It allows the system to override regular HTTP headers (for example, Content-Type and Cache-Control).
-Customizing Error Messages
-
-All error messages are stored in the errors.txt file within the respective HotSpot servlet directory. You can change and translate all these messages to your native language. To do so, edit the errors.txt file. You can also use variables in the messages. All instructions are given in that file.
-Multiple Versions of HotSpot Pages
-
-Multiple HotSpot page sets for the same HotSpot server are supported. They can be chosen by the user (to select language) or automatically by JavaScript (to select PDA/regular version of HTML pages).
-
-To utilize this feature, create subdirectories in the HotSpot HTML directory, and place those HTML files, which are different, in that subdirectory. For example, to translate everything in Latvian, the subdirectory "lv" can be created with login.html, logout.html, status.html, alogin.html, radvert.html and errors.txt files, which are translated into Latvian. If the requested HTML page can not be found in the requested subdirectory, the corresponding HTML file from the main directory will be used. Then main login.html file would contain a link to "/lv/login?dst=$(link-orig-esc)", which then displays Latvian version of login page: <a href="/lv/login?dst=$(link-orig-esc)">Latviski</a> . And Latvian version would contain a link to English version: <a href="/login?dst=$(link-orig-esc)">English</a>
-
-Another way of referencing directories is to specify 'target' variable:
-
-        <a href="$(link-login-only)?dst=$(link-orig-esc)&target=lv">Latviski</a>
-        <a href="$(link-login-only)?dst=$(link-orig-esc)&target=%2F">English</a>
-
-After the preferred directory has been selected (for example, "lv"), all links to local HotSpot pages will contain that path (for example, $(link-status) = "http://hotspot.mt.lv/lv/status"). So, if all HotSpot pages reference links using "$(link-xxx)" variables, then no more changes are to be made - each client will stay within the selected directory all the time.
-Misc
-
-If you want to use the HTTP-CHAP authentication method, you need to include the doLogin() function (which references to the md5.js which must be already loaded) before the Submit action of the login form. Otherwise, CHAP login will fail.
-
-The resulting password to be sent to the HotSpot gateway in case of HTTP-CHAP method, it is formed by MD5-hashing the concatenation of the following: chap-id, the password of the user, and chap-challenge (in the given order)
-
-In case variables are to be used in the link directly, then they must be escaped accordingly. For example, in login page, <a href="https://login.example.com/login?mac=$(mac)&user=$(username)">link</a> will not work as intended, if username will be "123&456=1 2". In this case instead of $(user), its escaped version must be used: $(user-esc): <a href="https://login.server.serv/login?mac=$(mac-esc)&user=$(user-esc)">link</a>. Now the same username will be converted to "123%26456%3D1+2", which is the valid representation of "123&456=1 2" in URL. This trick may be used with any variables, not only with $(username).
-
-There is a boolean parameter "erase-cookie" to the logout page, which may be either "on" or "true" to delete user cookie on logout (so that the user would not be automatically logged on when he/she opens a browser next time.
-Examples
-
-With basic HTML language knowledge and the examples below it should be easy to implement the ideas described above.
-
-    To provide predefined value as username, in login.html change:
-
-<type="text" value="$(username)>
-
-to this line:
-
-<input type="hidden" name="username" value="hsuser">
-
-(where hsuser is the username you are providing)
-
-    To provide a predefined value as a password, in login.html change:
-
-<input type="password">
-
-to this line:
-
-<input type="hidden" name="password" value="hspass">
-
-(where hspass is the password you are providing)
-
-    To send the client's MAC address to a registration server in the form of:
-
-https://www.example.com/register.html?mac=XX:XX:XX:XX:XX:XX
-
-change the Login button link in login.html to:
-
-https://www.example.com/register.html?mac=$(mac)
-
-(you should correct the link to point to your server)
-
-    To show a banner after user login, in alogin.html after
-
-$(if popup == 'true') add the following line:
-
-open('http://www.example.com/your-banner-page.html', 'my-banner-name','');
-
-(you should correct the link to point to the page you want to show)
-
-    To choose a different page shown after login, in login.html change:
-
-<input type="hidden" name="dst" value="$(link-orig)">
-
-to this line:
-
-<input type="hidden" name="dst" value="http://www.example.com">
-
-(you should correct the link to point to your server)
-
-    To erase the cookie on logoff, in the page containing a link to the logout (for example, in status.html) change:
-
-open('$(link-logout)', 'hotspot_logout', ...
-
-to this:
-
-open('$(link-logout)?erase-cookie=on', 'hotspot_logout', ...
-
-or alternatively add this line:
-
-<input type="hidden" name="erase-cookie" value="on">
-
-before this one:
-
-<input type="submit" value="log off">
-
-External authentication
-
-Another example is making HotSpot to authenticate on a remote server (which may, for example, perform credit card charging):
-
-    Allow direct access to the external server in walled-garden (either HTTP-based or IP-based)
-    Modify the login page of the HotSpot servlet to redirect to the external authentication server. The external server should modify the RADIUS database as needed
-
-Here is an example of such a login page to put on the HotSpot router (it is redirecting to https://auth.example.com/login.php, replace with the actual address of an external authentication server):
-
-<html>
-<title>...</title>
-<body>
-<form name="redirect" action="https://auth.example.com/login.php" method="post">
-<input type="hidden" name="mac" value="$(mac)">
-<input type="hidden" name="ip" value="$(ip)">
-<input type="hidden" name="username" value="$(username)">
-<input type="hidden" name="link-login" value="$(link-login)">
-<input type="hidden" name="link-orig" value="$(link-orig)">
-<input type="hidden" name="error" value="$(error)">
-</form>
-<script language="JavaScript">
-<!--
-	document.redirect.submit();
-//-->
-</script>
-</body>
-</html>
-          
-
-    The external server can log in a HotSpot client by redirecting it back to the original HotSpot servlet login page, specifying the correct username and password
-
-Here is an example of such a page (it is redirecting to https://hotspot.example.com/login, replace with the actual address of a HotSpot router; also, it is displaying www.mikrotik.com after successful login, replace with what is needed):
-
-<html>
-<title>Hotspot login page</title>
-<body>
-<form name="login" action="https://hotspot.example.com/login" method="post">
-<input type="text" name="username" value="demo">
-<input type="password" name="password" value="none">
-<input type="hidden" name="domain" value="">
-<input type="hidden" name="dst" value="http://www.mikrotik.com/">
-<input type="submit" name="login" value="log in">
-</form>
-</body>
-</html>
-          
-
-    Hotspot will ask the RADIUS server whether to allow the login or not. If allowed, alogin.html page will be displayed (it can be modified to do anything). If not allowed, the flogin.html (or login.html) page will be displayed, which will redirect the client back to the external authentication server.
-
-Note: as shown in these examples, HTTPS protocol and POST method can be used to secure communications.
-HTTP header detection
-
-The Hotspot login pages have access to HTTP headers by using $(http-header-name);
-
-For example, there exists an ability to check the user agent (or browser), and will return any other content instead of the regular login page, if so desired. This can be used to disable automatic popups in phones, for example.
-
-For example, to output "SUCCESS" for users of a specific Firefox mobile version, instead of the login page, you can these lines on the top of the rlogin.html page in your hotspot directory:
-
-$(if user-agent == "Mozilla/5.0 (Android; Mobile; rv:40.0) Gecko/40.0 Firefox/40.0" ) 
-<HTML><HEAD><TITLE>Success</TITLE></HEAD><BODY>Success</BODY></HTML> 
-$(else)
----- regular content of rlogin.html page  ----
-$(endif)
-
-This will DISABLE the login popup for Android Firefox 40 users.
-One-click login
-
-It is possible to create a modified captive portal for quick one-click login for scenarios where no user or password is required.
-
-What you need to do is:
-
-    Create a user for this purpose. In example, it is "notsosecretuser" with password "notsosecretpass"
-    Assign this user to a user profile that allows a specific/unlimited amount of simultaneous active users.
-    Copy original hotspot directory that is already generated in routers file menu on root level.
-    Modify the contents of this copy directory contents.
-        Only one file requires modifications for this to work, the "login.html".
-
-Original:
-
-<table width="100" style="background-color: #ffffff">
-  <tr><td align="right">login</td>
-      <td><input style="width: 80px" name="username" type="text" value="$(username)"/></td>
-  </tr>
-  <tr><td align="right">password</td>
-      <td><input style="width: 80px" name="password" type="password"/></td>
-  </tr>
-  <tr><td> </td>
-      <td><input type="submit" value="OK" /></td>
-  </tr>
-</table>
-
-Modified:
-
-<table width="100" style="background-color: #ffffff">
-  <tr style="display:none;"><td align="right">login</td>
-    <td><input style="width: 80px" name="username" type="text" value="notsosecretuser"/></td>
-  </tr>
-  <tr style="display:none;"><td align="right">password</td>
-    <td><input style="width: 80px" name="password" type="password" value="notsosecretpass"/></td>
-  </tr>
-  <tr><td> </td>
-    <td><input type="submit" value="Proceed to Internet!" /></td>
-  </tr>
-</table>
-
-What changed:
-
-            User and Password "" fields are hidden.
-            Both User and Password field values contain predefined values.
-            Changed the "OK" button value(name) to something more fitting.
-
-    Now upload this new hotspot folder back to the router, preferably with a different name.
-    Change settings in the hotspot server profile to use this new html directory.
-
-/ip hotspot profile set (profile number or name) html-directory-override=(dir path/name)
-
-Firewall customizations
-Summary
-
-Apart from the obvious dynamic entries in the /ip hotspot submenu itself (like hosts and active users), some additional rules are added in the firewall tables when activating a HotSpot service. 
-NAT
-
-From /ip firewall nat print dynamic command, you can get something like this (comments follow after each of the rules):
-
- 0 D chain=dstnat action=jump jump-target=hotspot hotspot=from-client
-
-Putting all HotSpot-related tasks for packets from all HotSpot clients into a separate chain.
-
- 1 I chain=hotspot action=jump jump-target=pre-hotspot
-
-Any actions that should be done before HotSpot rules apply, should be put in the pre-hotspot chain. This chain is under full administrator control and does not contain any rules set by the system, hence the invalid jump rule (as the chain does not have any rules by default).
-
- 2 D chain=hotspot action=redirect to-ports=64872 dst-port=53 protocol=udp 
- 3 D chain=hotspot action=redirect to-ports=64872 dst-port=53 protocol=tcp 
-
-Redirect all DNS requests to the HotSpot service. The 64872 port provides DNS service for all HotSpot users. If you want the HotSpot server to listen to another port, add rules here the same way, changing dst-port property.
-
- 4 D chain=hotspot action=redirect to-ports=64873 hotspot=local-dst dst-port=80
-     protocol=tcp
-
-Redirect all HTTP login requests to the HTTP login servlet. The 64873 is HotSpot HTTP servlet port.
-
- 5 D chain=hotspot action=redirect to-ports=64875 hotspot=local-dst dst-port=443
-     protocol=tcp
-
-Redirect all HTTPS login requests to the HTTPS login servlet. The 64875 is HotSpot HTTPS servlet port.
-
- 6 D chain=hotspot action=jump jump-target=hs-unauth hotspot=!auth protocol=tcp
-
-All other packets except DNS and login requests from unauthorized clients should pass through the hs-unauth chain.
-
- 7 D chain=hotspot action=jump jump-target=hs-auth hotspot=auth protocol=tcp
-
-And packets from the authorized clients - through the hs-auth chain.
-
- 8 D ;;; www.mikrotik.com
-     chain=hs-unauth action=return dst-address=66.228.113.26 dst-port=80 protocol=tcp
-
-First in the hs-unauth chain is put everything that affects TCP protocol in the /ip hotspot walled-garden ip submenu (i.e., everything where either protocol is not set, or set to TCP). Here we are excluding www.mikrotik.com from being redirected to the login page.
-
- 9 D chain=hs-unauth action=redirect to-ports=64874 dst-port=80 protocol=tcp
-
-All other HTTP requests are redirected to the Walled Garden proxy server which listens to the 64874 port. If there is an "allow" entry in the /ip hotspot walled-garden menu for an HTTP request, it is being forwarded to the destination. Otherwise, the request will be automatically redirected to the HotSpot login servlet (port 64873).
-
-10 D chain=hs-unauth action=redirect to-ports=64874 dst-port=3128 protocol=tcp 
-11 D chain=hs-unauth action=redirect to-ports=64874 dst-port=8080 protocol=tcp 
-
-HotSpot by default assumes that only these ports may be used for HTTP proxy requests. These two entries are used to "catch" client requests to unknown proxies (you can add more rules here for other ports). I.e., to make it possible for the clients with unknown proxy settings to work with the HotSpot system. This feature is called "Universal Proxy". If it is detected that a client is using some proxy server, the system will automatically mark those packets with the HTTP hotspot mark to work around the unknown proxy problem, as we will see later on. Note that the port used (64874) is the same as for HTTP requests in rule #9 (so both HTTP and HTTP proxy requests are processed by the same code).
-
-12 D chain=hs-unauth action=redirect to-ports=64875 dst-port=443 protocol=tcp
-
-HTTPS proxy is listening on the 64875 port.
-
-13 I chain=hs-unauth action=jump jump-target=hs-smtp dst-port=25 protocol=tcp
-
-Redirect for SMTP protocol may also be defined in the HotSpot configuration. In case it is, a redirect rule will be put in the hs-smtp chain. This is done so that users with unknown SMTP configuration would be able to send their mail through the service provider's (your) SMTP server instead of going to the [possibly unavailable outside their network of origin] SMTP server users have configured on their computers. The chain is empty by default, hence the invalid jump rule.
-
-14 D chain=hs-auth action=redirect to-ports=64874 hotspot=http protocol=tcp
-
-Providing HTTP proxy service for authorized users. Authenticated user requests may need to be subject to transparent proxying (the "Universal Proxy" technique and advertisement feature). This HTTP mark is put automatically on the HTTP proxy requests to the servers detected by the HotSpot HTTP proxy (the one that is listening on the 64874 port) as HTTP proxy requests for unknown proxy servers. This is done so that users that have some proxy settings would use the HotSpot gateway instead of the [possibly unavailable outside their network of origin] proxy server users have configured in their computers. This mark is also applied when an advertisement is due to be shown to the user, as well as on any HTTP requests from the users whose profile is configured to transparently proxy their requests.
-
-15 I chain=hs-auth action=jump jump-target=hs-smtp dst-port=25 protocol=tcp
-
-Providing SMTP proxy for authorized users (the same as in rule #13).
-Packet Filtering
-
-From /ip firewall filter print dynamic command, you can get something like this (comments follow after each of the rules):
-
- 0 D chain=forward action=jump jump-target=hs-unauth hotspot=from-client,!auth
-
-Any packet that traverse the router from an unauthorized client will be sent to the hs-unauth chain. The hs-unauth implements the IP-based Walled Garden filter.
-
- 1 D chain=forward action=jump jump-target=hs-unauth-to hotspot=to-client,!auth
-
-Everything that comes to clients through the router, gets redirected to another chain, called hs-unauth-to. This chain should reject unauthorized requests to the clients.
-
- 2 D chain=input action=jump jump-target=hs-input hotspot=from-client
-
-Everything that comes from clients to the router itself, gets to yet another chain, called hs-input.
-
- 3 I chain=hs-input action=jump jump-target=pre-hs-input
-
-Before proceeding with [predefined] dynamic rules, the packet gets to the administratively controlled pre-hs-input chain, which is empty by default, hence the invalid state of the jump rule.
-
- 4 D chain=hs-input action=accept dst-port=64872 protocol=udp 
- 5 D chain=hs-input action=accept dst-port=64872-64875 protocol=tcp 
-
-Allow client access to the local authentication and proxy services (as described earlier).
-
- 6 D chain=hs-input action=jump jump-target=hs-unauth hotspot=!auth
-
-All other traffic from unauthorized clients to the router itself will be treated the same way as the traffic traversing the routers.
-
- 7 D chain=hs-unauth action=return protocol=icmp
- 8 D ;;; www.mikrotik.com
-     chain=hs-unauth action=return dst-address=66.228.113.26 dst-port=80 protocol=tcp
-
-Unlike the NAT table where only TCP-protocol related Walled Garden entries were added, in the packet filter hs-unauth chain is added to everything you have set in the /ip hotspot walled-garden ip menu. That is why although you have seen only one entry in the NAT table, there are two rules here.
-
- 9 D chain=hs-unauth action=reject reject-with=tcp-reset protocol=tcp
-10 D chain=hs-unauth action=reject reject-with=icmp-net-prohibited
-
-Everything else that has not been white-listed by the Walled Garden will be rejected. Note the usage of TCP Reset for rejecting TCP connections.
-
-11 D chain=hs-unauth-to action=return protocol=icmp
-12 D ;;; www.mikrotik.com
-     chain=hs-unauth-to action=return src-address=66.228.113.26 src-port=80 protocol=tcp
-
-The same action as in rules #7 and #8 is performed for the packets destined to the clients (chain hs-unauth-to) as well.
-
-13 D chain=hs-unauth-to action=reject reject-with=icmp-host-prohibited
-
-Reject all packets to the clients with an ICMP reject message.
-
-
-
-    Creado por Usuario desconocido (emils), actualizado por última vez por Mārtiņš S. hace 6 horas 10 min de lectura
-
-    Summary
-    User Profiles
-    User Database
-    Active Users
+    User Settings
+    User Groups
+        Properties
+        Default groups
+    Router Users
+        Properties
+        Actions
+        Notes
+    Monitoring Active Users
+        Properties
+        Request logout
     Remote AAA
-    Examples
-        Add new profile
-        Add new user
+        Properties
+    SSH Keys 
+        Public keys
+            Import public SSH key
+            Add public SSH key
+        Private keys
+            Import private SSH key
 
 Summary
 
-Sub-menu: /ppp
+MikroTik RouterOS router user facility manages the users connecting the router from any of the Management tools. The users are authenticated using either a local database or a designated RADIUS server. Each user is assigned to a user group, which denotes the rights of this user. A group policy is a combination of individual policy items.
 
-The MikroTik RouterOS provides scalable Authentication, Authorization, and Accounting (AAA) functionality.
+In case the user authentication is performed using RADIUS, the RADIUS client should be previously configured.
+User Settings
 
-Local authentication is performed using the User Database and the Profile Database. The actual configuration for the given user is composed using the respective user record from the User Database, the associated item from the Profile Database, and the item in the Profile database which is set as default for a given service the user is authenticating to. Default profile settings from the Profile database have the lowest priority while the user access record settings from the User Database have the highest priority with the only exception being particular IP addresses take precedence over IP pools in the local-address and remote-address settings, which are described later on.
+The settings submenu allows to control the password complexity requirements of the router users. 
+minimum-password-length (integer; 0..4294967295; Default: )	Specifies the minimum character length of the user password
+minimum-categories (integer; 0..4; Default: )	
 
-Support for RADIUS authentication gives the ISP or network administrator the ability to manage PPP user access and accounting from one server throughout a large network. The MikroTik RouterOS has a RADIUS client that can authenticate for PPP, PPPoE, PPTP, L2TP, OPVN, and ISDN connections. The attributes received from the RADIUS server override the ones set in the default profile, but if some parameters are not received they are taken from the respective default profile.
-User Profiles
+Specifies the complexity requirements of the password, with categories being uppercase, lowercase, digit, symbol. 
 
-Sub-menu: /ppp profile
 
-PPP profiles are used to define default values for user access records stored under /ppp secret submenu. Settings in /ppp secret User Database overrides corresponding /ppp profile settings except that single IP addresses always take precedence over IP pools when specified as local-address or remote-address parameters.
+User Groups
 
+The router user groups provide a convenient way to assign different permissions and access rights to different user classes. 
 Properties
-address-list (string; Default: )	Address list name to which ppp assigned (on server) or received (on client) address will be added.
-remote-ipv6-prefix-reuse ( no | yes; Default: no)	If "remote-ipv6-prefix-pool" is specified and includes single "/64" prefix, then prefix can be used only for a single PPP client for RADVD configuration. When this option is set to value "yes", the same prefix can be reused between all the clients using this PPP profile.
-bridge (string; Default: )	Name of the bridge  interface to which ppp interface will be added as a slave port. Both tunnel endpoints (server and client) must be in the bridge to make this work, see more details in the BCP bridging manual.
-bridge-horizon (integer 0..429496729; Default: )	Used split-horizon value for the dynamically created bridge port. Can be used to prevent bridging loops and isolate traffic. Set the same value for a group of ports, to prevent them from sending data to ports with the same horizon value.
-bridge-learning (default | no | yes; Default: default)	Changes MAC learning behavior on the dynamically created bridge port:
+name (string; Default: )	The name of the user group
+policy (local | telnet | ssh | ftp | reboot | read | write | policy | test | winbox | password | web | sniff | sensitive | api | rest-api | romon ; Default: none)	List of allowed policies:
 
-    yes - enables MAC learning
-    no - disables MAC learning
-    default - derive this value from the interface default profile; same as yes if this is the interface default profile
 
-bridge-path-cost (integer 1..200000000; Default: )	Used path cost for the dynamically created bridge port, used by STP/RSTP to determine the best path, used by MSTP to determine the best path between regions. This property has no effect when a bridge protocol-mode is set to none.
-bridge-port-priority (integer 0..240; Default: )	Used priority for the dynamically created bridge port, used by STP/RSTP to determine the root port, used by MSTP to determine the root port between regions. This property has no effect when a bridge protocol-mode is set to none.
-bridge-port-vid (integer 1..4094; Default: 1)	Used to assign PVID parameter for dynamically created interface. This property only has an effect when bridge vlan-filtering is set to yes.
-bridge-port-trusted ( no | yes; Default: no)	Used to set dynamically created interface as DHCP trusted.
-change-tcp-mss (yes | no | default; Default: no)	Modifies connection MSS settings (applies only for IPv4):
+Login policies:
 
-    yes - adjust connection MSS value
-    no - do not adjust connection MSS value
-    default - derive this value from the interface default profile; same as no if this is the interface default profile
+    local - policy that grants rights to log in locally via console
+    telnet - policy that grants rights to log in remotely via telnet
+    ssh - policy that grants rights to log in remotely via secure shell protocol
+    web - policy that grants rights to log in remotely via WebFig.
+    winbox - policy that grants rights to log in remotely via WinBox and bandwidth test authentication
+    password - policy that grants rights to change the password
+    api - grants rights to access router via API.
+    rest-api - grants rights to access the router via REST API.
+    ftp - policy that grants full rights to log in remotely via FTP.  Allows to read/write/erase files and to transfer files from/to the router. Should be used together with read/write policies.
+    romon - policy that grants rights to connect to the RoMon server.
 
-comment (string; Default: )	Profile comment
-dhcpv6-lease-time (string; Default: )	Lease time can be set starting from 7.20ab202, by default time is set to 1d.
-dhcpv6-pd-pool (string; Default: )	Name of the IPv6 pool which will be used by dynamically created DHCPv6 server when client connects. Read more >>
-dhcpv6-use-radius ( no | yes; Default: no)	Specifies value for "use-radius" option selected for dynamically generated DHCPv6 PD servers.
-dns-server (IP; Default: )	IP address of the DNS server that is supplied to PPP clients
-idle-timeout (time; Default: )	Specifies the amount of time after which the link will be terminated if there is no activity present. Timeout is not set by default
-incoming-filter (string; Default: )	Firewall chain name for incoming packets. The specified chain gets control of each packet coming from the client. The ppp chain should be manually added and rules with action=jump jump-target=ppp should be added to other relevant chains for this feature to work. For more information look at the examples section
-insert-queue-before (bottom | first | queue name ; Default: )	Inserts new queue as the last, first, or before a specified queue
-interface-list (interface list name; Default: )	Specifies interface list to which profile interfaces will be added
-local-address (IP address | pool; Default: )	Tunnel address or name of the pool from which the address is assigned to ppp interface locally
-name (string; Default: )	PPP profile name
-on-up (script; Default: )	Execute script on user login-event. These are available variables that are accessible for the event script:
+Config Policies:
 
-    user
-    local-address
-    remote-address
-    caller-id
-    called-id
-    interface
+    reboot - policy that allows rebooting the router
+    read - policy that grants read access to the router's configuration. All console commands that do not alter the router's configuration are allowed. Doesn't affect FTP
+    write - policy that grants write access to the router's configuration, except for user management. This policy does not allow to read the configuration, so make sure to enable read policy as well
+    policy - policy that grants user management rights. Should be used together with the write policy. Allows also to see global variables created by other users (requires also 'test' policy). Allows to design skins (requires also "sensitive" policy).
+    test - policy that grants rights to run ping, traceroute, bandwidth-test, wireless scan, snooper, fetch, email and other test commands
+    sensitive - grants rights to change "hide sensitive" option, if this policy is disabled sensitive information is not displayed.
+    sniff - policy that grants rights to use packet sniffer tool, torch tool, traffic generator.
 
-The interface variable will return interface id value, not interface name.
-on-down (script; Default: )	Execute script on the user logging off. See on-up for more details
-only-one (yes | no | default; Default: default)	Defines whether a user is allowed to have more than one ppp session at a time
+skin (name; Default: default)	Used skin for WebFig
+Default groups
 
-    yes - a user is not allowed to have more than one ppp session at a time
-    no - the user is allowed to have more than one ppp session at a time
-    default - derive this value from the interface default profile; same as no if this is the interface default profile
+There are three default system groups which cannot be deleted:
+[admin@MikroTik] > /user group print 
+0 name="read" policy=local,telnet,ssh,reboot,read,test,winbox,password,web,sniff,sensitive,api,romon,rest-api,!ftp,!write,!policy skin=default 
 
-outgoing-filter (string; Default: )	Firewall chain name for outgoing packets. The specified chain gets control for each packet going to the client. The PPP chain should be manually added and rules with action=jump jump-target=ppp should be added to other relevant chains for this feature to work. For more information look at the Examples section.
-parent-queue (none | queue name; Default: )	Specifies parent queue 
+1 name="write" policy=local,telnet,ssh,reboot,read,write,test,winbox,password,web,sniff,sensitive,api,romon,rest-api,!ftp,!policy skin=default 
 
-queue-type (default | ethernet-default | wireless-default | synchronous-default |  hotspot-default | pcq-upload-default | pcq-download-default | only-hardware-queue | multi-queue-ethernet-default | default-small | custom queue type name ; Default: )
-	Specifies queue type. Starting from 7.19 it is possible to specify queue type for rx/tx separately, clients "upload" and "download". Use / to configure separate queue type, first is rx queue type, and then tx queue type.
-rate-limit (string; Default: )	Rate limitation in form of rx-rate[/tx-rate] [rx-burst-rate[/tx-burst-rate] [rx-burst-threshold[/tx-burst-threshold] [rx-burst-time[/tx-burst-time] [priority] [rx-rate-min[/tx-rate-min]]]] from the point of view of the router (so "rx" is client upload, and "tx" is client download). All rates are measured in bits per second, unless followed by an optional 'k' suffix (kilobits per second) or 'M' suffix (megabits per second). If tx-rate is not specified, rx-rate serves as tx-rate too. The same applies to tx-burst-rate, tx-burst-threshold and tx-burst-time. If both rx-burst-threshold and tx-burst-threshold are not specified (but burst-rate is specified), rx-rate and tx-rate are used as burst thresholds. If both rx-burst-time and tx-burst-time are not specified, 1s is used as default. Priority takes values 1..8, where 1 implies the highest priority, but 8 - the lowest. If rx-rate-min and tx-rate-min are not specified rx-rate and tx-rate values are used. The rx-rate-min and tx-rate-min values can not exceed rx-rate and tx-rate values.
-remote-address (IP; Default: )	Tunnel address or name of the pool from which address is assigned to remote ppp interface.
-remote-ipv6-prefix-pool (string | none; Default: none)	Assign a prefix from the IPv6 pool to the client and install the corresponding IPv6 route.
-session-timeout (time; Default: )	Maximum time the connection can stay up. By default, no time limit is set.
-use-compression (yes | no | default; Default: default)	Specifies whether to use data compression or not.
+2 name="full" policy=local,telnet,ssh,ftp,reboot,read,write,policy,test,winbox,password,web,sniff,sensitive,api,romon,rest-api skin=default 
 
-    yes - enable data compression
-    no - disable data compression
-    default - derive this value from the interface default profile; same as no if this is the interface default profile
+Please note, that even the "read" group includes sensitive, reboot, and other important policies, meaning that this group should not be given to untrusted users. For truly limited groups, make a custom group, defining specific policies. All groups have access to file operations. Exclamation sign '!' just before the policy item name means NOT.
+Router Users
 
-This setting does not affect OVPN tunnels.
-use-encryption (yes | no | default | require; Default: default)	Specifies whether to use data encryption or not.
+The router user database stores information such as username, password, allowed access addresses, and group about router management personnel. 
+Properties
+address (IP/mask | IPv6 prefix; Default: )	Host or network address from which the user is allowed to log in
+group (string; Default: )	Name of the group the user belongs to
+inactivity-policy (lockscreen | logout | none; Default: none)	Specifies inactivity action - logout (user will be logged out) or lockscreen (session will be locked, require password input to continue). Works only for CLI sessions.
+inactivity-timeout (time; Default: 10min)	Specifies time after which user will be logged out or session will be locked. Minimal timeout - 1 minute, maximal timeout - 24 hours. Works only for CLI sessions.
+name (string; Default: )	User name. Must start and end with an alphanumeric character but can include "_", ".", "#", "-", and "@" symbols. However the "*" symbol is prohibited in the user name.
+password (string; Default: )	User password. If not specified, it is left blank (hit [Enter] when logging in). It conforms to standard Unix characteristics of passwords and may contain letters, digits, "*" and "_" symbols.
+last-logged-in (time and date; Default: "")	Read-only field. Last time and date when a user logged in.
+Actions
 
-    yes - enable data encryption
-    no - disable data encryption
-    default - derive this value from the interface default profile; same as no if this is the interface default profile
-    require - explicitly requires encryption
-
-This setting does not work on OVPN and SSTP tunnels.
-use-ipv6 (yes | no | default | require; Default: default)	Specifies whether to allow IPv6. By default is enabled if IPv6 package is installed.
-
-    yes - enable IPv6 support
-    no - disable IPv6 support
-    default - derive this value from the interface default profile; same as no if this is the interface default profile
-    require - explicitly requires IPv6 support
-
-use-mpls (yes | no | default | require; Default: default)	Specifies whether to allow MPLS over PPP.
-
-    yes - enable MPLS support
-    no - disable MPLS support
-    default - derive this value from the interface default profile; same as no if this is the interface default profile
-    require - explicitly requires MPLS support
-
-use-upnp (yes | no | default ; Default: default)	
-
-Specifies whether to allow UPnP 
-
-    yes - enable UPnP 
-    no - disable UPnP 
-    default - derive this value from the interface default profile; same as no if this is the interface default profile
-
-wins-server (IP address; Default: )	IP address of the WINS server to supply to Windows clients
-
+Actions for existing router user.
+password	Option to change user password.
+expire-password	Expires user password, on next login, router will prompt to change password.
 Notes
 
-The two default profiles cannot be removed:
-[admin@rb13] ppp profile> print
-Flags: * - default
- 0 * name="default" use-compression=no use-encryption=no only-one=no
-     change-tcp-mss=yes
- 1 * name="default-encryption" use-compression=default use-encryption=yes
-     only-one=default change-tcp-mss=default
-[admin@rb13] ppp profile>
+There is one predefined user with full access rights:
+[admin@MikroTik] user> print
+Flags: X - disabled
+# NAME GROUP ADDRESS LAST-LOGGED-IN
+0 ;;; system default user
+admin full 0.0.0.0/0 dec/08/2010 16:19:24
 
-incoming-filter and outgoing-filter arguments add dynamic jump rules to chain ppp, where the jump-target argument will be equal to incoming-filter or outgoing-filter argument in the profile. Therefore, chain ppp should be manually added before changing these arguments.
+There always should be at least one user with full access rights. If the user with full access rights is the only one, it cannot be removed.
+Monitoring Active Users
+/user active print
 
-only-one parameter is ignored if RADIUS authentication is used.
-PPP tunnels uses LCP protocol for MTU negotiation, it happens right when connection is established. Framed MTU attribute is not supported, as it is sent only after authentication with Radius.
-User Database
-
-Sub-menu: /ppp secret
-
-PPP User Database stores PPP user access records with PPP user profile assigned to each user.
-
+ The command shows the currently active users along with respective statistics information.
 Properties
-caller-id (string; Default: )	For PPTP and L2TP it is the IP address a client must connect from. For PPPoE it is the MAC address (written in CAPITAL letters) a client must connect from. For ISDN it is the caller's number (that may or may not be provided by the operator) the client may dial-in from
-comment (string; Default: )	Short description of the user.
-disabled (yes | no; Default: no)	Whether secret will be used.
-limit-bytes-in (integer; Default: 0)	The maximum amount of bytes for a session that the client can upload.
-limit-bytes-out (integer; Default: 0)	The maximum amount of bytes for a session that the client can download.
-local-address (IP address; Default: )	IP address that will be set locally on ppp interface.
-name (string; Default: )	Name used for authentication
-password (string; Default: )	Password used for authentication
-profile (string; Default: default)	Which user profile to use
-remote-address (IP; Default: )	IP address that will be assigned to the remote ppp interface.
-remote-ipv6-prefix (IPv6 prefix; Default: )	IPv6 prefix assigned to ppp client. Prefix is added to ND prefix list enabling stateless address auto-configuration on ppp interface.
-routes (string; Default: )	Routes that appear on the server when the client is connected. The route format is: dst-address gateway metric (for example, 10.1.0.0/ 24 10.0.0.1 1). Other syntax is not acceptable since it can be represented incorrectly. Several routes may be specified and separated with commas. This parameter will be ignored for OpenVPN.
-service (any | async | isdn | l2tp | pppoe | pptp | ovpn | sstp; Default: any)	Specifies the services that a particular user will be able to use.
-Active Users
 
-Sub-menu: /ppp active
+All properties are read-only.
+address (IP/IPv6 address/MAC address)	Host IP/IPv6/MAC address from which the user is accessing the router.
+group (string)	A group that the user belongs to.
+name (string)	Username.
+radius (true | false)	Whether a user is authenticated by the RADIUS server.
+via (telnet | ssh | winbox | api | rest-api | web | ftp )	User's access method
+by-romon (MAC address)	RoMON agent MAC address
+when (time)	Time and date when the user logged in.
+Request logout
 
-This submenu allows monitoring active (connected) users.
+It is possible to close an active CLI session using the request logout function.
 
-/ppp active print command will show all currently connected users.
 
-/ppp active print stats command will show received/sent bytes and packets
+ /user/active/request-logout ACTIVE_USER_SESSION_NUMBER
 
-Properties
-address (IP address)	The IP address the client got from the server
-bytes (integer)	Amount of bytes transferred through this connection. The first figure represents the amount of transmitted traffic from the router's point of view, while the second one shows the amount of received traffic.
-caller-id (string)	For PPTP and L2TP it is the IP address the client connected from. For PPPoE, it is the MAC address the client connected from.
-encoding (string)	Shows encryption and encoding (separated with '/' if asymmetric) being used in this connection
-limit-bytes-in (integer)	The maximum amount of bytes the user is allowed to send to the router.
-limit-bytes-out (integer)	The maximum amount of bytes the user is allowed to send to the client.
-name (string)	User name supplied at authentication stage
-packets (integer/integer)	Amount of packets transferred through this connection. The first figure represents the amount of transmitted traffic from the router's point of view, while the second one shows the amount of received traffic
-service (async | isdn | l2tp | pppoe | pptp | ovpn | sstp)	Type of service the user is using.
-session-id (string)	Shows unique client identifier.
-uptime (time)	User's uptime
+
 Remote AAA
 
-Sub-menu: /ppp aaa
-
-Settings in this submenu allows to set RADIUS accounting and authentication. Note that the RADIUS user database is consulted only if the required username is not found in the local user database.
-
+Router user remote AAA enables router user authentication and accounting via a RADIUS server. The RADIUS user database is consulted only if the required username is not found in the local user database.
 Properties
-accounting (yes | no; Default: yes)	Enable RADIUS accounting
+accounting (yes | no; Default: yes)	If the RADIUS server should be sent accounting of login, logout. Bandwidth usage statistics are not part of /user accounting
+exclude-groups (list of group names; Default: )	Exclude-groups consist of the groups that should not be allowed to be used for users authenticated by radius. If the radius server provides a group specified in this list, the default-group will be used instead.
+
+
+This is to protect against privilege escalation when one user (without policy permission) can change the radius server list, set up its own radius server and
+log in as admin.
+default-group (string; Default: read)	User group used by default for users authenticated via a RADIUS server.
 interim-update (time; Default: 0s)	Interim-Update time interval
-use-radius (yes | no; Default: no)	Enable user authentication via RADIUS. If an entry in the local secret database is not found, then the client will be authenticated via RADIUS.
-enable-ipv6-accounting (yes | no; Default: no)	Enable IPv6 separate accounting. PPP service counts Layer2, IPv4 and IPv6 data all together when reporting network usage statistics to the RADIUS server by default. If it is required to differ IPv4 and IPv6 traffic, then this option can be enabled. Prerequisites for it to work are that the prefix must be assigned to the client through PPP service and also rate-limit must be provided. Dynamically created queue statistics will be used as counters for IPv6 data, which then will be included in accounting packets as separate IPv6 statistics attributes. This will not work for prefixes assigned by dynamically created DHCPv6 server due to provided prefix pool or PPP/Profile configuration. Then prefix assignment is handled by DHCP service, not PPP, thus accounting can not be managed by PPP service.
-Examples
-Add new profile
+use-radius (yes |no; Default: no)	Enable user authentication via RADIUS
 
-To add the profile ex that assigns the router itself the 10.0.0.1 address, and the addresses from the ex pool to the clients, filtering traffic coming from clients through mypppclients chain:
-[admin@rb13] ppp profile> add name=ex local-address=10.0.0.1 remote-address=ex incoming-filter=mypppclients
-[admin@rb13] ppp profile> print
-Flags: * - default
- 0 * name="default" use-compression=no use-vj-compression=no use-encryption=no only-one=no
-     change-tcp-mss=yes
- 1   name="ex" local-address=10.0.0.1 remote-address=ex use-compression=default
-     use-vj-compression=default use-encryption=default only-one=default change-tcp-mss=default
-     incoming-filter=mypppclients
- 2 * name="default-encryption" use-compression=default use-vj-compression=default use-encryption=yes
-     only-one=default change-tcp-mss=default
-[admin@rb13] ppp profile>
-Add new user
+If you are using RADIUS, you need to have CHAP support enabled in the RADIUS server for WinBox to work
+SSH Keys 
 
-To add the user ex with password lkjrht and profile ex available for PPTP service only, enter the following command:
-[admin@rb13] ppp secret> add name=ex password=lkjrht service=pptp profile=ex
-[admin@rb13] ppp secret> print
-Flags: X - disabled
- #   NAME                SERVICE CALLER-ID         PASSWORD          PROFILE            REMOTE-ADDRESS
- 0   ex                  pptp                      lkjrht            ex                 0.0.0.0
-[admin@rb13] ppp secret>
+ This menu allows importing of private and public keys used for SSH authentication. 
 
+By default, User is not allowed to log in via SSH by password if an SSH key for the user is added. For more details see the SSH page.
+Public keys
 
+This menu is used to import (or add) and list imported public keys. Public keys are used to approve another device's identity when logging into a router using an SSH key.
 
+RSA and Ed25519 keys are supported in PEM, PKCS#8, or OpenSSH format.
+user (string; Default: )	system user to which the SSH key has been assigned
+key-owner (string)	SSH key owner
+key-type (read-only)	key type
+bits (read-only)	key length
+Import public SSH key
 
+On public SSH key import, must specify key file, system user to which SSH key will been assigned, optional it is possible to specify key owner.
+user (string; Default: )	system user to which the SSH key has been assigned
+key-owner (string)	SSH key owner
+public-key-file (string)	file name in the router's root directory containing public key
+Add public SSH key
+
+It is possible to add public SSH key (pasting SSH key string), must provide key string, system user to which the SSH key has been assigned. 
+
+It is possible to add keys only in OpenSSH format
 
 
-    Creado por Normunds R., actualizado por última vez por Sergejs B. el jun 04, 2025 13 min de lectura
+user (string; Default: )	system user to which SSH key has been assigned
+key (string)	public key 
 
-Summary
 
-RADIUS, short for Remote Authentication Dial-In User Service, is a remote server that provides authentication and accounting facilities to various network appliances. RADIUS authentication and accounting allows the ISP or network administrator to manage PPP user access and accounting from one server throughout a large network. The MikroTik RouterOS has a RADIUS client that can authenticate router's local users, HotSpot, PPP, PPPoE, PPTP, L2TP, OVPN, SSTP, IPsec and ISDN connections. The attributes received from the RADIUS server override the ones set in the default profile, but if some parameters are not received they are taken from the respective default profile.
+Private keys
 
-The RADIUS server database is consulted only if no matching user access record is found in the router's local database.
+This menu is used to import and list imported private keys. Private keys are used to approve the router's identity during login into another device using an SSH key.
 
-If RADIUS accounting is enabled, accounting information is also sent to the RADIUS server default for that service.
-RADIUS Client
-Sub-menu: /radius
+On private key import, is it possible to specify key-owner.
 
-This sub-menu allows adding and removing RADIUS clients. 
+RSA and Ed25519 keys are supported in PEM or PKCS#8 format.
+user (string; Default: )	system user to which the SSH key has been assigned
+key-owner (string)	SSH key owner
+key-type (read-only)	key type
+bits (read-only)	key length
+Import private SSH key
 
- The order of added items in this list is significant.
+On private SSH key import, must specify key file, system user to which SSH key will been assigned, optional it is possible to provide key passhrase and specify key owner.
+user (string; Default: )	system user to which the SSH key has been assigned
+key-owner (string)	SSH key owner
+passphrase (string)	key file passphrase
+private-key-file (string)	file name in the router's root directory containing private key
+
+
+
+
+
+
+    Creado por Usuario desconocido (emils), actualizado por última vez por Ruslans Sudņiks el ene 27, 2025 19 min de lectura
+
+    Overview
+    Attributes
+    Database
+    Limitations
+    Payments
+    Profiles
+    Profile Limitations
+    Routers
+    Sessions
+    Settings
+        Advanced
+    Users
+    User Groups
+    User Profiles
+    WEB Interface
+    Application Guides
+        Batch user creation
+        Providing NAS with custom RADIUS attributes
+            Static IP address for a user
+            Specifying address pool for a group of users
+        Using TOTP (time-based one-time password) for user authentication
+        Exporting user credentials
+            Printable login credentials for a single user
+            Multiple user credential export
+        Generating usage report
+        Purchasing a profile
+        Migrating from RouterOS v6
+    Application Examples
+        Basic L2TP/IPsec server with User Manager authentication
+        MFA authentication for RouterOS user login
+
+Overview
+
+User Manager is RADIUS server implementation in RouterOS which provides centralized user authentication and authorization to a certain service. Having a central user database allows better tracking of system users and customers. As a separate package, User Manager is available on all architectures except SMIPS, however, care must be taken due to limited free space available. It supports many different authentication methods including PAP, CHAP, MS-CHAP, MS-CHAPv2, EAP-TLS, EAP-TTLS, and EAP-PEAP. In RouterOS, DHCP, Dot1x, Hotspot, IPsec, PPP, and Wireless are features that benefit from User Manager the most. Each user can see their account statistics and manage available profiles using the WEB interface. Additionally, users can buy their own data plans (profiles) using the most popular payment gateway - PayPal making it a great system for service providers. Customized reports can be generated to ease processing by the billing department. User Manager works according to RADIUS standards defined in RFC2865 and RFC3579.
+
+User Manager is one of the RouterOS features, that is limited by the RouterOS license level. Depending on the License level, number of active sessions will be limited, including multiple connections per user (not unique accounts).
+
+Attributes
+
+Sub-menu: /user-manager attribute
+
+RADIUS attributes are defined authorization, information, and configuration parameters that are passed between the RADIUS server and the client. User Manager allows sending customized attributes defined in the "attributes" menu. RouterOS has a set of predefined attributes already present, but it is also possible to add additional attributes if necessary. Predefined attributes:
+
+Framed-IP-Address
+	0 (standard)	8	ip address	Access-Accept	RFC2865 section 5.8
+
+Framed-IP-Netmask
+	0 (standard)	9	ip address	Access-Accept	RFC2865 section 5.9
+
+Session-Timeout
+	0 (standard)	27	integer (maximum value: 21474720)	Access-Accept, Access-Challenge	RFC2865 section 5.27
+
+Idle-Timeout
+	0 (standard)	28	integer	Access-Accept, Access-Challenge	RFC2865 section 5.28
+
+Tunnel-Type
+	0 (standard)	64	
+1	Point-to-Point Tunneling Protocol (PPTP)
+2	Layer Two Forwarding (L2F)
+3	Layer Two Tunneling Protocol (L2TP)
+4	Ascend Tunnel Management Protocol (ATMP)
+5	Virtual Tunneling Protocol (VTP)
+6	IP Authentication Header in the Tunnel-mode (AH)
+7	IP-in-IP Encapsulation (IP-IP)
+8	Minimal IP-in-IP Encapsulation (MIN-IP-IP)
+9	IP Encapsulating Security Payload in the Tunnel-mode (ESP)
+10	Generic Route Encapsulation (GRE)
+11	Bay Dial Virtual Services (DVS)
+12	IP-in-IP Tunneling
+13	Virtual LAN
+	Access-Accept	
+
+RFC2868 section 3.1
+RFC3580 section 3.31
+
+Tunnel-Medium-Type
+	0 (standard)	65	
+1	IPv4 (IP version 4)
+2	IPv6 (IP version 6)
+3	NSAP
+4	HDLC (8-bit multidrop)
+5	BBN 1822
+6	802 (includes all 802 media plus Ethernet "canonical format")
+7	E.163 (POTS)
+8	E.164 (SMDS, Frame Relay, ATM)
+9	F.69 (Telex)
+10	X.121 (X.25, Frame Relay)
+11	IPX
+12	Appletalk
+13	Decnet IV
+14	Banyan Vines
+15	E.164 with NSAP format subaddress
+	Access-Accept	RFC2868 section 3.2
+
+Tunnel-Private-Group-ID
+	0 (standard)	81	string	Access-Accept	RFC2868 section 3.6
+
+Framed-Pool
+	0 (standard)	88	string	Access-Accept	RFC2869 section 5.18
+Framed-IPv6-Prefix	0 (standard)	97	ipv6 prefix	Access-Accept	RFC3162 section 2.3
+
+Framed-IPv6-Pool
+	0 (standard)	100	string	Access-Accept	RFC3162 section 2.6
+
+Delegated-IPv6-Prefix
+	0 (standard)	123	ipv6 prefix	Access-Accept	RFC4818
+Framed-IPv6-Address	0 (standard)	168	ip address	Access-Accept	RFC6911 section 3.1
+Mikrotik-Recv-Limit	14988 (Mikrotik)	1	integer	Access-Accept	Total receive limit in bytes for the client.
+Mikrotik-Xmit-Limit	14988 (Mikrotik)	2	integer	Access-Accept	Total transmit limit in bytes for the client.
+Mikrotik-Group	14988 (Mikrotik)	3	string	Access-Accept	
+
+User's group for local users.
+
+HotSpot profile for HotSpot users.
+
+PPP profile for PPP users.
+Mikrotik-Wireless-Forward	14988 (Mikrotik)	4	integer	Access-Accept	Not forward the client's frames back to the wireless infrastructure if this attribute is set to "0" (wireless only).
+Mikrotik-Wireless-Skip-Dot1x	14988 (Mikrotik)	5	integer	Access-Accept	Disable 802.1x authentication for the particular wireless client if set to a non-zero value (wireless only).
+Mikrotik-Wireless-Enc-Algo	14988 (Mikrotik)	6	
+0	No-encryption
+1	40-bit-WEP
+2	104-bit-WEP
+3	AES-CCM
+4	TKIP
+	Access-Accept	WEP encryption algorithm( wireless only).
+Mikrotik-Wireless-Enc-Key	14988 (Mikrotik)	7	string	Access-Accept	WEP encryption key for the client (wireless only).
+Mikrotik-Rate-Limit	14988 (Mikrotik)	8	string	Access-Accept	Datarate limitation for clients. The format is: rx-rate[/tx-rate] [rx-burst-rate[/tx-burst-rate] [rx-burst-threshold[/tx-burst-threshold] [rx-burst-time[/tx-burst-time] [priority] [rx-rate-min[/tx-rate-min]]]] from the point of view of the router (so "rx" is client upload, and "tx" is client download). All rates should be numbers with optional 'k' (1,000s) or 'M' (1,000,000s). If the tx-rate is not specified, the rx-rate is as tx-rate too. The same goes for tx-burst-rate and tx-burst-threshold and tx-burst-time. If both rx-burst-threshold and tx-burst-threshold are not specified (but burst-rate is specified), rx-rate and tx-rate are used as burst thresholds. If both rx-burst-time and tx-burst-time are not specified, 1s is used as default. Priority takes values 1..8, where 1 implies the highest priority, but 8 - the lowest. If rx-rate-min and tx-rate-min are not specified rx-rate and tx-rate values are used. The rx-rate-min and tx-rate-min values can not exceed rx-rate and tx-rate values. 
+Mikrotik-Realm	14988 (Mikrotik)	9	string	Access-Request	If it is set in /radius menu, it is included in every RADIUS request as Mikrotik-Realm attribute. If it is not set, the same value is sent as in the MS-CHAP-Domain attribute (if MS-CHAP-Domain is missing, Realm is not included either).
+Mikrotik-Host-IP	14988 (Mikrotik)	10	ip address	Access-Request	The IP address of HotSpot client before Universal Client translation (the original IP address of the client).
+Mikrotik-Mark-Id	14988 (Mikrotik)	11	string	Access-Accept	Firewall mangle chain name (HotSpot only). The MikroTik RADIUS client upon receiving this attribute creates a dynamic firewall mangle rule with action=jump chain=hotspot and jump-target equal to the attribute value. Mangle chain name can have suffixes .in or .out, which will install rule only for incoming or outgoing traffic. Multiple Mark-id attributes can be provided, but only the last ones for incoming and outgoing are used. 
+Mikrotik-Advertise-URL	14988 (Mikrotik)	12	string	Access-Accept	URL of the page with advertisements that should be displayed to clients. If this attribute is specified, advertisements are enabled automatically, including transparent proxy, even if they were explicitly disabled in the corresponding user profile. Multiple attribute instances may be sent by the RADIUS server to specify additional URLs which are chosen in a round-robin fashion.
+Mikrotik-Advertise-Interval	14988 (Mikrotik)	13	integer	Access-Accept	The time interval between two adjacent advertisements. Multiple attribute instances may be sent by the RADIUS server to specify additional intervals. All interval values are treated as a list and are taken one by one for each successful advertisement. If the end of the list is reached, the last value is continued to be used.
+Mikrotik-Recv-Limit-Gigawords	14988 (Mikrotik)	14	integer	Access-Accept	4G (2^32) bytes of total receive limit (bits 32..63, when bits 0..31 are delivered in Mikrotik-Recv-Limit).
+Mikrotik-Xmit-Limit-Gigawords	14988 (Mikrotik)	15	integer	Access-Accept	4G (2^32) bytes of total transmit limit (bits 32..63, when bits 0..31 are delivered in Mikrotik-Recv-Limit).
+Mikrotik-Wireless-PSK	14988 (Mikrotik)	16	string	Access-Accept	
+Mikrotik-Total-Limit	14988 (Mikrotik)	17	integer	Access-Accept	
+Mikrotik-Total-Limit-Gigawords	14988 (Mikrotik)	18	integer	Access-Accept	
+Mikrotik-Address-List	14988 (Mikrotik)	19	string	Access-Accept	
+Mikrotik-Wireless-MPKey	14988 (Mikrotik)	20	string	Access-Accept	
+Mikrotik-Wireless-Comment	14988 (Mikrotik)	21	string	Access-Accept	
+Mikrotik-Delegated-IPv6-Pool	14988 (Mikrotik)	22	string	Access-Accept	IPv6 pool used for Prefix Delegation.
+Mikrotik-DHCP-Option-Set	14988 (Mikrotik)	23	string	Access-Accept	
+Mikrotik-DHCP-Option-Param-STR1	14988 (Mikrotik)	24	string	Access-Accept	
+Mikrotik-DHCP-Option-Param-STR2	14988 (Mikrotik)	25	string	Access-Accept	
+Mikrotik-Wireless-VLANID	14988 (Mikrotik)	26	integer	Access-Accept	VLAN ID for the client (Wireless only).
+Mikrotik-Wireless-VLANIDtype	14988 (Mikrotik)	27	
+0	802.1q
+1	802.1ad
+	Access-Accept	VLAN ID type for the client (Wireless only). 
+Mikrotik-Wireless-Minsignal	14988 (Mikrotik)	28	string	Access-Accept	
+Mikrotik-Wireless-Maxsignal	14988 (Mikrotik)	29	string	Access-Accept	
+Mikrotik-Switching-Filter	14988 (Mikrotik)	30	string	Access-Accept	Allows to create dynamic switch rules when authenticating clients with dot1x server.
+
 Properties
-accounting-backup (yes | no; Default: no)	Whether the configuration is for the backup RADIUS server
-accounting-port (integer [1..65535]; Default: 1813)	RADIUS server port used for accounting
-address (IPv4/IPv6 address; Default: 0.0.0.0)	
+name (string; Default: )	Name of the attribute.
+packet-types (string; Default: access-accept)	
 
-IPv4 or IPv6 address of RADIUS server.
+    access-accept - use this attribute in RADIUS Access-Accept messages
+    access-challenge - use this attribute in RADIUS Access-Challenge messages
 
-The following formats are accepted:
+type-id (integer:1..255; Default: )	Attribute identification number from the specific vendor's attribute database.
+value-type (string; Default: )	
 
-- ipv4
-- ipv4@vrf
-- ipv6
-- ipv6@vrf
-authentication-port (integer [1..65535]; Default: 1812)	RADIUS server port used for authentication.
-called-id (string; Default: )	Value depends on Point-to-Point protocol: PPPoE - service name, PPTP - server's IP address, L2TP - server's IP address.
-certificate (string; Default: )	Certificate file to use for communicating with RADIUS Server with RadSec enabled.
-comment (string; Default: )	
-disabled (yes | no; Default: no)	
-domain (string; Default: )	Microsoft Windows domain of client passed to RADIUS servers that require domain validation.
-protocol (radsec | udp; Default: udp)	Specifies the protocol to use when communicating with the RADIUS Server.
-require-message-auth (no | yes-for-request-resp Default: yes-for-request-resp)	Specifies if Message-Authenticator attributes are required.
-realm (string; Default: )	Explicitly stated realm (user domain), so the users do not have to provide proper ISP domain name in the user name.
-secret (string; Default: )	The shared secret used to access the RADIUS server.
-service (ppp|login|hotspot|wireless|dhcp|ipsec|dot1x; Default: )	Router services that will use this RADIUS server:
+    hex
+    ip-address - IPv4 or IPv6 IP address
+    ip6-prefix - IPv6 prefix
+    macro
+    string
+    uint32
 
-    hotspot - HotSpot authentication service
-    login - router's local user authentication
-    ppp - Point-to-Point clients authentication
-    wireless - wireless client authentication
-    dhcp - DHCP protocol client authentication (client's MAC address is sent as User-Name)
-    ipsec - ipsec client authentification
-    dot1x - dot1x authentification
+vendor-id (integer; Default: 0)	IANA allocated a specific enterprise identification number.
+Database
 
-src-address (ipv4/ipv6 address; Default: 0.0.0.0)	Source IP/IPv6 address of the packets sent to the RADIUS server
-timeout (time; Default: 100ms)	Timeout after which the request should be resent, for example, "/radius set timeout=300ms numbers=0"
+Sub-menu: /user-manager database
 
-When the RADIUS server is authenticating the user with CHAP, MS-CHAPv1, MS-CHAPv2, it is not using a shared secret, the secret is used only in the authentication reply, and the router (RADIUS client) verifies it. So if you have the wrong shared secret, the RADIUS server will accept a request, but the router won't accept the reply. You can see that with "/radius monitor" command, the "bad-replies" number should increase whenever somebody tries to connect.
+All RADIUS-related information is stored in a separate User Manager's database configurable under the "database" sub-menu. "Enabled" and "db-path" are the only parameters that are not stored in the User Manager's database and instead are stored in the main RouterOS configuration table meaning that these parameters will be affected by the RouterOS configuration reset. The rest of the configuration, session, and payment data is stored in a separate SQLite database on the FLASH storage of the device. When performing any actions with databases, it is advised to make a backup before and after any activity.
 
-If RadSec is enabled, make sure your RADIUS Server is using "radsec" as the shared secret, otherwise, the RADIUS Server will not be able to decrypt data correctly (unprintable characters). With RadSec RouterOS forces the shared secret to "radsec" regardless of what has been set manually. For more details see - RFC6614.
-Example
-
-To set up a RADIUS Client for HotSpot and PPP services that will authenticate against a RADIUS Server (10.0.0.3), you need to do the following:
-[admin@MikroTik] > /radius add service=hotspot,ppp address=10.0.0.3 secret=ex
-[admin@MikroTik] > /radius print
-Flags: X - disabled
-# SERVICE CALLED-ID DOMAIN ADDRESS SECRET
-0 ppp,hotspot 
-
-To set up a RADIUS Client with RadSec, you need to do the following:
-[admin@MikroTik] > /radius add service=hotspot,ppp address=10.0.0.3 secret=radsec protocol=radsec certificate=client.crt
-[admin@MikroTik] > /radius print
-Flags: X - disabled
-# SERVICE CALLED-ID DOMAIN ADDRESS SECRET
-0 ppp,hotspot 10.0.0.3 radsec
-
-Make sure the specified certificate is trusted. 
-
-To view RADIUS Client statistics, you need to do the following:
-[admin@MikroTik] > /radius monitor 0
-pending: 0
-requests: 10
-accepts: 4
-rejects: 1
-resends: 15
-timeouts: 5
-bad-replies: 0
-last-request-rtt: 0s
-
-Make sure you enable RADIUS authentication for the desired services:
-/ppp aaa set use-radius=yes
-/ip hotspot profile set default use-radius=yes
-Connection Terminating from RADIUS
-
-Sub-menu: /radius incoming
-
-This facility supports unsolicited messages sent from the RADIUS server. Unsolicited messages extend RADIUS protocol commands, that allow terminating a session that has already been connected from the RADIUS server. For this purpose, DM (Disconnect-Messages) is used. Disconnect messages cause a user session to be terminated immediately. 
-
-RouterOS doesn't support POD (Packet of Disconnect) the other RADIUS access request packet that performs a similar function as Disconnect Messages
 Properties
-accept (yes | no; Default: no)	Whether to accept unsolicited messages
-port (integer; Default: 1700)	The port number to listen for the requests on
+db-path (string; Default: )	Path to the location where database files will be stored.
 
-vrf (VRF name; default value: main)
-	Set VRF on which service is listening for incoming connections
-Supported RADIUS Attributes
+Read-only properties
+db-size	The current size of the database.
+free-disk-space	Free space left on the disk where the database is stored.
 
-Here you can download the RADIUS reference dictionary, that includes all supported RADIUS attributes by MikroTik device. This file is designed for FreeRADIUS, but may also be used by other RADIUS servers. Note, it may conflict with the default configuration file of your RADIUS server, correct the configuration, not the dictionary, as no other attributes are supported by MikroTik RouterOS. There is also the RADIUS MikroTik specific dictionary that can be included in an existing dictionary to support MikroTik vendor-specific attributes.
+Commands
+load (name)	Restore previously created backup file in .umb format.
+migrate-legacy-db (database-path; overwrite)	Convert the old User Manager (from RouterOS v6 or before) to the new standard. It is possible to overwrite the current database. 
+optimize-db ()	
+save (name; overwrite)	Save the current state of the User Manager database.
+Limitations
 
-Below you will find description about attributes and how they are used on MikroTik devices during communication with RADIUS.
-Definitions
+Sub-menu: /user-manager limitation
 
-    PPPs - PPP,PPTP, PPPoE
-    default configuration -settings in default profile (for PPPs) or HotSpot server settings (for HotSpot)
+Limitations are used by Profiles and are linked together by Profile-Limitations. RADIUS accounting and Interim updates must be enabled to seamlessly switch between multiple limitations or disconnect active sessions when download-limit, upload-limit or uptime-limit is reached.
 
-Access-Request packet
+To disconnect already active sessions from User Manager, accept must be set to yes on the RADIUS client side. If simultaneous session limits are not unlimited (shared-users) and it has reached the maximum allowed number, then the router will try to disconnect the older user session first.
 
-    Service-Type - always is "Framed" (only for PPPs)
-    Framed-Protocol - always is "PPP" (only for PPPs)
-    NAS-Identifier - router's identity name
-    NAS-IP-Address - IP address of the router itself
-    NAS-Port - this Attribute indicates the physical port number of the NAS which is authenticating the user.
-    Acct-Session-Id - unique session ID. The first two symbols of session ID represent service (PPP, Hotspot, etc.). The next symbol is incremented on each reboot. The last group of symbols is incremented on each new session. This means, that you can not get the same ID for 1 million re-connects on the same boot for the same RADIUS type service. If you lose session stop message and RADIUS server does still keep the session open, but then receives another session start message, then it must be aware that stop message was lost, close old session and start a new session.
-    NAS-Port-Type - async PPP - "Async"; PPTP and L2TP - "Virtual"; PPPoE - "Ethernet"; ISDN - "ISDN Sync"; HotSpot - "Ethernet | Cable | Wireless-802.11" (according to the value of nas-port-type parameter in /ip hotspot profile)
-    Calling-Station-Id - PPPoE and HotSpot- client MAC address in capital letters; PPTP and L2TP - client public IP address
-    Called-Station-Id - PPPoE - service name; PPTP and L2TP - server IP address; HotSpot - name of the HotSpot server
-    NAS-Port-Id - async PPP - serial port name; PPPoE - ethernet interface name on which server is running; HotSpot - name of the physical HotSpot interface (if bridged, the bridge port name is showed here); not present for ISDN, PPTP and L2TP
-    Framed-IP-Address - IP address of HotSpot client after Universal Client translation
-    Mikrotik-Host-IP - IP address of HotSpot client before Universal Client translation (the original IP address of the client)
-    User-Name - client login name
-    MS-CHAP-Domain - User domain, if present
-    Mikrotik-Realm - If it is set in /radius menu, it is included in every RADIUS request as Mikrotik-Realm attribute. If it is not set, the same value is sent as in MS-CHAP-Domain attribute (if MS-CHAP-Domain is missing, Realm is not included neither)
-    WISPr-Location-ID - text string specified in radius-location-id property of the HotSpot server
-    WISPr-Location-Name - text string specified in radius-location-name property of the HotSpot server
-    WISPr-Logoff-URL - full link to the login page (for example, http://10.48.0.1/lv/logout)
-
-Depending on authentication methods (NOTE: HotSpot uses CHAP by default and may use also PAP if unencrypted passwords are enabled, it can not use MSCHAP).
-
-    User-Password - encrypted password (used with PAP authentication)
-    CHAP-Password, CHAP-Challenge - encrypted password and challenge (used with CHAP authentication)
-    MS-CHAP-Response, MS-CHAP-Challenge - encrypted password and challenge (used with MS-CHAPv1 authentication)
-    MS-CHAP2-Response, MS-CHAP-Challenge - encrypted password and challenge (used with MS-CHAPv2 authentication)
-
-Access-Accepts packet
-
-    Framed-IP-Address - IP address given to client. If address belongs to 127.0.0.0/8 or 224.0.0.0/3 networks, IP pool is used from the default profile to allocate client IP address. If Framed-IP-Address is specified, Framed-Pool is ignored
-    Framed-IP-Netmask - client netmask. PPPs - if specified, a route will be created to the network Framed-IP-Address belongs to via the Framed-IP-Address gateway; HotSpot - ignored by HotSpot
-    Framed-Pool - IP pool name (on the router) from which to get IP address for the client. If Framed-IP-Address is specified, this attribute is ignored
-    Framed-IPv6-Prefix - IPv6 prefix assigned for the client
-    Mikrotik-Delegated-IPv6-Pool - IPv6 pool used for Prefix Delegation
-    Delegated-IPv6-Prefix - IPv6 Prefix
-    Delegated-IPv6-Prefix-Pool - IPv6 Prefix pool used for Prefix Delegation
-
-NOTE: if Framed-IP-Address or Framed-Pool is specified it overrides remote-address in default configuration.
-
-    Idle-Timeout - overrides idle-timeout in the default configuration
-    Session-Timeout - overrides session-timeout in the default configuration
-    Port-Limit - maximal mumber of simultaneous connections using the same username (overrides te shared-users property of the HotSpot user profile)
-    Class - cookie, will be included in Accounting-Request unchanged
-    Framed-Route - routes to add on the server. Format is specified in RFC 2865 (Ch. 5.22), can be specified as many times as needed
-    Filter-Id - firewall filter chain name. It is used to make a dynamic firewall rule. Firewall chain name can have suffix .in or .out, that will install rule only for incoming or outgoing traffic. Multiple Filter-id can be provided, but only last ones for incoming and outgoing is used. For PPPs - filter rules in ppp chain that will jump to the specified chain, if a packet has come to/from the client (that means that you should first create a ppp chain and make jump rules that would put actual traffic to this chain). The same applies for HotSpot, but the rules will be created in hotspot chain
-    Mikrotik-Mark-Id - firewall mangle chain name (HotSpot only). The MikroTik RADIUS client upon receiving this attribute creates a dynamic firewall mangle rule with action=jump chain=hotspot and jump-target equal to the atribute value. Mangle chain name can have suffixes .in or .out, that will install rule only for incoming or outgoing traffic. Multiple Mark-id attributes can be provided, but only last ones for incoming and outgoing is used.
-    Acct-Interim-Interval - interim-update for RADIUS client. PPP - if 0 uses the one specified in RADIUS client; HotSpot - only respected if radius-interim-update=received in HotSpot server profile
-    MS-MPPE-Encryption-Policy - require-encryption property (PPPs only)
-    MS-MPPE-Encryption-Types - use-encryption property, non-zero value means to use encryption (PPPs only)
-    Ascend-Data-Rate - tx/rx data rate limitation if multiple attributes are provided, first limits tx data rate, second - rx data rate. If used together with Ascend-Xmit-Rate, specifies rx rate. 0 if unlimited. Ignored if Rate-Limit attribute is present
-    Ascend-Xmit-Rate - tx data rate limitation. It may be used to specify tx limit only instead of sending two sequental Ascend-Data-Rate attributes (in that case Ascend-Data-Rate will specify the receive rate). 0 if unlimited. Ignored if Rate-Limit attribute is present
-    MS-CHAP2-Success - auth. response if MS-CHAPv2 was used (for PPPs only)
-    MS-MPPE-Send-Key, MS-MPPE-Recv-Key - encryption keys for encrypted PPPs provided by RADIUS server only is MS-CHAPv2 was used as authentication (for PPPs only)
-    Ascend-Client-Gateway - client gateway for DHCP-pool HotSpot login method (HotSpot only)
-    Mikrotik-Recv-Limit - total receive limit in bytes for the client
-    Mikrotik-Recv-Limit-Gigawords - 4G (2^32) bytes of total receive limit (bits 32..63, when bits 0..31 are delivered in Mikrotik-Recv-Limit)
-    Mikrotik-Xmit-Limit - total transmit limit in bytes for the client
-    Mikrotik-Xmit-Limit-Gigawords - 4G (2^32) bytes of total transmit limit (bits 32..63, when bits 0..31 are delivered in Mikrotik-Recv-Limit)
-    Mikrotik-Wireless-Forward - not forward the client's frames back to the wireless infrastructure if this attribute is set to "0" (Wireless only)
-    Mikrotik-Wireless-Skip-Dot1x - disable 802.1x authentication for the particulat wireless client if set to non-zero value (Wireless only)
-    Mikrotik-Wireless-Enc-Algo - WEP encryption algorithm: 0 - no encryption, 1 - 40-bit WEP, 2 - 104-bit WEP (Wireless only)
-    Mikrotik-Wireless-Enc-Key - WEP encruption key for the client (Wireless only)
-    Mikrotik-Wireless-VLANID - VLAN ID for the client (Wireless only)
-    Mikrotik-Wireless-VLANID-type - VLAN ID type for the client. 0 - 802.1q tag and 1 - 802.1ad tag (Wireless only)
-    Mikrotik-Switching-Filter - allows to create dynamic switch rules, when authenticating clients with dot1x server.
-    Mikrotik-Rate-Limit - Datarate limitation for clients. Format is: rx-rate[/tx-rate] [rx-burst-rate[/tx-burst-rate] [rx-burst-threshold[/tx-burst-threshold] [rx-burst-time[/tx-burst-time] [priority] [rx-rate-min[/tx-rate-min]]]] from the point of view of the router (so "rx" is client upload, and "tx" is client download). All rates should be numbers with optional 'k' (1,000s) or 'M' (1,000,000s). If tx-rate is not specified, rx-rate is as tx-rate too. Same goes for tx-burst-rate and tx-burst-threshold and tx-burst-time. If both rx-burst-threshold and tx-burst-threshold are not specified (but burst-rate is specified), rx-rate and tx-rate is used as burst thresholds. If both rx-burst-time and tx-burst-time are not specified, 1s is used as default. Priority takes values 1..8, where 1 implies the highest priority, but 8 - the lowest. If rx-rate-min and tx-rate-min are not specified rx-rate and tx-rate values are used. The rx-rate-min and tx-rate-min values can not exceed rx-rate and tx-rate values.
-    Mikrotik-Group - Router local user group name (defines in /user group) for local users; HotSpot default profile for HotSpot users; PPP default profile name for PPP users.
-    Mikrotik-Advertise-URL - URL of the page with advertisements that should be displayed to clients. If this attribute is specified, advertisements are enabled automatically, including transparent proxy, even if they were explicitly disabled in the corresponding user profile. Multiple attribute instances may be send by RADIUS server to specify additional URLs which are choosen in round robin fashion.
-    Mikrotik-Advertise-Interval - Time interval between two adjacent advertisements. Multiple attribute instances may be send by RADIUS server to specify additional intervals. All interval values are treated as a list and are taken one-by-one for each successful advertisement. If end of list is reached, the last value is continued to be used.
-    WISPr-Redirection-URL - URL, which the clients will be redirected to after successfull login
-    WISPr-Bandwidth-Min-Up - minimal datarate (CIR) provided for the client upload
-    WISPr-Bandwidth-Min-Down - minimal datarate (CIR) provided for the client download
-    WISPr-Bandwidth-Max-Up - maxmal datarate (MIR) provided for the client upload
-    WISPr-Bandwidth-Max-Down - maxmal datarate (MIR) provided for the client download
-    WISPr-Session-Terminate-Time - time, when the user should be disconnected; in "YYYY-MM-DDThh:mm:ssTZD" form, where Y - year; M - month; D - day; T - separator symbol (must be written between date and time); h - hour (in 24 hour format); m - minute; s - second; TZD - time zone in one of these forms: "+hh:mm", "+hhmm", "-hh:mm", "-hhmm".
-
-The received attributes override the default ones (set in the default profile), but if an attribute is not received from RADIUS server, the default one is to be used.  Rate-Limit takes precedence over all other ways to specify data rate for the client. Ascend data rate attributes are considered second; and WISPr attributes takes the last precedence.
-
-Here are some Rate-Limit examples:
-
-    128k - rx-rate=128000, tx-rate=128000 (no bursts)
-    64k/128M - rx-rate=64000, tx-rate=128000000
-    64k 256k - rx/tx-rate=64000, rx/tx-burst-rate=256000, rx/tx-burst-threshold=64000, rx/tx-burst-time=1s
-    64k/64k 256k/256k 128k/128k 10/10 - rx/tx-rate=64000, rx/tx-burst-rate=256000, rx/tx-burst-threshold=128000, rx/tx-burst-time=10s
-
-Accounting-Request packet
-
-The accounting request carries the same attributes as Access Request, plus these ones:
-
-    Acct-Status-Type - Start, Stop, or Interim-Update
-    Acct-Authentic - either authenticated by the RADIUS or Local authority (PPPs only)
-    Class - RADIUS server cookie, as received in Access-Accept
-    Acct-Delay-Time - how long does the router try to send this Accounting-Request packet
-
-Stop and Interim-Update Accounting-Request packet
-
-Additionally to the accounting start request, the following messages will contain the following attributes:
-
-    Acct-Session-Time - connection uptime in seconds
-    Acct-Input-Octets - bytes received from the client
-    Acct-Input-Gigawords - 4G (2^32) bytes received from the client (bits 32..63, when bits 0..31 are delivered in Acct-Input-Octets)
-    Acct-Input-Packets - nubmer of packets received from the client
-    Acct-Output-Octets - bytes sent to the client
-    Acct-Output-Gigawords - 4G (2^32) bytes sent to the client (bits 32..63, when bits 0..31 are delivered in Acct-Output-Octets)
-    Acct-Output-Packets - number of packets sent to the client
-
-Stop Accounting-Request packet
-
-These packets will, additionally to the Interim Update packets, have:
-
-    Acct-Terminate-Cause - session termination cause (see RFC 2866 ch. 5.10)
-
-Change of Authorization
-
-RADIUS disconnect and Change of Authorization (according to RFC3576) are supported as well. These attributes may be changed by a CoA request from the RADIUS server:
-
-    Mikrotik-Group
-    Mikrotik-Recv-Limit
-    Mikrotik-Xmit-Limit
-    Mikrotik-Rate-Limit
-    Ascend-Data-Rate (only if Mikrotik-Rate-Limit is not present)
-    Ascend-XMit-Rate (only if Mikrotik-Rate-Limit is not present)
-    Mikrotik-Mark-Id
-    Filter-Id
-    Mikrotik-Advertise-Url
-    Mikrotik-Advertise-Interval
-    Session-Timeout
-    Idle-Timeout
-    Port-Limit
-
-Note that it is not possible to change IP address, pool or routes that way - for such changes a user must be disconnected first.
-MikroTik Specific RADIUS Attribute Numeric Values
-MIKROTIK_RECV_LIMIT	14988	1	
-MIKROTIK_XMIT_LIMIT	14988	2	
-MIKROTIK_GROUP	14988	3	
-MIKROTIK_WIRELESS_FORWARD	14988	4	
-MIKROTIK_WIRELESS_SKIPDOT1X	14988	5	
-MIKROTIK_WIRELESS_ENCALGO	14988	6	
-MIKROTIK_WIRELESS_ENCKEY	14988	7	
-MIKROTIK_RATE_LIMIT	14988	8	
-MIKROTIK_REALM	14988	9	
-MIKROTIK_HOST_IP	14988	10	
-MIKROTIK_MARK_ID	14988	11	
-MIKROTIK_ADVERTISE_URL	14988	12	
-MIKROTIK_ADVERTISE_INTERVAL	14988	13	
-MIKROTIK_RECV_LIMIT_GIGAWORDS	14988	14	
-MIKROTIK_XMIT_LIMIT_GIGAWORDS	14988	15	
-MIKROTIK_WIRELESS_PSK	14988	16	
-MIKROTIK_TOTAL_LIMIT	14988	17	
-MIKROTIK_TOTAL_LIMIT_GIGAWORDS	14988	18	
-MIKROTIK_ADDRESS_LIST	14988	19	
-MIKROTIK_WIRELESS_MPKEY	14988	20	
-MIKROTIK_WIRELESS_COMMENT	14988	21	
-MIKROTIK_DELEGATED_IPV6_POOL	14988	22	
-MIKROTIK_DHCP_OPTION_SET	14988	23	
-MIKROTIK_DHCP_OPTION_PARAM_STR1	14988	24	
-MIKROTIK_DHCP_OPTION_PARAM_STR2	14988	25	
-MIKROTIK_WIRELESS_VLANID	14988	26	
-MIKROTIK_WIRELESS_VLANIDTYPE	14988	27	
-MIKROTIK_WIRELESS_MINSIGNAL	14988	28	
-MIKROTIK_WIRELESS_MAXSIGNAL	14988	29	
-All Supported Attribute Numeric Values
-Acct-Authentic	
-	45	RFC 2866
-Acct-Delay-Time	
-	41	RFC 2866
-Acct-Input-Gigawords	
-	52	RFC 2869
-Acct-Input-Octets	
-	42	RFC 2866
-Acct-Input-Packets	
-	47	RFC 2866
-Acct-Interim-Interval	
-	85	RFC 2869
-Acct-Output-Gigawords	
-	53	RFC 2869
-Acct-Output-Octets	
-	43	RFC 2866
-Acct-Output-Packets	
-	48	RFC 2866
-Acct-Session-Id	
-	44	RFC 2866
-Acct-Session-Time	
-	46	RFC 2866
-Acct-Status-Type	
-	40	RFC 2866
-Acct-Terminate-Cause	
-	49	RFC 2866
-Ascend-Client-Gateway	529	132	
-Ascend-Data-Rate	529	197	
-Ascend-Xmit-Rate	529	255	
-Called-Station-Id	
-	30	RFC 2865
-Calling-Station-Id	
-	31	RFC 2865
-CHAP-Challenge	
-	60	RFC 2866
-CHAP-Password	
-	3	RFC 2865
-Class	
-	25	RFC 2865
-Filter-Id	
-	11	RFC 2865
-Framed-Compression	
-	53	RFC 2865
-Framed-IP-Address	
-	8	RFC 2865
-Framed-IP-Netmask	
-	9	RFC 2865
-Framed-IPv6-Prefix	
-	97	RFC 3162
-Framed-Mtu	
-	52	RFC 2869
-Framed-Pool	
-	88	RFC 2869
-Framed-Protocol	
-	7	RFC 2865
-Framed-Route	
-	22	RFC 2865
-Framed-Routing	
-	50	RFC 2865
-Idle-Timeout	
-	28	RFC 2865
-MS-CHAP-Challenge	311	11	RFC 2548
-MS-CHAP-Domain	311	10	RFC 2548
-MS-CHAP-Response	311	1	RFC 2548
-MS-CHAP2-Response	311	25	RFC 2548
-MS-CHAP2-Success	311	26	RFC 2548
-MS-MPPE-Encryption-Policy	311	7	RFC 2548
-MS-MPPE-Encryption-Types	311	8	RFC 2548
-MS-MPPE-Recv-Key	311	17	RFC 2548
-MS-MPPE-Send-Key	311	16	RFC 2548
-NAS-Identifier	
-	32	RFC 2865
-NAS-Port	
-	5	RFC 2865
-NAS-IP-Address	
-	4	RFC 2865
-NAS-Port-Id	
-	87	RFC 2869
-NAS-Port-Type	
-	61	RFC 2865
-Port-Limit	
-	62	RFC 2865
-Redback-Agent-Remote-Id	2352	96	
-Redback-Agent-Circuit-Id	2352	97	
-Service-Type	
-	6	RFC 2865
-Session-Timeout	
-	27	RFC 2865
-User-Name	
-	1	RFC 2865
-User-Password	
-	2	RFC 2865
-WISPr-Bandwidth-Max-Down	14122	8	wi-fi.org
-WISPr-Bandwidth-Max-Up	14122	7	wi-fi.org
-WISPr-Bandwidth-Min-Down	14122	6	wi-fi.org
-WISPr-Bandwidth-Min-Up	14122	5	wi-fi.org
-WISPr-Location-Id	14122	1	wi-fi.org
-WISPr-Location-Name	14122	2	wi-fi.org
-WISPr-Logoff-URL	14122	3	wi-fi.org
-WISPr-Redirection-URL	14122	4	wi-fi.org
-WISPr-Session-Terminate-Time	14122	9	wi-fi.org
-WISPr-Session-Terminate-End-Of-Day	14122	10	wi-fi.org
-WISPr-Billing-Class-Of-Service	14122	11	wi-fi.org
+User-Manager attempts to disconnect an active session before a new user will be accepted (when the appropriate limit is set), that's why in such setups it is suggested to use 1s for /radius client timeout.
 
 
+IPsec service in RouterOS does not support rate limitations.
+
+Properties
+comment (string; Default: )	Short description of the limitation.
+download-limit (integer; Default: 0)	The total amount of traffic a user can download in Bytes.
+name (string; Default: )	Unique name of the limitation.
+rate-limit-burst-rx ()	Part of MT-Rate-Limit RADIUS attribute. Refer to Queues#SimpleQueue.
+rate-limit-burst-threshold-rx ()	Part of MT-Rate-Limit RADIUS attribute. Refer to Queues#SimpleQueue.
+rate-limit-burst-threshold-tx ()	Part of MT-Rate-Limit RADIUS attribute. Refer to Queues#SimpleQueue.
+rate-limit-burst-time-rx ()	Part of MT-Rate-Limit RADIUS attribute. Refer to Queues#SimpleQueue.
+rate-limit-burst-time-tx ()	Part of MT-Rate-Limit RADIUS attribute. Refer to Queues#SimpleQueue.
+rate-limit-burst-tx ()	Part of MT-Rate-Limit RADIUS attribute. Refer to Queues#SimpleQueue.
+rate-limit-min-rx ()	Part of MT-Rate-Limit RADIUS attribute. Refer to Queues#SimpleQueue.
+rate-limit-min-tx ()	Part of MT-Rate-Limit RADIUS attribute. Refer to Queues#SimpleQueue.
+rate-limit-priority ()	Part of MT-Rate-Limit RADIUS attribute. Refer to Queues#SimpleQueue.
+rate-limit-rx ()	Part of MT-Rate-Limit RADIUS attribute. Refer to Queues#SimpleQueue.
+rate-limit-tx ()	Part of MT-Rate-Limit RADIUS attribute. Refer to Queues#SimpleQueue.
+reset-counters-interval (hourly | daily | weekly | monthly | disabled); Default: disabled)	The interval from reset-counters-start-time when all associated user statistics are cleared.
+reset-counters-start-time (datetime; Default: )	Static date and time value from which reset-counters-interval is calculated.
+transfer-limit (integer; Default: 0)	The total amount of aggregated (download+upload) traffic in Bytes.
+upload-limit (integer; Default: 0)	The total amount of traffic a user can upload in Bytes.
+uptime-limit (time; Default: 00:00:00)	The total amount of uptime a user can stay active.
+Payments
+
+Sub-menu: /user-manager payment
+
+Information about all received payments is available in this section.
+
+Read-only properties
+currency (string)	The currency used in the transaction.
+method (string)	Service used for the transaction (currently PayPal only).
+price (decimal)	Amount paid by the user.
+profile (profile)	Name of the profile the user purchased.
+trans-end (datetime)	Date and time when the transaction started.
+trans-start (datetime)	Date and time when the transaction ended.
+trans-status (string)	Status of the transaction. Possible statuses - started, pending, approved, declined, error, timeout, aborted, user approved. Only approved should be considered as a complete transaction.
+user (string; Default: )	Name of the user who performed the transaction.
+user-message (string; Default: )	
+Profiles
+
+Sub-menu: /user-manager profile
+
+Properties
+comment (string; Default: )	Short description of the entry.
+name (string; Default: )	Unique name of the profile.
+name-for-users (string; Default: )	Name of the profile that will be shown for users on the Web page.
+override-shared-users (decimal | off | unlimited; Default: off)	Whether to allow multiple sessions with the same user name. This overrides the shared-users setting.
+price (decimal; Default: 0.00)	
+starts-when (assigned | first-auth; Default: assigned)	The time when does the profile become active. Assigned - immediately when a User Profile entry is created. First-auth - upon first authentication request from the user.
+validity (time | unlimited; Default: unlimited)	The total amount of time a user can use this profile.
+Profile Limitations
+
+Sub-menu: /user-manager profile-limitation
+
+Profile-Limitations table links Limitations and Profiles together and defines their validity period. When multiple Limitations are assigned to the same Profile, a user must comply with all Limitations for the session to be established. This allows more complicated setups to be created, for example, separate monthly and daily bandwidth limits.
+
+Properties
+comment (string; Default: )	Short description of the entry.
+from-time (time; Default: 00:00:00)	Time of day when the limitation should start.
+limitation (limitation; Default: )	Name of already created Limitation.
+profile (profile; Default: )	Name of already created Profile.
+till-time (time; Default: 23:59:59)	Time of day when the limitation should end.
+weekdays (day of week; Default: Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday)	Day of the week when the limitation should be active.
+Routers
+
+Sub-menu: /user-manager router
+
+Here you can define NAS devices that can use User Manager as a RADIUS server.
+
+Properties
+coa-port (integer:1..65535; Default: 3799)	Port number of CoA (Change of Authorization) communication.
+address (IP/IPv6; Default: )	IP address of the RADIUS client.
+comment (string; Default: )	Short description of the NAS.
+disabled (yes | no; Default: no)	Controls whether the entry is currently active or not.
+name (string; Default: )	Unique name of the RADIUS client.
+shared-secret (string; Default: )	Used to secure communication between a RADIUS server and a RADIUS client.
+
+Commands
+reset-counters ()	Clear all statistics for specific RADIUS client.
+Sessions
+
+Sub-menu: /user-manager session
+
+Sessions are logged only if accounting is enabled on NAS.
+
+Read-only properties
+acct-session-id (string)
+	Unique identification of the accounting session.
+active (yes | no)
+	Whether the session is currently used.
+calling-station-id (string)	User's identifier, usually IP address or MAC address.
+download (Bytes)	Amount of traffic downloaded.
+ended (datetime)	Date and time when the session was closed. Empty for active sessions.
+last-accounting-packet (datetime)	Date and time when the last accounting update was received.
+nas-ip-address (IP address)	The IP address of the NAS.
+nas-port-id (string)	Identifier of the NAS port that is authenticating the user. 
+nas-port-type (string)	The port type (physical or virtual) that is authenticating the user. 
+started (datetime)	Date and time when the session was established.
+status (list of statuses)	Possible available statuses of a session: start - accounting message Start has been received, stop - accounting message Stop has been received, interim - Interim update has been received, close-acked - session is successfully closed, expired.
+terminate-cause (string)	The reason why the session was closed.
+upload (Bytes)	Amount of traffic uploaded.
+uptime (time)	Total logged uptime on the session.
+user (string)	Name of the user.
+user-address (IP address)	IP address provided to the user.
+Settings
+
+Sub-menu: /user-manager
+
+Properties
+accounting-port (integer; Default: 1813)	Port to listen for RADIUS accounting requests.
+authentication-port (integer; Default: 1812)	Port to listen for RADIUS authentication requests.
+certificate (certificate; Default: )	Certificate for use in EAP TLS-type authentication methods.
+enabled (yes | no; Default: no)	Whether the User Manager functionality is enabled.
+use-profiles (yes | no; Default: no)	Whether to use Profiles and Limitations. When set to no, only User configuration is required to run User Manager.
+Advanced
+
+Sub-menu: /user-manager advanced
+
+Properties
+paypal-allow (yes | no; Default: no)	Whether to enable PayPal functionality for User Manager.
+paypal-currency (string; Default: USD)	The currency related to price setting in which users will be billed.
+paypal-password (string; Default: )	The password of your PayPal API account.
+paypal-signature (string; Default: )	Signature of your PayPal API account.
+paypal-use-sandbox (yes | no; Default: no)	Whether to use PayPal's sandbox environment for testing purposes.
+paypal-user (string; Default: )	Username of your PayPal API account.
+web-private-password (string; Default: )	Password for accessing /um/PRIVATE/ section over HTTP.
+web-private-username (string; Default: )	Username for accessing /um/PRIVATE/ section over HTTP.
+Users
+
+Sub-menu: /user-manager user
+
+Properties
+attributes (array of attributes; Default: )	Custom set of Attributes with their values that will additionally be added to Access-Accept messages.
+caller-id (string; Default: )	Allow user's authentication with a specific Calling-Station-Id value.
+comment (string; Default: )	Short description of the user.
+disabled (yes | no; Default: no)	Controls whether the user can be used or not.
+group (group; Default: default)	Name of the Group the user is associated to.
+name (string; Default: )	Username for session authentication.
+otp-secret (string; Default: )	A one-time password token that is attached to the password.
+password (string; Default: )	The password of the user for session authentication.
+shared-users (integer | unlimited; Default: 1)	The total amount of sessions the user can simultaneously establish.
+
+Commands
+add-batch-users ()	The command can generate multiple user accounts based on various parameters.
+generate-voucher ()	Generates a file based on voucher-template that can be presented to the end user.
+monitor ()	Shows total statistics for a user. Stats include total-uptime, total-download, total-upload, active-sessions, actual-profile, attributes-details.
+User Groups
+
+Sub-menu: /user-manager user group
+
+User groups define common characteristics of multiple users such as allowed authentication methods and RADIUS attributes. There are two groups already present in User Manager called default and default-anonymous.
+
+Properties
+attributes (array of attributes; Default: )	Custom set of Attributes with their values that will additionally be added to Access-Accept messages for users in this group.
+comment (string; Default: )	Short description of the group.
+inner-auths (list of auths; Default: )	List of allowed authentication methods for tunneled (outer) authentication methods. Supported inner authentication methods - ttls-pap, ttls-chap, ttls-mschap1, ttls-mschap2, peap-mschap2.
+name (string; Default: )	Unique name of the group.
+outer-auths (list of auths; Default: )	List of allowed authentication methods. Supported outer authentication methods - pap, chap, mschap1, mschap2, eap-tls, eap-ttls, eap-peap, eap-mschap2.
+User Profiles
+
+Sub-menu: /user-manager user-profile
+
+This menu assigns users a profile and tracks the status of the profile. A single user can have multiple profiles assigned, however, only one can be used at the same time. A user will seamlessly be switched to the next profile when the currently active profile expires without dropping the user's session.
+
+Properties
+profile (profile; Default: )	Name of the profile to assign for user.
+user (user; Default: )	Name of the user to use particular profile.
+
+Read-only properties
+end-time (datetime)
+	Date and time the User Profile will expire.
+state (running active | running | used)
+	The current state of the User Profile. Running active - currently used profile by the user. Running - a profile is ready to be used. Used - an expired profile that can no longer be activated.
+
+Commands
+activate-user-profile ()	Make a User Profile entry active immediately.
+WEB Interface
+
+Each user has access to his personal profile using a WEB interface. The WEB interface can be accessed by adding "/um/" directory to the router's IP or domain, for example, http://example.com/um/. Note that the WEB interface is affected by IP Services "www" and "www-ssl". The WEB interface can be customized using CSS, JavaScript, and HTML.
+
+Customizable file reference
+css/login.css	Cascading style sheet file used in login prompt page.
+css/user.css	Cascading style sheet file used in user's profile page.
+img/PayPal_mark_37x23.gif	PayPal logo image.
+img/ajax-loader.gif	Loading gif while processing page switching.
+img/mikrotik_logo.png	MikroTik logo that is displayed on all pages.
+js/generic.js	Javascript file used on all pages.
+js/login.js	Javascript file used in login prompt page.
+js/user.js	Javascript file used in user's profile page.
+user/login_dynamic.html	Layout of the login prompt page.
+user/user_dynamic.html	Layout of the user's profile page.
+Application Guides
+Batch user creation
+
+It is possible to create multiple new users with randomly generated usernames and passwords. For example, the following command will generate 3 new users with 6 lowercase symbols as the username and 6 lowercase, uppercase, and numbers as the password.
+/user-manager user
+add-batch-users number-of-users=3 password-characters=lowercase,numbers,uppercase password-length=6 username-characters=lowercase username-length=6
+
+The command generated users can be seen by printing the user's table:
+/user-manager user print 
+Flags: X - disabled 
+ 0   name="olsgkl" password="86a6zH" otp-secret="" group=default shared-users=1 attributes="" 
+
+ 1   name="lkbwss" password="jaKY5V" otp-secret="" group=default shared-users=1 attributes="" 
+
+ 2   name="cwxbwu" password="a62yZd" otp-secret="" group=default shared-users=1 attributes="" 
+
+Providing NAS with custom RADIUS attributes
+
+It is possible to send additional RADIUS attributes during the authentication process to provide NAS with custom information about the session, such as what IP address should be assigned to the supplicant or what address pool to use for address assigning.
+Static IP address for a user
+
+To assign the end user a static IP address, Framed-IP-Address attribute can be used. When using static IP address allocation, shared-sessions must be set to 1 to prevent cases when a user has multiple simultaneous sessions, but there is only one IP address. For example:
+/user-manager user
+set [find name=username] shared-users=1 attributes=Framed-IP-Address:192.168.1.4
+Specifying address pool for a group of users
+
+We can group up multiple similar users and assign RADIUS attributes to all of them at once. First of all, create a new group:
+/user-manager user group
+add name=location1 outer-auths=chap,eap-mschap2,eap-peap,eap-tls,eap-ttls,mschap1,mschap2,pap \
+inner-auths=peap-mschap2,ttls-chap,ttls-mschap1,ttls-mschap2,ttls-pap attributes=Framed-Pool:pool1
+
+The next step is to assign a user to the group:
+/user-manager user
+ set [find name=username] group=location1
+
+In this case, an IP address from pool1 will be assigned to the user upon authentication - make sure pool1 is created on the NAS device.
+Using TOTP (time-based one-time password) for user authentication
+
+User Manager supports time-based authentication token addition to the user's password field that is regenerated every 30 seconds.
+
+OTP depends on the clock, so make sure time settings are configured correctly.
+
+TOTP works by having a shared secret on the supplicant (client) and the authentication server (User Manager). To configure TOTP on RouterOS, simply set the otp-secret for the user. For example:
+/user-manager user
+set [find name=username] password=mypass otp-secret=mysecret
+
+To calculate the TOTP token on the supplicant side, many widely available applications can be used, for example, Google Authenticator or https://totp.app/. Adding mysecret to the TOTP token generator will provide a new unique 6-digit code that must be added to the user password.
+
+The following example will accept the user's authentication with a calculated TOTP token added to the common password until a new TOTP token is generated, for example,
+User-Name=username
+User-Password=mypass620872
+Exporting user credentials
+Printable login credentials for a single user
+
+To generate a single user's printable voucher card, simply use the generate-voucher command. Specify the RouterOS ID number of the user or use the find command to specify a username. A template is already included in User Manager's installation available in the Files section of your device. You can customize the template for your needs.
+/user-manager user
+generate-voucher voucher-template=printable_vouchers.html [find where name=username]
+
+The generated voucher card is available by accessing the router using a WEB browser and navigating to /um/PRIVATE/GENERATED/vouchers/gen_printable_vouchers.html
+
+By default, the printable card looks like this:
+
+To access the PRIVATE path of the /um/ directory by the WEB browser, private-username and private-password must be configured. See Settings section.
+
+It is possible to use different variables when generating vouchers. Currently, supported variables are:
+
+$(username) - Represents User Manager username
+$(password) - Password of the username
+$(userprofname) - Profile that is active for the particular user
+$(userprofendtime) - Profile validity end time if specified
+Multiple user credential export
+
+It is possible to generate a CSV or XML file with multiple or all user credentials at once by using the export.xml or export.csv as voucher-template.
+/user-manager user
+generate-voucher voucher-template=export.xml [find]
+
+The command generates an XML file um5files/PRIVATE/GENERATED/vouchers/gen_export.xml which can either be accessible by the WEB browser or any other file access tools.
+<?xml version="1.0" encoding="UTF-8"?>
+<users>
+    <user>
+        <username>olsgkl</username>
+        <password>86a6zH</password>
+    </user>
+    <user>
+        <username>lkbwss</username>
+        <password>jaKY5V</password>
+    </user>
+    <user>
+        <username>cwxbwu</username>
+        <password>a62yZd</password>
+    </user>
+    <user>
+        <username>username</username>
+        <password>secretpassword</password>
+    </user>
+
+</users>
+Generating usage report
+
+In cases where presentable network usage information is required by companies billing or legal team an automated session export can be created using the generate-report command. The command requires an input of the report template - an example of the template is available in um5files/PRIVATE/TEMPLATES/reports/report_default.html. Example of the report generation:
+/user-manager
+generate-report report-template=report_default.html columns=username,uptime,download,upload
+
+The generated report is available by accessing the router using a WEB browser and navigating to /um/PRIVATE/GENERATED/reports/gen_report_default.html
+
+Purchasing a profile
+
+After logging into the user's private profile by accessing the router's /um/ directory using a WEB browser, for example, http://example.com/um/, he will be able to see all available Profiles in the respective menu. Profiles that have specified price values will have a Buy this Profile button available.
+
+After pressing the Buy this Profile button, the user will be asked to choose from available transaction service providers (currently only PayPal is available) and later redirected to PayPal's payment processing page.
+
+When the payment is completed, the User Manager will ask PayPal to approve the transaction. After approval, the profile is assigned to the user and is ready to use.
+Migrating from RouterOS v6
 
 
+When you upgrade your User Manager router from RouterOS v6 to the v7 the new User Manager will work with new database files and configuration. To continue using the old user, router, profile, etc. configuration you must manually execute the migrate command. To do so you must have files from the old User Manager server folder "user-manager" present. The folder can be renamed, but all the contents from the old installation must be transferred to the new v7 installation (you can move the old configuration from one router to another router with v7, you must copy "user-manager" folder). After that, all you need to do is execute this command - "/user-manager/database/migrate-legacy-db database-path=<path_to_old_user_manager_folder>".
+
+The import process will try to convert such configuration - users, profiles, user-profiles, limitations, profile-limitations, user-counters, routers, and sessions.
+Application Examples
+Basic L2TP/IPsec server with User Manager authentication
+
+User Manager configuration
+
+Start off by enabling User Manager functionality.
+/user-manager
+set enabled=yes
+
+Allow receiving RADIUS requests from the localhost (the router itself).
+/user-manager router
+add address=127.0.0.1 comment=localhost name=local shared-secret=test
+
+Next, add users and their credentials that clients will use to authenticate to the server.
+/user-manager user
+add name=user1 password=password
+
+Configuring RADIUS client
+
+For the router to use the RADIUS server for user authentication, it is required to add a new RADIUS client that has the same shared secret that we already configured on User Manager.
+/radius
+add address=127.0.0.1 secret=test service=ipsec
+
+L2TP/IPsec server configuration
+
+Configure the IP pool from which IP addresses will be assigned to the users and assign it to the PPP Profile.
+/ip pool
+add name=vpn-pool range=192.168.99.2-192.168.99.100
+
+/ppp profile
+set default-encryption local-address=192.168.99.1 remote-address=vpn-pool
+
+Enable the use of RADIUS for PPP authentication.
+/ppp aaa
+set use-radius=yes
+
+Enable the L2TP server with IPsec encryption.
+/interface l2tp-server server
+set enabled=yes use-ipsec=required ipsec-secret=mySecret
+
+That is it. Your router is now ready to accept L2TP/IPsec connections and authenticate them to the internal User Manager.
+MFA authentication for RouterOS user login
+
+As User-Manager supports TOTP (time-based-one-time password), it is possible to setup so called MFA authentication for different services. Here will will look into RouterOS user authentication over User Manager (radius) with time based password, that is changed every 30 seconds. 
+
+Here are the necessary configuration options on your MikroTik router,
+
+Enable to use RADIUS for /user menu, and set default-grop from /user group menu. Keep in mind that local /user database is checked first, and then RADIUS is contacted.
+ 
+
+/user/aaa/set use-radius=yes default-group=full
+
+Enable radius client for login service. As we run User Manager on the same router, 127.0.0.1 is used,
+
+/radius/add address=127.0.0.1 service=login secret=mystrongsecret
+
+Here are the configuration steps for User Manager,
+
+Make sure you have added your managed devices to "Routers" menu,
+
+/user-manager/router/add name=myrouter address=127.0.0.1 shared-secret=mystrongsecret
+
+Add user to User-Manager user table with OTP secret parameter. Few more steps are required for proper OTP configuration.
+Pick OTP-secret name and convert it to base32 format (there are plenty of online converters from utf-8 to base32 format). For my configuration I use "mysupersecret", that in base32 would be NV4XG5LQMVZHGZLDOJSXI===
+
+/user-manager/user/add name=mikrotik password=mysuperpassword otp-secret="NV4XG5LQMVZHGZLDOJSXI==="
+
+Note, than in your favorite authenticator app, you will need to set user this key manually "NV4XG5LQMVZHGZLDOJSXI===", when adding new time password instance.
+
+To login to your MikroTik device, open Winbox/Console and connect to your router address, use login:mikrotik and password:mysuperpasswordxxxxxx, where xxxxxx is 6 digit code from your favorite authentication app.
+
+Password is changed every 30 seconds and it is available from your favorite app.
