@@ -580,3 +580,4 @@ For example, the output of Ethernet stats on the hAP ac2 device:
      tx-excessive-deferred:                0      0              0             0      0
                tx-deferred:                0      0              0             0      0
          tx-late-collision:                0      0              0             0      0
+
