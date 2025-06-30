@@ -1,1138 +1,1081 @@
 
+Multi Protocol Label Switching - MPLS
 
-    Creado por Emīls T., actualizado por última vez por Artis M. el jun 10, 2025 16 min de lectura
+    Creado por Normunds R., actualizado por última vez el oct 03, 2024 1 min de lectura
 
-    Summary
-    LTE Client
-        Properties
-        APN profiles
-        LTE settings
-        LTE eSIM
-            Modem eSIM management support table
-        Scanner
-        User Info command
-            Properties (Up to 6.40)
-        Modem firmware-upgrade command
-            Modems with firmware update support and connectivity required
-            Modem firmware-upgrade command examples:
-        User at-chat command
-    Quick setup example
-    Passthrough Example
-    Dual SIM
-        Boards with switchable SIM slots
-        Usage Example
-    Tips and Tricks
-        Find device location using Cell information
-        Using Cell lock
-        Cell Monitor
-    Troubleshooting
-        Locking band on Huawei and other modems
-        mPCIe modems with RB9xx series devices
-        Boards with USB-A port and mPCIe
-        Avoiding tethering speed throttling
-        Unlocking SIM card after multiple wrong PIN code attempts
+In This Section:
 
+        MPLS Overview
+        MPLS MTU, Forwarding and Label Bindings
+        EXP bit and MPLS Queuing
+        LDP
+        VPLS
+        Traffic Eng
+        MPLS Reference
+        MPLS Case Studies
 
-Summary
 
 
-Package: system
-Optional lte-mipsbe.npk package is only required for SXT 3-7 built-in modem.
 
-Support for Direct-IP mode type cards only. MBIM support is available in RouterOS v7 releases and the MBIM driver is loaded automatically. If the modem is not recognized in RouterOS v6 - Please test it in v7 releases before asking for support in RouterOS v6.
-
-To enable access via a PPP interface instead of a LTE Interface, change the operational mode to "serial" with /interface lte settings set mode=serial CLI command and issue a reboot. Note that using PPP emulation mode you may not get the same throughput speeds as using the LTE interface emulation type. 
-
-For RouterOS v7 the ignore-direct-modem parameter was renamed to "mode" and moved to /interface lte settings menu.
-LTE Client
-Sub-menu: /interface lte
-Properties
-allow-roaming (yes | no; Default: no)	Enable data roaming for connecting to other countries' data-providers. Not all LTE modems support this feature. Some modems, that do not fully support this feature, will connect to the network but will not establish an IP data connection with allow-roaming set to no.
-apn-profiles (string; Default: default)	Which APN profile to use for this interface
-band (integer list; Default: "")	LTE Frequency band used in communication LTE Bands and bandwidths
-nr-band (integer list; Default: "")	5G NR Frequency band used in communication 5G NR Bands and bandwidths
-comment (string; Default: "")	Descriptive name of an item
-disabled (yes | no; Default: no)	Whether the interface is disabled or not. By default it is enabled.
-modem-init (string; Default: "")	Modem init string (AT command that will be executed at modem startup)
-mtu (integer; Default: 1500)	Maximum Transmission Unit. Max packet size that the LTE interface will be able to send without packet fragmentation.
-name (string; Default: "")	Descriptive name of the interface.
-network-mode (3g | gsm | lte | 5g)	Select/force mode for LTE interface to operate with
-operator (integer; Default: "")	used to lock the device to a specific operator full PLMN number is used for the lock consisting of MCC+MNC. PLMN codes
-pin (integer; Default: "")	SIM Card's PIN code.
-sms-protocol (at | auto | mbim)
-	SMS functionality.  mbim: uses MBIM driver.  at: uses AT-Commands.  auto: selects the appropriate option depending on the modem.
-APN profiles
-
-All network-related settings are under profiles
-Sub-menu: /interface lte apn
-
-
-add-default-route (yes | no)	Whether to add a default route to forward all traffic over the LTE interface.
-apn (string)	Service Provider's Access Point Name
-authentication (pap | chap | none; Default: none)	Allowed protocol to use for authentication
-default-route-distance (integer; Default: 2)	Sets distance value applied to auto-created default route, if add-default-route is also selected. LTE route by default is with distance 2 to prefer wired routes over LTE
-ip-type (ipv4 | ipv4-ipv6 | ipv6; Default: )	Requested PDN type
-ipv6-interface (; Default: )	Interface on which to advertise IPv6 prefix
-name (string; Default: )	APN profile name
-number (integer; Default: )	APN profile number
-passthrough-interface (; Default: )	Interface to passthrough IP configuration (activates passthrough)
-passthrough-mac (MAC; Default: auto)	If set to auto, then will learn MAC from the first packet
-passthrough-subnet-selection (auto / p2p; Default: auto)	"auto" selects the smallest possible subnet to be used for the passthrough interface. "p2p" sets the passthrough interface subnet as /32 and picks gateway address from 10.177.0.0/16 range. The gateway address stays the same until the apn configuration is changed.
-password (string; Default: )	Password used if any of the authentication protocols are active
-use-network-apn (yes | no; Default: yes)	Parameter is available starting from RouterOS v7 and used only for MBIM modems. If set to yes, uses network provided APN.
-use-peer-dns (yes | no; Default: yes)	If set to yes, uses DNS received from LTE interface
-user (integer)	Username used if any of the authentication protocols are active
-LTE settings
-
-LTE and router-specific LTE settings. The menu is available starting from RouterOS v7.
-Sub-menu: /interface lte settings
-
-
-mode (auto | mbim | serial / user; Default: auto)	
-
-Operation mode setting.
-
-    auto - automatically select the operation mode.
-    serial - provide only serial ports
-    mbim - switch modem into MBIM mode if possible
-    user - OS will not attempt to automatically switch the modem mode. (Available from RouterOS 7.16)
-
-firmware-path (string)	Firmware path in host OS. Modem gobi firmware
-external-antenna (auto | both | div | main | none; Default: auto)	This setting is only available for "Chateau" routers, except for Chateau 5G versions.
-
-    auto - measures the signal levels on both internal and external antennas and selects the antennas with the best signal(RSRP).
-    both - both antennas are set to external
-    div - diversity antenna set to external
-    main - main antenna set to external
-    none - no external antenna selected(using internal antennas) 
-
-external-antenna-selected ()	This setting is only available for "Chateau" routers, except for Chateau 5G versions. Shows the currently selected antenna if "external-antenna" is set to "auto"
-sim-slot ()	This setting is available for routers that have switchable SIM slots (LtAP, SXT). Selection options differ between products.
-LTE eSIM
-Sub-menu: /interface/lte/esim
-RouterOS version: 7.18+
-
-This menu contains commands related to eSIM (embedded Subscriber Identification Module) provisioning and management using RouterOS build in LPA (eSIM Local Profile Assistant).
-
-RouterOS LPA supports:
-
-    AT modems which firmware supports SIM low access commands (AT+CCHO; AT+CCHC; AT+CGLA)
-    MBIM modems which supports SIM low level access service in its firmware (UUID_SERVICE_MS_UICC)
-
-Other requirements:
-
-    eSIM in SIM cards form factor (physical eSIM) inserted in RouterBoard SIM slot
-    eSIM/eUICC present on modem (soldered chip) and modem set to use this slot
-    connectivity to eSIM SIM profile provider SM-DP+ provisioning server during provisioning and deletion of SIM profiles on eSIM chip (for connectivity, can use another eSIM profile or another WAN interface)
-    eSIM can be provisioned only if the active slot is eSIM
-
-A single eSIM chip can store multiple eSIM profiles, the maximum profile count depends on the eSIM chip used.
-
-
-Command /interface/lte/esim esim-id [find] can be used to check whether the modem supports SIM low access commands and eSIM presence.
-
-If 3rd party modem with embedded eSIM chip is used, please consult modem manual regarding AT commands needed to select eSIM slot (AT!UIMS; AT+QUIMSLOT etc).
-
-
-Commands
-deactivate	
-
-Deactivate (disable) eSIM profile. 
-
-/interface/lte/esim deactivate number=0
-
-activate	
-
-Activate (enable) eSIM profile.
-
-/interface/lte/esim activate number=0
-
-delete	
-
-Permanently deletes eSIM profile from the eSIM card.
-
-/interface/lte/esim delete number=0
-
-print	
-
-List the eSIM profiles installed on eSIM
-
-/interface/lte esim print
-Flags: A - ACTIVE
-Columns: INTERFACE, NAME, SPN, UICCID, NICKNAME
-#   INTERFACE  NAME           SPN                   UICCID  NICKNAME
-0 A lte1       NAME1          SPN1    1111111111111111111   nickname1
-1   lte1       NAME2          SPN2    2222222222222222222   nickname2
-2   lte1       NAME3          SPN3    3333333333333333333   nickname3
-
-provision	
-
-Provision new eSIM profile. The command takes four parameters:
-
-    interface - the interface for which the eSIM profile will be enabled.
-    matching-id - an activation code token. Example:  matching-id=ABCD10EFGHI5KL6M
-    sm-dp-plus - SM-DP+ server hostname
-    confirmation-code - confirmation code (a one-time password that is required in some cases)
-
-Example eSIM LPA string decoded from QR: LPA:1$server.example.io$ABCD10EFGHI5KL6M
-
-
-/interface/lte/esim provision interface=lte1 sm-dp-plus=server.example.io matching-id=ABCD10EFGHI5KL6M
-
-esim-id	
-
-Query the eSIM ID. The command takes one parameter:
-
-    interface - select the interface for which to query the eSIM ID.
-
-/interface/lte/esim esim-id interface=lte1
-  eid: 8903302342630000000004181FFFFFFF
-
-set-nickname	
-
-Set a nickname for an eSIM profile.
-
-/interface/lte/esim set-nickname number=0 nickname=nickname1
-
-refresh-profile-list
-	
-
-Re-query the eSIM profile list. The command takes one parameter:
-
-    interface - Select an interface for which the eSIM profiles will be re-queried.
-
-Modem eSIM management support table
-
-These modems do not have eSIM built in. Requires an external eSIM chip. For example, a physical eSIM card (eSIM in a standard SIM form factor).
-
-
-EC200A-EU	yes	
-EG06-A	yes	
-EG18-EA	yes	
-EG12-EA	yes	
-EG120K-EA	yes	
-RG520F-EU	yes	
-EP06-A	yes	
-RG502Q-EA	yes	
-FG621-EA	yes	Can't manage empty eSIM (no profiles)
-R11e-LTE6	yes	Firmware revision R11e-LTE6_V039 and newer
-R11e-LTE-US	no	
-R11e-4G	no	
-R11e-LTE	no	
-Scanner
-
-It is possible to scan LTE interfaces with /interface lte scan command. Example:
-
-[admin@MikroTik] > /interface lte scan duration=60 number=0 
-Columns: OPERATOR, MCC-MNC, RSSI, RSRP, RSRQ
-OPERATOR  MCC-MNC  RSSI    RSRP    RSRQ
-LMT         24701  -36dBm  -63dBm  -7dB
-
-Available properties:
-duration (integer)	Duration of scan in seconds
-freeze-frame-interval (integer)	time between data printout
-number (integer)	Interface number or name
-User Info command
-
-It is possible to send a special "info" command to LTE interface with /interface lte info command. In RouterOS v7 this command is moved to /interface lte monitor menu.
-Properties (Up to 6.40)
-user-command (string; Default: "")	send a command to the LTE card to extract useful information, e.g. with AT commands
-user-command-only (yes | no; Default: )	
-Modem firmware-upgrade command
-
-Command allows to check and upgrade modem firmware if update is available for supported MikroTik modems.
-
-For firmware update availability check and installation active internet connection is required, depending on modem internet connection can be provided using any  RouterOS  interface or modem interface (FOTA), please see table bellow regarding each modem supported connection methods.
-upgrade (yes | no; Default: no )	
-
-Set command execution mode: 
-
-    no - display current modem firmware version and show latest available firmware version
-    yes - performs firmware installation
-
-update-channel (stable | testing; Default: stable)
-
-
-	
-
-Sets which firmware update channel is used: 
-
-    stable - firmware version for general use
-    testing - early access/testing channel where modem firmware is published before releasing it in stable channel
-
-Feature available from v7.17beta2.
-
-firmware-file (string; Default:"" )
-	
-
-Allows to override firmware update source and perform upgrade from custom location (file, url) in environments where upgrade using internet connection to MikroTik upgrade servers is not a viable option, eg private networks etc. 
-Before attempting an LTE modem firmware upgrade - upgrade RouterOS version to the latest release How To Upgrade RouterOS
-Modems with firmware update support and connectivity required
-
-Use command /interface lte monitor [find] once returned property "model" for installed modem model identification.
-
-EC200A-EU
-
-R11eL-EC200A-EU
-	Using modem LTE interface
-Using any RouterOS interface(7.18beta1+)
-
-EG06-A
-	Using any RouterOS interface
-
-EP06-A
-	Using any RouterOS interface
-
-EG12-EA
-	
-
-Using any RouterOS interface
-
-EG18-EA
-	
-
-Using any RouterOS interface
-
-FG621-EA
-
-R11eL-FG621-EA
-	Using any RouterOS interface
-R11-LTE	Using modem LTE interface
-R11e-4G
-	Using any RouterOS interface
-
-R11e-LTE6
-	Using any RouterOS interface
-
-RG502Q-EA
-	
-
-Using any RouterOS interface
-
-RG520F-EU
-	
-
-Using any RouterOS interface
-Modem firmware-upgrade command examples:
-
-Check for new firmware update availability
-[admin@D53G] > /interface lte firmware-upgrade lte1                        
-  installed: EG12EAPAR01A13M4G_02.001.02.001
-     latest: EG12EAPAR01A15M4G_01.201.01.201
-
-
-Check for new firmware update availability in early access/testing channel
-[admin@D53G] > /interface lte firmware-upgrade lte1 update-channel=testing
-  installed: EG12EAPAR01A15M4G_01.201.01.201
-     latest: EG12EAPAR01A15M4G_01.203.01.203
-
-
-Install latest firmware
-[admin@D53G] > /interface lte firmware-upgrade lte1 upgrade=yes
-
-
-Install latest firmware from early access/testing channel
-[admin@D53G] > /interface lte firmware-upgrade lte1 upgrade=yes update-channel=testing
-User at-chat command
-
-It is possible to send user defined "at-chat" command to the LTE interface with /interface lte at-chat command.
-[admin@MikroTik] > /interface lte at-chat lte1 input="AT"
-  output: OK
-
-It is also possible to use the "wait" parameter wait=yes  with the command to make "at-chat" wait for 5 seconds and return all the output instead of returning only the first received data, this is useful for some commands that return multiline output or a large block of data.
-[admin@MikroTik] > interface lte at-chat lte1 input="at+qcfg=?"
-  output: 
-
-[admin@MikroTik] > interface lte at-chat lte1 input="at+qcfg=?" wait=yes
-  output: +QCFG: "rrc",(0-5)
-          +QCFG: "hsdpacat",(6,8,10-24)
-          +QCFG: "hsupacat",(5,6)
-          +QCFG: "pdp/duplicatechk",(0,1)
-          +QCFG: "risignaltype",("respective","physical")
-          +QCFG: "lte/bandprior",(1-43),(1-43),(1-43)
-          +QCFG: "volte_disable",(0,1)
-          +QCFG: "diversity/config",(4,6),(1-4),(0)
-          +QCFG: "div_test_mode",(0,1)
-          +QCFG: "usbspeed",("20","30")
-          +QCFG: "data_interface",(0,1),(0,1)
-          +QCFG: "pcie/mode",(0,1)
-          +QCFG: "pcie_mbim",(0,1)
-          +QCFG: "sms_control",(0,1),(0,1)
-          +QCFG: "call_control",(0,1),(0,1)
-          +QCFG: "usb/maxpower",(0-900)
-          +QCFG: "efratctl",(0,1)
-          +QCFG: "netmaskset",(0,1)[,<netmask>]
-          +QCFG: "mmwave",ant_chip,ant_type
-          +QCFG: "gatewayset",(0,1)[,<gateway>]
-          +QCFG: "clat",(0,1),(0,1),<prefix>,(0,32,40,48,56,64,96),<fqdn>,(0,1),(0,1,2,4,8),(0,1),(0,1),(0,1,2),(0,1,2)
-          +QCFG: "usage/apmem"
-          +QCFG: "enable_gea1"[,(0,1)]
-          +QCFG: "dhcppktfltr",(0,1)
-          OK
-
-You can also use "at-chat" function in scripts and assign command output to variable.
-[admin@MikroTik] > :global "lte_command" [/interface lte at-chat lte1 input="AT+CEREG?" as-value ] 
-[admin@MikroTik] > :put $"lte_command" 
-output=+CEREG: 0,1
-OK
-Quick setup example
-
-Start with network settings - Add new connection parameters under LTE apn profile (provided by network provider):
-/interface lte apn add name=profile1 apn=phoneprovider.net authentication=chap password=web user=web
-
-Select the newly created profile for an LTE connection:
-/interface lte set [find] apn-profiles=profile1 
-
-LTE interface should appear with the running (R) flag:
-[admin@MikroTik] > /interface lte print
-Flags: X - disabled, R - running 
-0 R name="lte1" mtu=1500 mac-address=AA:AA:AA:AA:AA:AA 
-
-If required, add NAT Masquerade for LTE Interface to get internet to the local network:
-/ip firewall nat add action=masquerade chain=srcnat out-interface=lte1
-
-After the interface is added, you can use the "info" command to see what parameters the client acquired (parameters returned depends on the LTE hardware device):
-
-[admin@MikroTik] > interface/lte/monitor lte1                                                                                                            
-            status: connected
-             model: EG18-EA
-          revision: EG18EAPAR01A12M4G
-  current-operator: LMT
-    current-cellid: 3103242
-            enb-id: 12122
-         sector-id: 10
-        phy-cellid: 480
-        data-class: LTE
-    session-uptime: 15m54s
-              imei: 86981604098XXXX
-              imsi: 24701060267XXXX
-              uicc: 8937101122102057XXXX
-      primary-band: B3@20Mhz earfcn: 1300 phy-cellid: 480
-     dl-modulation: qpsk
-               cqi: 7
-                ri: 2
-               mcs: 1
-              rssi: -68dBm
-              rsrp: -97dBm
-              rsrq: -9dB
-              sinr: 6dB
-
-Passthrough Example
-
-Some LTE interfaces support the LTE Passthrough feature where the IP configuration is applied directly to the client device. In this case, modem firmware is responsible for the IP configuration, and the router is used only to configure modem settings - APN, Network Technologies, and IP-Type. In this configuration, the router will not get IP configuration from the modem. The LTE Passthrough modem can pass both IPv4 and IPv6 addresses if that is supported by the modem. Some modems support multiple APNs where you can pass the traffic from each APN to a specific router interface.
-
-Passthrough will only work for one host. The router will automatically detect the MAC address of the first received packet and use it for the Passthrough. If there are multiple hosts on the network it is possible to lock the Passthrough to a specific MAC. On the host on the network where the Passthrough is providing the IP a DHCP-Client should be enabled on that interface too. Note, that it will not be possible to connect to the LTE router via a public lte IP address or from the host which is used by the passthrough. It is suggested to create an additional connection from the LTE router to the host for configuration purposes. For example vlan interface between the LTE router and host.
-
-To enable the Passthrough a new entry is required or the default entry should be changed in the '/interface lte apn' menu
-Passthrough is not supported by all chipsets.
-to check if your modem supports passthrough:
-/interface/lte/show-capabilities [find]
-
-Examples.
-
-To configure the Passthrough on ether1:
-[admin@MikroTik] > /interface lte apn add apn=apn1 passthrough-interface=ether1
-[admin@MikroTik] > /interface lte set lte1 apn-profiles=apn1
-
-To configure the Passthrough on ether1 host 00:0C:42:03:06:AB:
-[admin@MikroTik] > /interface lte apn add apn=apn1 passthrough-interface=ether1 passthrough-mac=00:0C:42:03:06:AB
-[admin@MikroTik] > /interface lte set lte1 apn-profiles=apn1
-
-To configure multiple APNs on ether1 and ether2:
-[admin@MikroTik] > /interface lte apn add apn=apn1 passthrough-interface=ether1
-[admin@MikroTik] > /interface lte apn add apn=apn2 passthrough-interface=ether2
-[admin@MikroTik] > /interface lte set lte1 apn-profiles=apn1,apn2
-
-To configure multiple APNs with the same APN for different interfaces:
-[admin@MikroTik] > /interface lte apn add name=interface1 apn=apn1
-[admin@MikroTik] > /interface lte apn add name=interface2 apn=apn1 passthrough-interface=ether1
-[admin@MikroTik] > /interface lte set lte1 apn-profiles=interface1
-[admin@MikroTik] > /interface lte set lte2 apn-profiles=interface2
-
-Additionally, you can override the default dynamic dhcp server parameters/options by creating a DHCP server manually on the same passthrough-interface. For example, the default lease-time is 1 minute:
-[admin@MikroTik] > ip dhcp-server/print detail 
-Flags: D - dynamic; X - disabled, I - invalid 
- 0 D  name="apn2" interface=ether2 lease-time=1m address-pool=static-only use-radius=no lease-script="" address-lists="" 
-
-Now if you want to change the lease-time to for example 30 minutes, then you can create a new dhcp-server on the passthrough-interface, in this case, ether2:
-[admin@MikroTik] > /ip dhcp-server add interface=ether2 name=dhcp1 lease-time=30m
-[admin@MikroTik] > ip dhcp-server/print detail                                   
-Flags: D - dynamic; X - disabled, I - invalid 
- 0    name="dhcp1" interface=ether2 lease-time=30m address-pool=static-only use-radius=no lease-script="" address-lists=""
-Dual SIM
-Boards with switchable SIM slots
-RouterBoard	Modem slot	SIM slots	Switchable
-LtAP
-
-	lower	2 | 3	Y
-upper	1	N
-LtAP mini	
-	up | down	Y
-SXT R	
-	a |  b	Y
-
-SIM slots switching commands
-
-    RouterOS v7
-
-/interface lte settings set sim-slot=down
-
-    RouterOS v6 after 6.45.1
-
-/system routerboard modem set sim-slot=down
-
-    RouterOS v6 pre 6.45.1:
-
-/system routerboard sim set sim-slot=down
-
-For more reference please see the board block diagram,  Quick Guide, and User manual.
-Usage Example
-
-Follow this link - Dual SIM Application, to see examples of how to change SIM slot based on roaming status and in case the interface status is down, with the help of RouterOS scripts and scheduler.
-Tips and Tricks
-
-This paragraph contains information for additional features and usage cases.
-Find device location using Cell information
-
-On devices using the R11e-LTE International version card (wAP LTE kit) some extra information is provided under info command.
-
-   current-operator: 24701
-                lac: 40
-     current-cellid: 2514442
-
-current-operator (integer; Default: )	Contains MCC and MNC. For example: current-operator: 24701 breaks to: MCC=247 MNC=01
-lac (integer; Default: )	location area code (LAC)
-current-cellid (integer; Default: )	Station identification number
-
-Values can be used to find location in databases: Cell Id Finder
-Using Cell lock
-
-It is possible to lock R11e-LTE, R11e-LTE6 and R11e-4G modems and equipped devices to the exact LTE tower. LTE info command provides currently used cellular tower information:
-
-         phy-cellid: 384
-             earfcn: 1300 (band 3, bandwidth 20Mhz)
-
-phy-cellid (integer; Default: )	Physical Cell Identification (PCI) of currently used cell tower.
-earfcn (integer; Default: )	Absolute Radio Frequency Channel Number
-
-Exact tower location as well as available bands and other information can be acquired from mobile carrier or by using online services:
-
-CellMapper
-
-By using those acquired variables it's possible to send the AT command to modem for locking to tower in the current format:
-
-for R11e-LTE and R11e-LTE6
-
-AT*Cell=<mode>,<NetworkMode>,<band>,<EARFCN>,<PCI>
-
-where
-
-<mode> :
-0 – Cell/Frequency disabled
-1 – Frequency lock enabled
-2 – Cell lock enabled
-
-<NetworkMode>
-0 – GSM
-1 – UMTS_TD
-2 – UMTS_WB
-3 – LTE
-
-<band>
-Not in use, leave this blank
-
-<EARFCN>
-earfcn from lte info
-
-<PCI>
-phy-cellid from lte info
-
-To lock modem at previously used tower at-chat can be used:
-/interface lte at-chat lte1 input="AT*Cell=2,3,,1300,384"
-
-For R11e-LTE all set on locks are lost after reboot or modem reset. Cell data can be also gathered from "cell-monitor".
-
-For R11e-LTE6 cell lock works only for the primary band, this can be useful if you have multiple channels on the same band and you want to lock it to a specific earfcn. Note, that cell lock is not band-specific and for ca-band it can also use other frequency bands, unless you use band lock.
-
-Use cell lock to set the primary band to the 1300 earfcn and use the second channel for the ca-band:
-/interface lte at-chat lte1 input="AT*Cell=2,3,,1300,138"
-
-Now it uses the earfcn: 1300 for the primary channel:
-
-         primary-band: B3@20Mhz earfcn: 1300 phy-cellid: 138
-              ca-band: B3@5Mhz earfcn: 1417 phy-cellid: 138
-
-You can also set it the other way around:
-/interface lte at-chat lte1 input="AT*Cell=2,3,,1417,138"
-
-Now it uses the earfcn: 1417 for the primary channel:
-
-         primary-band: B3@5Mhz earfcn: 1417 phy-cellid: 138
-              ca-band: B3@20Mhz earfcn: 1300 phy-cellid: 138
-
-For R11e-LTE6 modem cell lock information will not be lost after reboot or modem reset. To remove cell lock use at-chat command:
-/interface lte at-chat lte1 input="AT*Cell=0"
-
-for R11e-4G
-
-AT%CLCMD=<mode>,<mode2>,<EARFCN>,<PCI>,<PLMN>
-AT%CLCMD=1,1,3250,244,\"24705\"
-
-where
-
-<mode> :
-0 – Cell/Frequency disabled
-1 – Cell lock enabled
-
-<mode2> :
-0 - Save lock for first scan
-1 - Always use lock 
-(after each reset modem will clear out previous settings no matter what is used here)
-
-<EARFCN>
-earfcn from lte info
-
-<PCI>
-phy-cellid from lte info
-
-<PLMN>
-Mobile operator code
-
-All PLMN codes available here this variable can be also left blank
-
-To lock the modem to the cell - modem needs to be in non operating state, the easiest way for R11e-4G modem is to add CellLock line to "modem-init" string:
-/interface lte set lte1 modem-init="AT%CLCMD=1,1,3250,244,\"24705\""
-
-Multiple cells can also be added by providing a list instead of one tower information in the following format:
-
-AT%CLCMD=<mode>,<mode2>,<EARFCN_1>,<PCI_1>,<PLMN_1>,<EARFCN_2>,<PCI_2>,<PLMN_2>
-
-For example to lock to two different PCIs within the same band and operator:
-/interface lte set lte1 modem-init="AT%CLCMD=1,1,6300,384,\"24701\",6300,385,\"24701\""
-
-for Chateau LTE12, Chateau LTE18, Chateau 5G, Chateau 5G R16, LHG LTE18 and ATL LTE18
-
-AT+QNWLOCK="common/4g",<num of cells>,[[<freq>,<pci>],...]
-AT+QNWLOCK=\"common/4g\",1,6300,384
-
-where
-
-<num of cells>
-number of cells to cell lock
-
-<freq>
-earfcn from lte info
-
-<pci>
-phy-cellid from lte info
-
-Single-cell lock example:
-/interface lte at-chat lte1 input="AT+QNWLOCK=\"common/4g\",1,3050,448"
-
-Query current configuration:
-/interface lte at-chat lte1 input="AT+QNWLOCK=\"common/4g\""
-
-Multiple cells can also be added to the cell lock. For example to lock to two different cells:
-/interface lte at-chat lte1 input="AT+QNWLOCK=\"common/4g\",2,3050,448,1574,474"
-
-
-To remove the cell lock use this at-chat command:
-/interface lte at-chat lte1 input="at+qnwlock=\"common/4g\",0"
-1. Cell lock information will not be saved after a reboot or modem reset. 2. AT+QNWLOCK command can lock the cell and frequency. Therefore, the module can be given priority to register to the locked cell, however, according to the 3gpp protocol, the module will be redirected or handover to a cell with better signal instructions, even if it is not within the lock of the command. This phenomenon is normal.
-
-for FG621-EA
-
-AT+GTCELLLOCK=<mode>[,<rat>,<type>,<earfcn>[,<PCI>]]
-
-where
-
-< mode >: integer type; 0 Disable this function 1 Enable this function 2 Add new cell to be locked
-
-<rat>: integer type; 0 LTE 1 WCDMA
-
-<type>: integer type; 0 Lock PCI 1 Lock frequency
-
-<earfcn>: integer type; the range is 0-65535.
-
-<PCI>: integer type; If second parameter value is 0, the range is 0-503 for LTE If second parameter value is 1, the rang is 0-512 for WCDMA
-
-Example:
-/interface lte at-chat lte1 input="AT+GTCELLLOCK=1,0,0,6175,176" 
-Cell Monitor
-
-Cell monitor allows to scan available nearby mobile network cells:
-[admin@MikroTik] > /interface lte cell-monitor lte1 
-PHY-CELLID BAND         PSC EARFCN                 RSRP          RSRQ          RSSI         SINR
-        49 B20              6300                -110dBm       -19.5dB
-       272 B20              6300                -116dBm       -19.5dB
-       374 B20              6300                -108dBm         -16dB
-       384 B1               150                 -105dBm       -13.5dB
-       384 B3               1300                -106dBm         -12dB
-       384 B7               2850                -107dBm       -11.5dB
-       432 B7               2850                -119dBm       -19.5dB
-
-Gathered data can be used for more precise location detection or for Cell lock.
-Not all modems support this feature
-Troubleshooting
-
-Enable LTE logging:
-[admin@MikroTik] > /system logging add topics=lte
-
-Check for errors in log:
-[admin@MikroTik] > /log print
-
-11:08:59 lte,async lte1: sent AT+CPIN? 
-11:08:59 lte,async lte1: rcvd +CME ERROR: 10 
-
-search for CME error description online,
-
-in this case: CME error 10 - SIM not inserted
-Locking band on Huawei and other modems
-
-To lock band for Huawei modems /interface lte set lte1 band="" option can't be used.
-
-It is possible to use AT commands to lock to the desired band manually.
-
-To check all supported bands run the at-chat command:
-[admin@MikroTik] /interface lte at-chat lte1 input="AT^SYSCFGEX=\?"
-
-output: ^SYSCFGEX: ("00","03","02","01","99"),((2000004e80380,"GSM850/GSM900/GSM1800/GSM1900/WCDMA BCI/WCDMA BCII/WCDMA BCV/WCDMA BCVIII"),
-(3fffffff,"All Bands")),(0-2),(0-4),((800d7,"LTE BC1/LTE BC2/LTE 
-BC3/LTE BC5/LTE BC7/LTE BC8/LTE BC20"),(7fffffffffffffff,"All Bands")) 
-OK
-
-
-Example to lock to LTE band 7:
-[admin@MikroTik] /interface lte set lte1 modem-init="AT^SYSCFGEX=\"03\",3FFFFFFF,2,4,40,,"
-
-Change last part 40 to desired band specified hexadecimal value where:
-
-4 LTE BC3
-40 LTE BC7
-80000 LTE BC20
-7FFFFFFFFFFFFFFF  All bands
-etc
-
-All band HEX values and AT commands can be found in Huawei AT Command Interface Specification guide
-
-Check if the band is locked:
-[admin@MikroTik] /interface lte at-chat lte1 input="AT^SYSCFGEX\?"
-
-output: ^SYSCFGEX: "03",3FFFFFFF,0,2,40
-OK
-
-For more information check modem manufacturers AT command reference manuals.
-mPCIe modems with RB9xx series devices
-
-In case your modem is not being recognized after a soft reboot, then you might need to add a delay before the USB port is initialized. This can be done using the following command:
-/system routerboard settings set init-delay=5s
-Boards with USB-A port and mPCIe
-
-Some devices such as specific RB9xx's and the RBLtAP-2HnD share the same USB lines between a single mPCIe slot and a USB-A port. If auto switch is not taking place and a modem is not getting detected, you might need to switch manually to either use the USB-A or mini-PCIe:
-/system routerboard usb set type=mini-PCIe
-Avoiding tethering speed throttling
-
-Some operators (TMobile, YOTA etc.) allow unlimited data only for the device the SIM card is used on, all other data coming from mobile hotspots or tethering is highly limited by volume or by throughput speed. Some sources have found out that this limitation is done by monitoring TTL (Time To Live) values from packets to determine if limitations need to be applied (TTL is decreased by 1 for each "hop" made). RouterOS allows changing the TTL parameter for packets going from the router to allow hiding sub networks. Keep in mind that this may conflict with fair use policy.
-IPv4 mangle rule:
-/ip firewall mangle
-add action=change-ttl chain=postrouting new-ttl=set:65 out-interface=lte1 passthrough=yes
-IPv6 mangle rule:
-/ipv6 firewall mangle 
-add action=change-hop-limit chain=postrouting new-hop-limit=set:65 passthrough=yes
-
-More information: YOTA, TMobile
-Unlocking SIM card after multiple wrong PIN code attempts
-
-After locking the SIM card, unlock can be done through "at-chat"
-
-Check current PIN code status:
-/interface lte at-chat lte1 input="at+cpin\?"
-
-If card is locked - unlock it by providing:
-/interface lte at-chat lte1 input="AT+CPIN=\"PUK_code\",\"NEW_PIN\""
-
-Replace PUK_code and NEW_PIN with matching values.
-
-The command for sim slot selection changes in v6.45.1 and again in v7. Some device models like SXT, have SIM slots named "a" and "b" instead of "up" and down"
-
-
-
-
-    Creado por Normunds R., actualizado por última vez por Druvis Timma el abr 06, 2022 1 min de lectura
+    Creado por Usuario desconocido (olga), actualizado por última vez por Normunds R. el oct 03, 2024 3 min de lectura
 
     Overview
-    Introduction
-        PPP Client
-        PPP Client example
-        PPP Server
+    Supported Features
 
 Overview
 
-The Point-to-Point Protocol (PPP) provides a standard method for transporting multi-protocol datagrams over point-to-point links. PPP in RouterOS is based on RFC 1661 standard.
-Introduction
+MPLS stands for MultiProtocol Label Switching. It kind of replaces IP routing - packet forwarding decision (outgoing interface and next-hop router) is no longer based on fields in IP header (usually destination address) and routing table, but on labels that are attached to packet. This approach speeds up the forwarding process because next-hop lookup becomes very simple compared to routing lookup (finding the longest matching prefix).
 
-The basic purpose of PPP at this point is to transport Layer-3 packets across a Data Link layer point-to-point link.  Packets between both peers are assumed to deliver in order. 
+The efficiency of the forwarding process is the main benefit of MPLS, but it must be taken into account that MPLS forwarding disables the processing of network layer (e.g. IP) headers, therefore no network layer-based actions like NAT and filtering can be applied to MPLS forwarded packets. Any network-layer-based actions should be taken on ingress or egress of MPLS cloud, with the preferred way being ingress - this way, e.g. traffic that is going to be dropped anyway does not travel through the MPLS backbone.
 
-PPP is comprised of three main components:
+In the simplest form, MPLS can be thought of as improved routing - labels are distributed by means of LDP protocol for routes that are active and a labeled packet takes the same path it would take if it was not labeled. A router that routes unlabeled packets using some route for which it has received a label from the next hop, imposes a label on the packet, and sends it to the next hop - gets MPLS switched further along its path. A router that receives a packet with a label it has assigned to some route changes the packet label with one received from the next hop of a particular route and sends a packet to the next hop. Label switched path ensures delivery of data to the MPLS cloud egress point. Applications of MPLS are based on this basic MPLS concept of label switched paths.
 
-     A method for encapsulating multi-protocol datagrams.
-     A Link Control Protocol (LCP) for establishing, configuring, and testing the data-link connection. 
-    A family of Network Control Protocols (NCPs) for establishing and configuring different network-layer protocols.
+Another way of establishing label switching paths is traffic engineering tunnels (TE tunnels) by means of the RSVP-TE protocol. Traffic engineering tunnels allow explicitly routed LSPs and constraint-based path selection (where constraints are interface properties and available bandwidth).
 
-Detailed PPP packet processing in RouterOS you can see in the Packet Flow Diagram.
-PPP Client
-/interface ppp-client
-PPP Client example
+Taking into account the complexity, new protocols, and applications that MPLS introduces and the differences of concepts that MPLS adds to routed/bridged networks, it is recommended to have an in-depth understanding of MPLS concepts before implementing MPLS in a production network. Some suggested reading material:
 
-This is an example of how to add a client using an exposed serial port from an LTE modem.
-/interface ppp-client add apn=yourapn dial-on-demand=no disabled=no port=usb2
+    Multiprotocol Label Switching http://en.wikipedia.org/wiki/Multiprotocol_Label_Switching
+    RFC3031 Multiprotocol Label Switching Architecture http://www.ietf.org/rfc/rfc3031.txt
+    MPLS Fundamentals by Luc De Ghein http://www.amazon.com/MPLS-Fundamentals-Luc-Ghein/dp/1587051974
 
-The dial-on-demand should to be set to 'no' for a continuous connection.
-PPP Server
-/interface ppp-server
+Feature is not supported on SMIPS devices (hAP lite, hAP lite TC and hAP mini).
+Supported Features
+
+Currently, RouterOS supports the following MPLS related features:
+
+    MPLS switching with penultimate hop popping support
+    static local label bindings for IPv4 and IPv6
+    static remote label bindings for IPv4 and IPv6
+    Label Distribution Protocol (RFC 3036, RFC 5036, and RFC 7552) for IPv4 and IPv6
+        downstream unsolicited label advertisement
+        independent label distribution control
+        liberal label retention
+        targeted session establishment
+        optional loop detection
+        ECMP support
+    Virtual Private Lan Service
+        VPLS LDP signaling (RFC 4762)
+        Cisco style static VPLS pseudowires (RFC 4447 FEC type 0x80)
+        VPLS pseudowire fragmentation and reassembly (RFC 4623)
+        VPLS MP-BGP based autodiscovery and signaling (RFC 4761)
+        Cisco VPLS BGP-based auto-discovery (draft-ietf-l2vpn-signaling-08)
+        support for multiple import/export route-target extended communities for BGP based VPLS (both, RFC 4761 and draft-ietf-l2vpn-signaling-08)
+    RSVP-TE Tunnels
+        tunnel head-end
+        explicit paths
+        OSPF extensions for TE tunnels
+        CSPF path selection
+        forwarding of VPLS and MPLS IP VPN traffic on TE tunnels
+        Ingress TE tunnel rate limit and automatic reserved bandwidth adjustment, see TE Tunnel Bandwidth Control
+        all tunnel bandwidth settings are specified and displayed in bits per second
+    MP-BGP based MPLS IP VPN
+    Per-prefix and per-vrf label distribution policies for MP-BGP based MPLS VPN
+    OSPF extensions for MPLS TE
+    support for OSPF as CE-PE protocol
+    ping and traceroute for specified VRF
+    control over network-layer TTL propagation in MPLS
+    RIP as CE-PE protocol
+    per-VRF BGP instance redistribution settings
+
+MPLS features that RouterOS DOES NOT HAVE yet:
+
+    LDP features:
+        downstream on-demand label advertisement
+        ordered label distribution control
+        conservative label retention
+    TE features
+        fast-reroute
+        link/node protection
+    Support for BGP as label distribution protocol
+	
+	
+
+    Creado por Māris B., actualizado por última vez el abr 18, 2023 3 min de lectura
+
+Label Range and TTL
+
+From the /mpls settings menu it is possible to assign specific dynamic label range and TTL propagation. If for some reason static label mapping is used then the dynamic range can be adjusted to exclude statically assigned label numbers from being dynamically assigned by any of the label distribution protocols.
+dynamic-label-range (range of integer[16..1048575]; Default: 16-1048575)	Range of Label numbers used for dynamic allocation. The first 16 labels are reserved for special purposes (as defined in RFC). If you intend to configure labels statically then adjust the dynamic default range not to include numbers that will be used in a static configuration.
+propagate-ttl (yes | no; Default: yes)	Whether to copy TTL values from IP header to MPLS header. If this option is set to no then hops inside the MPLS cloud will be invisible from traceroutes.
+allow-fast-path(yes | no; Default: yes)	Enable/disable MPLS fast-path support.
+MPLS MTU
+
+Configuration of MPLS MTU (path MTU + MPLS tag size) is useful in cases when there is a large variety of possible MTUs along the path. Configuring MPLS MTU to a minimum value that can pass all the hops will ensure that the MPLS packet will not be silently dropped on the devices that do not support big enough MTU.
+
+MPLS MTUs are configured from the /mpls interface menu.
+[admin@rack1_b35_CCR1036] /mpls/interface> print 
+Flags: X - disabled; * - builtin 
+ 0    ;;; router-test
+      interface=ether1 mpls-mtu=1580 input=yes 
+
+ 1    ;;; router-test
+      interface=ether2 mpls-mtu=1580 input=yes 
+
+ 2    interface=all mpls-mtu=1500  
+
+
+Properties
+comment (string; Default: )	Short description of the interface
+disabled (yes | no; Default: no)	If set to yes then this configuration is ignored.
+interface (name; Default:)	Name of the interface or interface-list to match.
+input (yes | no; Default: yes)	Whether to allow MPLS input on the interface
+mpls-mtu (integer [512..65535]; Default: 1508)	The option represents how big packets can be carried over the interface with added MPLS labels.
+
+
+Listed entries are ordered, and the first entry (iterating from the top to the bottom) that matches the interface will be used.
+
+The order of the entries is important due to the possibility that different interface lists can contain the same interface and in addition, that interface can be referenced directly.
+
+Selection of the MPLS MTU happens in the following manner:
+
+    If the interface matched the entry from this table, then try to use configured MPLS MTU value
+    If the interface does not match any entry then consider MPLS MTU equal to L2MTU
+    If the interface does not support L2MTU, then consider MPLS MTU equal to L3 MTU
+
+On the MPLS ingress path, MTU is chosen by min(MPLS MTU - tagsize, l3mtu). This means that on interfaces that do not support L2MTU and default L3 MTU is set to 1500, max path MTU will be 1500 - tag size (the interface will not be able to pass full IP frame without fragmentation). In such scenarios, L3MTU must be increased by max observed tag size.
+
+Read more on MTUs in the MTU in RouterOS article.
+
+
+Forwarding Table
+
+Entries in the /mpls forwarding-table menu show label bindings for specific routes that will be used in MPLS label switching. Properties in this menu are read-only.
+[admin@rack1_b35_CCR1036] /mpls/forwarding-table> print 
+Flags: L, V - VPLS
+Columns: LABEL, VRF, PREFIX, NEXTHOPS
+#   LABEL  VRF   PREFIX         NEXTHOPS                                            
+0 L    16  main  10.0.0.0/8     { nh=10.155.130.1; interface=ether12 }              
+1 L    18  main  111.111.111.3  { label=impl-null; nh=111.12.0.1; interface=ether2 }
+2 L    17  main  111.111.111.2  { label=impl-null; nh=111.11.0.1; interface=ether1 }
+
+
+
+prefix (IP/Mask)	Destination prefix for which labels are assigned
+label (integer)	Ingress MPLS label
+ldp (yes | no)	Whether labels are LDP signaled
+nexthops ()	
+
+An array of the next-hops, each entry in the array represents one ECMP next-hop. Array entry can contain several parameters:
+
+    label - egress MPLS label
+    nh - out next-hop IP address
+    interface - out the interface
+
+out-label (integer)	Label number which is added or switched to for outgoing packet.
+packets (integer)	Number of packets matched by this entry
+te-sender	
+te-session 	
+traffic-eng 	Shows whether the entry is signaled by RSVP-TE (Traffic Engineering)
+type (string)	Type of the entry, for example, "vpls", etc.
+vpls (yes | no)	Shows whether the entry is used for VPLS tunnels.
+vpn	
+vrf	Name of the VRF table this entry belongs to
 
 
 
 
-    Creado por Artūrs C., actualizado por última vez por Artis Bernāts el jul 02, 2024 4 min de lectura
+    Creado por Usuario desconocido (emils), actualizado por última vez por Māris B. el sept 17, 2024 4 min de lectura
 
-    Summary
-    Sending
-        Example
-    USSD messages
-        Example
-    Receiving
-        Inbox
-        Syntax
-        Examples
-    Debugging
-    Implementation details
+Overview
+
+When the MPLS label is attached to the packet, it increases packet length by 32 bits (4 bytes). These 32 bits are broken down as follows:
+
+    label value itself (20 bits)
+    EXP ("experimental") field (3 bits)
+    time to live field (8 bits)
+    bottom of stack field (1 bit)
+
+The use of "experimental" bits is not specified by MPLS standards, but the most common use is to carry QoS information, similar to 802.1q priority in the VLAN tag. Note that the EXP field is 3 bits only therefore it can carry values from 0 to 7 only, which allows having 8 traffic classes.
+EXP field treatment in RouterOS
+
+When RouterOS receives an MPLS packet, it sets the "ingress priority" value for the packet to that carried inside the top label. Note that "ingress priority" is not a field inside packet headers - it can be thought of as an additional mark assigned to a packet while being processed by the router. When RouterOS labels an MPLS packet, it sets EXP bits to "priority" (not "ingress priority"!) assigned to the packet. When RouterOS switches MPLS packet, "ingress priority" is automatically copied to "priority", this way regular MPLS switching communicates priority info over the whole label switched path.
+
+Additional info on "ingress priority" and "priority" handling is also in WMM and VLAN priority.
+
+Therefore what happens to the EXP field depends based on what action is taken on the packet:
+
+    if the packet is MPLS switched (by popping the label off the packet and pushing on the new one), the EXP field in the new label will be the same as in the received label, because:
+        RouterOS sets "ingress priority" to EXP bits in the received label
+        Switching automatically sets "priority" to "ingress priority"
+        RouterOS labels the packet with a new label and sets its EXP bits to value in "priority".
+    if the packet is MPLS switched by using penultimate-hop-popping (the received label is popped off and no new one is pushed on), the EXP field of received priority stays in the "priority" field of the packet and may be used by some other MAC protocol, e.g. WMM or 802.1q VLAN, for example:
+        RouterOS sets "ingress priority" to EXP bits in the received label
+        Switching automatically sets "priority" to "ingress priority"
+        RouterOS switches the packet to the next hop (without pushing on the label) and that happens over the VLAN interface
+        VLAN interface sets 802.1q priority in the VLAN header to the "priority" value of the packet.
+
+Note that penultimate-hop-popping can therefore lose QoS information carried over label switched path at the last hop. In cases where this is not desirable, penultimate-hop-popping behavior should be disabled by using the Explicit NULL label instead of the Implicit NULL label for the last hop in the label switched path. Using an Explicit NULL label for the last hop is the default behavior for MPLS TE tunnels.
+
+    if a packet is supposed to be sent over label switched path (the first label will get pushed on the packet), EXP bits will be set to value in "priority", which in turn can be set up properly using firewall rules or other means (e.g. from DSCP field in IP header)
+    if a packet is received for local processing, "ingress priority" is set to the EXP field of the received packet and can therefore be used to update the DSCP field of the packet or set "priority" from "ingress priority" using firewall rules
+
+
+MPLS Mangle and Queuing
+
+RouterOS firewall works only with IP traffic, which means that it is not possible to mark MPLS packets directly in mangle and limit by queues. Queuing had to be done on ingress edge router before MPLS header is added or on egress edge router after MPLS label is removed. 
+
+Starting from ROS v7.17 MPLS Mangle is added. This allows to add packet mark based on exp bit, or change the assigned exp bit on label switching (P) routers or on PE output after MPLS encapsulation.
+
+This configuration is accessible from /mpls/mangle menu. 
+Basic Example
+
+Lets look at very basic example where on the label switching router (P) along the LSP we want to mark packets with exp bit 0, limit the bandwidth and change exp bit to 3:
+/mpls mangle
+add chain=forward exp=0 set-exp=3 set-mark=m0
+
+/queue tree
+add limit-at=10M max-limit=10M name=mpls_queue packet-mark=m0 parent=sfp-sfpplus2
+
+
+Keep in mind that MPLS packets cannot be queued with queues that are using IMQ interfaces (simple queue, queue tree global), so we need to use queue tree with "real" interface as a parent.
+
+MPLS Mangle table also shows matched packet count that is useful for setup debugging:
+[admin@CCR2004_2XS_111] /mpls/mangle> print 
+Flags: X - DISABLED
+Columns: CHAIN, EXP, SET-EXP, SET-MARK, PACKETS
+#   CHAIN    EXP  SET-EXP  SET-MARK  PACKETS
+0   forward    0        3  m0        221 654
+
+
+Another important thing is that MPLS mangle rules are not executed line by line like regular firewall mangle rules, MPLS Mangle is a set of actions that are applied in one go.
+For example, lets look at the set of rules
+/mpls mangle
+add chain=forward exp=0 set-mark=m0
+add chain=forward exp=0 set-exp=3
+add chain=forward exp=3 set-mark=m3
+
+In this example, if incoming packet has exp bit 0, third rule will have no effect.
+
+And once the action is set for specific exp bit it cannot be modified by another rules:
+[admin@CCR2004_2XS_111] /mpls/mangle> add chain=forward exp=0 set-mark=m4
+failure: conflicting forward set-mark rule
+
+
+
+
+
+
+
+    Creado por Māris B., actualizado por última vez el abr 12, 2024 17 min de lectura
+
+ 
+
+    Overview
+    Prerequisites for MPLS
+        "Loopback" IP address
+        IP connectivity
+    Example Setup
+        Ip Reachability
+        LDP Setup
+    Using traceroute in MPLS networks
+        Drawbacks of using traceroute in MPLS network
+            Label switching ICMP errors
+            Penultimate hop popping and traceroute source address
+    Optimizing label distribution
+        Label binding filtering
+    LDP on Ipv6 and Dual-Stack links
+    Property Reference
+        LDP Instance
+        Interface
+        Neighbors
+        Accept Filter
+        Advertise Filter
+        Local Mapping
+        Remote Mapping
+
+Overview
+
+MikroTik RouterOS implements Label Distribution Protocol (RFC 3036, RFC 5036, and RFC 7552) for IPv4 and IPv6 address families. LDP is a protocol that performs the set of procedures and exchange messages by which Label Switched Routers (LSRs) establish Label Switched Paths (LSPs) through a network by mapping network-layer routing information directly to data-link layer switched paths.
+Prerequisites for MPLS
+"Loopback" IP address
+
+Although not a strict requirement, it is advisable to configure routers participating in the MPLS network with "loopback" IP addresses (not attached to any real network interface) to be used by LDP to establish sessions.
+
+This serves 2 purposes:
+
+    as there is only one LDP session between any 2 routers, no matter how many links connect them, the loopback IP address ensures that the LDP session is not affected by interface state or address changes
+    use of loopback address as LDP transport address ensures proper penultimate hop popping behavior when multiple labels are attached to the packet as in the case of VPLS
+
+In RouterOS "loopback" IP address can be configured by creating a dummy bridge interface without any ports and adding the address to it. For example:
+/interface bridge add name=lo
+/ip address add address=255.255.255.1/32 interface=lo
+
+
+
+IP connectivity
+
+As LDP distributes labels for active routes, the essential requirement is properly configured IP routing. LDP by default distributes labels for active IGP routes (that is - connected, static, and routing protocol learned routes, except BGP).
+
+For instructions on how to set up properly IGP refer to appropriate documentation sections:
+
+    OSPF
+    Static Routing
+    etc
+
+LDP supports ECMP routes.
+
+You should be able to reach any loopback address from any location of your network before continuing with the LDP configuration. Connectivity can be verified with the ping tool running from loopback address to loopback address.
+Example Setup
+
+Let's consider that we have already existing four routers setup, with working IP connectivity.
+   (lo:111.111.111.1)       (lo:111.111.111.2)          (lo:111.111.111.3)         (lo:111.111.111.4)
+|---------R1-----(111.11.0.0/24)-----R2-----(111.12.0.0/24)-----R3-----(111.13.0.0/24)-----R4---------|
+
+
+Ip Reachability
+
+Not going deep into routing setup here is the quit export of the IP and OSPF configurations:
+#R1
+/interface bridge
+add name=loopback
+/ip address
+add address=111.11.0.1/24 interface=ether2
+add address=111.111.111.1 interface=loopback
+
+/routing ospf instance
+add name=default_ip4 router-id=111.111.111.1
+/routing ospf area
+add instance=default_ip4 name=backbone_ip4
+/routing ospf interface-template
+add area=backbone_ip4 dead-interval=10s hello-interval=1s networks=111.111.111.1 
+add area=backbone_ip4 dead-interval=10s hello-interval=1s networks=111.11.0.0/24 
+
+
+#R2
+/interface bridge
+add name=loopback
+/ip address
+add address=111.11.0.2/24 interface=ether2
+add address=111.12.0.1/24 interface=ether3
+add address=111.111.111.2 interface=loopback
+
+/routing ospf instance
+add name=default_ip4 router-id=111.111.111.2
+/routing ospf area
+add instance=default_ip4 name=backbone_ip4
+/routing ospf interface-template
+add area=backbone_ip4 dead-interval=10s hello-interval=1s networks=111.111.111.2
+add area=backbone_ip4 dead-interval=10s hello-interval=1s networks=111.11.0.0/24
+add area=backbone_ip4 dead-interval=10s hello-interval=1s networks=111.12.0.0/24
+
+
+#R3
+/interface bridge
+add name=loopback
+
+/ip address
+add address=111.12.0.2/24 interface=ether2
+add address=111.13.0.1/24 interface=ether3
+add address=111.111.111.3 interface=loopback
+
+/routing ospf instance
+add name=default_ip4 router-id=111.111.111.3
+/routing ospf area
+add instance=default_ip4 name=backbone_ip4
+/routing ospf interface-template
+add area=backbone_ip4 dead-interval=10s hello-interval=1s networks=111.111.111.3
+add area=backbone_ip4 dead-interval=10s hello-interval=1s networks=111.12.0.0/24
+add area=backbone_ip4 dead-interval=10s hello-interval=1s networks=111.13.0.0/24
+
+
+#R4
+/interface bridge
+add name=loopback
+/ip address
+add address=111.13.0.2/24 interface=ether2
+add address=111.111.111.4 interface=loopback
+
+/routing ospf instance
+add name=default_ip4 router-id=111.111.111.4
+/routing ospf area
+add instance=default_ip4 name=backbone_ip4
+/routing ospf interface-template
+add area=backbone_ip4 dead-interval=10s hello-interval=1s networks=111.111.111.4
+add area=backbone_ip4 dead-interval=10s hello-interval=1s networks=111.13.0.0/24
+
+
+Verify that IP connectivity and routing are working properly
+[admin@R4] /ip/address> /tool traceroute 111.111.111.1 src-address=111.111.111.4
+Columns: ADDRESS, LOSS, SENT, LAST, AVG, BEST, WORST, STD-DEV
+#  ADDRESS        LOSS  SENT  LAST   AVG  BEST  WORST  STD-DEV
+1  111.13.0.1     0%       4  0.6ms  0.6  0.6   0.6    0      
+2  111.12.0.1     0%       4  0.5ms  0.6  0.5   0.6    0.1    
+3  111.111.111.1  0%       4  0.6ms  0.6  0.6   0.6    0      
+
+
+LDP Setup
+
+In order to start distributing labels, LDP is enabled on interfaces that connect other LDP routers and not enabled on interfaces that connect customer networks.
+
+On R1 it will look like this:
+/mpls ldp
+add afi=ip lsr-id=111.111.111.1 transport-addresses=111.111.111.1
+/mpls ldp interface
+add interface=ether2    
+
+Note that the transport address gets set to 111.111.111.1. This makes the router originate LDP session connections with this address and also advertise this address as a transport address to LDP neighbors.
+
+
+Other routers are set up similarly.
+
+R2:
+/mpls ldp
+add afi=ip lsr-id=111.111.111.2 transport-addresses=111.111.111.2
+/mpls ldp interface
+add interface=ether2   
+add interface=ether3   
+
+On R3:
+/mpls ldp
+add afi=ip lsr-id=111.111.111.3 transport-addresses=111.111.111.3
+/mpls ldp interface
+add interface=ether2   
+add interface=ether3   
+
+On R4:
+/mpls ldp
+add afi=ip lsr-id=111.111.111.4 transport-addresses=111.111.111.4
+/mpls ldp interface
+add interface=ether2   
+
+
+
+After LDP sessions are established, R2 should have two LDP neighbors:
+[admin@R2] /mpls/ldp/neighbor> print 
+Flags: D, I - INACTIVE; O, T - THROTTLED; p - PASSIVE
+Columns: TRANSPORT, LOCAL-TRANSPORT, PEER, ADDRESSES
+#     TRANSPORT      LOCAL-TRANSPORT  PEER             ADDRESSES    
+0 DO  111.111.111.1  111.111.111.2    111.111.111.1:0  111.11.0.1   
+                                                       111.111.111.1
+1 DOp 111.111.111.3  111.111.111.2    111.111.111.3:0  111.12.0.2   
+                                                       111.13.0.1   
+                                                       111.111.111.3
+
+
+The local mappings table shows what label is assigned to what route and peers the router have distributed labels to.
+[admin@R2] /mpls/ldp/local-mapping> print 
+Flags: I - INACTIVE; D - DYNAMIC; E - EGRESS; G - GATEWAY; L - LOCAL
+Columns: VRF, DST-ADDRESS, LABEL, PEERS
+#       VRF   DST-ADDRESS      LABEL      PEERS          
+0  D G  main  10.0.0.0/8       16         111.111.111.1:0
+                                          111.111.111.3:0
+1 IDE L main  10.155.130.0/25  impl-null  111.111.111.1:0
+                                          111.111.111.3:0
+2 IDE L main  111.11.0.0/24    impl-null  111.111.111.1:0
+                                          111.111.111.3:0
+3 IDE L main  111.12.0.0/24    impl-null  111.111.111.1:0
+                                          111.111.111.3:0
+4 IDE L main  111.111.111.2    impl-null  111.111.111.1:0
+                                          111.111.111.3:0
+5  D G  main  111.111.111.1    17         111.111.111.1:0
+                                          111.111.111.3:0
+6  D G  main  111.111.111.3    18         111.111.111.1:0
+                                          111.111.111.3:0
+7  D G  main  111.111.111.4    19         111.111.111.1:0
+                                          111.111.111.3:0
+8  D G  main  111.13.0.0/24    20         111.111.111.1:0
+                                          111.111.111.3:0
+
+
+
+
+Remote mappings table on the other hand shows labels that are allocated for routes by neighboring LDP routers and advertised to this router:
+[admin@R2] /mpls/ldp/remote-mapping> print 
+Flags: I - INACTIVE; D - DYNAMIC
+Columns: VRF, DST-ADDRESS, NEXTHOP, LABEL, PEER
+ #    VRF   DST-ADDRESS      NEXTHOP     LABEL      PEER           
+ 0 ID main  10.0.0.0/8                   16         111.111.111.1:0
+ 1 ID main  10.155.130.0/25              impl-null  111.111.111.1:0
+ 2 ID main  111.11.0.0/24                impl-null  111.111.111.1:0
+ 3 ID main  111.12.0.0/24                17         111.111.111.1:0
+ 4  D main  111.111.111.1    111.11.0.1  impl-null  111.111.111.1:0
+ 5 ID main  111.111.111.2                19         111.111.111.1:0
+ 6 ID main  111.111.111.3                20         111.111.111.1:0
+ 7 ID main  111.111.111.4                21         111.111.111.1:0
+ 8 ID main  111.13.0.0/24                18         111.111.111.1:0
+ 9 ID main  0.0.0.0/0                    impl-null  111.111.111.3:0
+10 ID main  111.111.111.2                16         111.111.111.3:0
+11 ID main  111.111.111.1                18         111.111.111.3:0
+12  D main  111.111.111.3    111.12.0.2  impl-null  111.111.111.3:0
+13  D main  111.111.111.4    111.12.0.2  19         111.111.111.3:0
+14 ID main  10.155.130.0/25              impl-null  111.111.111.3:0
+15 ID main  111.11.0.0/24                17         111.111.111.3:0
+16 ID main  111.12.0.0/24                impl-null  111.111.111.3:0
+17  D main  111.13.0.0/24    111.12.0.2  impl-null  111.111.111.3:0
+
+
+We can observe that router has received label bindings for all routes from both its neighbors - R1 and R3.
+
+The remote mapping table will have active mappings only for the destinations that have direct next-hop, for example, let's take a closer look at 111.111.111.4 mappings. The routing table indicates that the network 111.111.111.4 is reachable via 111.12.0.2 (R3):
+[admin@R2] /ip/route> print where dst-address=111.111.111.4
+Flags: D - DYNAMIC; A - ACTIVE; o, y - COPY
+Columns: DST-ADDRESS, GATEWAY, DISTANCE
+    DST-ADDRESS       GATEWAY            DISTANCE
+DAo 111.111.111.4/32  111.12.0.2%ether3       110
+
+And if we look again at the remote mapping table, the only active mapping is the one received from R3 with assigned label 19. This implies that when R2 when routing traffic to this network, will impose label 19.
+17  D main  111.111.111.4    111.12.0.2  19         111.111.111.3:0
+
+
+
+Label switching rules can be seen in the forwarding table:
+[admin@R2] /mpls/forwarding-table> print 
+Flags: L, V - VPLS
+Columns: LABEL, VRF, PREFIX, NEXTHOPS
+#   LABEL  VRF   PREFIX         NEXTHOPS                                            
+0 L    16  main  10.0.0.0/8     { nh=10.155.130.1; interface=ether1 }               
+1 L    18  main  111.111.111.3  { label=impl-null; nh=111.12.0.2; interface=ether3 }
+2 L    19  main  111.111.111.4  { label=19; nh=111.12.0.2; interface=ether3 }       
+3 L    20  main  111.13.0.0/24  { label=impl-null; nh=111.12.0.2; interface=ether3 }
+4 L    17  main  111.111.111.1  { label=impl-null; nh=111.11.0.1; interface=ether2 }
+
+If we take a look at rule number 2, the rule says that when R2 received the packet with label 19, it will change the label to new label 19 (assigned by the R3).
+
+As you can see from this example it is not mandatory that labels along the path should be unique.
+
+
+Now if we look at the forwarding table of R3:
+[admin@R3] /mpls/forwarding-table> print 
+Flags: L, V - VPLS
+Columns: LABEL, VRF, PREFIX, NEXTHOPS
+#   LA  VRF   PREFIX         NEXTHOPS                                            
+0 L 19  main  111.111.111.4  { label=impl-null; nh=111.13.0.2; interface=ether3 }
+1 L 17  main  111.11.0.0/24  { label=impl-null; nh=111.12.0.1; interface=ether2 }
+2 L 16  main  111.111.111.2  { label=impl-null; nh=111.12.0.1; interface=ether2 }
+3 L 18  main  111.111.111.1  { label=17; nh=111.12.0.1; interface=ether2 } 
+
+Rule number 0, shows that the out label is "impl-null". The reason for this is that R3 is the last hop before 111.111.111.4 will be reachable and there is no need to swap to any real label. It is known that R4 is the egress point for the 111.111.111.4 network (router is the egress point for directly connected networks because the next hop for traffic is not MPLS router), therefore it advertises the "implicit null" label for this route. This tells R3 to forward traffic for the destination 111.111.111.4/32 to R4 unlabelled, which is exactly what R3 forwarding table entry tells.
+
+Action, when the label is not swapped to any real label, is called Penultimate hop popping, it ensures that routers do not have to do unnecessary label lookup when it is known in advance that the router will have to route the packet.
+
+
+Using traceroute in MPLS networks
+
+RFC4950 introduces extensions to the ICMP protocol for MPLS. The basic idea is that some ICMP messages may carry an MPLS "label stack object" (a list of labels that were on the packet when it caused a particular ICMP message). ICMP messages of interest for MPLS are Time Exceeded and Need Fragment.
+
+MPLS label carries not only label value, but also TTL field. When imposing a label on an IP packet, MPLS TTL is set to value in the IP header, when the last label is removed from the IP packet, IP TTL is set to value in MPLS TTL. Therefore MPLS switching network can be diagnosed by means of a traceroute tool that supports MPLS extension.
+
+For example, the traceroute from R4 to R1 looks like this:
+[admin@R1] /mpls/ldp/neighbor> /tool traceroute 111.111.111.4 src-address=111.111.111.1
+Columns: ADDRESS, LOSS, SENT, LAST, AVG, BEST, WORST, STD-DEV, STATUS
+#  ADDRESS        LOSS  SENT  LAST   AVG  BEST  WORST  STD-DEV  STATUS         
+1  111.11.0.2     0%       2  0.7ms  0.7  0.7   0.7          0  <MPLS:L=19,E=0>
+2  111.12.0.2     0%       2  0.4ms  0.4  0.4   0.4          0  <MPLS:L=19,E=0>
+3  111.111.111.4  0%       2  0.5ms  0.5  0.5   0.5          0 
+
+
+Traceroute results show MPLS labels on the packet when it produced ICMP Time Exceeded. The above means: that when R3 received a packet with MPLS TTL 1, it had label 18 on it. This match advertised label by R3 for 111.111.111.4. In the same way, R2 observed label 17 on the packet on the next traceroute iteration - R3 switched label 17 to label 17, as explained above. R1 received packet without labels - R2 did penultimate hop popping as explained above.
+
+
+Drawbacks of using traceroute in MPLS network
+Label switching ICMP errors
+
+One of the drawbacks of using traceroute in MPLS networks is the way MPLS handles produced ICMP errors. In IP networks ICMP errors are simply routed back to the source of the packet that caused the error. In an MPLS network, it is possible that a router that produces an error message does not even have a route to the source of the IP packet (for example in the case of asymmetric label switching paths or some kind of MPLS tunneling, e.g. to transport MPLS VPN traffic).
+
+Due to this produced ICMP errors are not routed to the source of the packet that caused the error but switched further along the label switching path, assuming that when the label switching path endpoint will receive an ICMP error, it will know how to properly route it back to the source.
+
+This causes the situation, that traceroute in MPLS network can not be used the same way as in IP network - to determine failure point in the network. If the label switched path is broken anywhere in the middle, no ICMP replies will come back, because they will not make it to the far endpoint of the label switching path.
+Penultimate hop popping and traceroute source address
+
+A thorough understanding of penultimate hop behavior and routing is necessary to understand and avoid problems that penultimate hop popping causes to traceroute.
+
+In the example setup, a regular traceroute from R5 to R1 would yield the following results:
+
+[admin@R5] > /tool traceroute 9.9.9.1
+     ADDRESS                                    STATUS
+   1         0.0.0.0 timeout timeout timeout
+   2         2.2.2.2 37ms 4ms 4ms
+                      mpls-label=17
+   3         9.9.9.1 4ms 2ms 11ms
+
+compared to:
+
+[admin@R5] > /tool traceroute 9.9.9.1 src-address=9.9.9.5
+     ADDRESS                                    STATUS
+   1         4.4.4.3 15ms 5ms 5ms
+                      mpls-label=17
+   2         2.2.2.2 5ms 3ms 6ms
+                      mpls-label=17
+   3         9.9.9.1 6ms 3ms 3ms
+
+The reason why the first traceroute does not get a response from R3 is that by default traceroute on R5 uses source address 4.4.4.5 for its probes because it is the preferred source for a route over which next-hop to 9.9.9.1/32 is reachable:
+
+[admin@R5] > /ip route print
+Flags: X - disabled, A - active, D - dynamic,
+C - connect, S - static, r - rip, b - bgp, o - ospf, m - mme,
+B - blackhole, U - unreachable, P - prohibit
+ #      DST-ADDRESS        PREF-SRC        G GATEWAY         DISTANCE             INTERFACE
+ ...
+ 3 ADC  4.4.4.0/24         4.4.4.5                           0                    ether1
+ ...
+ 5 ADo  9.9.9.1/32                         r 4.4.4.3         110                  ether1
+ ...
+
+When the first traceroute probe is transmitted (source: 4.4.4.5, destination 9.9.9.1), R3 drops it and produces an ICMP error message (source 4.4.4.3 destination 4.4.4.5) that is switched all the way to R1. R1 then sends ICMP error back - it gets switched along the label switching path to 4.4.4.5.
+
+R2 is the penultimate hop popping router for network 4.4.4.0/24 because 4.4.4.0/24 is directly connected to R3. Therefore R2 removes the last label and sends ICMP error to R3 unlabelled:
+
+[admin@R2] > /mpls forwarding-table print
+ # IN-LABEL             OUT-LABELS           DESTINATION        INTERFACE            NEXTHOP
+ ...
+ 3 19                                        4.4.4.0/24         ether2               2.2.2.3
+ ...
+
+R3 drops the received IP packet because it receives a packet with its own address as a source address. ICMP errors produced by following probes come back correctly because R3 receives unlabelled packets with source addresses 2.2.2.2 and 9.9.9.1, which are acceptable to a route.
+
+Command:
+
+[admin@R5] > /tool traceroute 9.9.9.1 src-address=9.9.9.5
+ ...
+
+produces expected results, because the source address of traceroute probes is 9.9.9.5. When ICMP errors are traveling back from R1 to R5, the penultimate hop popping for the 9.9.9.5/32 network happens at R3, therefore it never gets to route packet with its own address as a source address.
+Optimizing label distribution
+Label binding filtering
+
+During the implementation of the given example setup, it has become clear that not all label bindings are necessary. For example, there is no need to exchange IP route label bindings between R1 and R3 or R2 and R4, as there is no chance they will ever be used. Also, if the given network core is providing connectivity only for mentioned customer ethernet segments, there is no real use to distribute labels for networks that connect routers between themselves, the only routes that matter are /32 routes to endpoints or attached customer networks.
+
+Label binding filtering can be used to distribute only specified sets of labels to reduce resource usage and network load.
+
+There are 2 types of label binding filters:
+
+    which label bindings should be advertised to LDP neighbors, configured in the /mpls ldp advertise-filter menu
+    which label bindings should be accepted from LDP neighbors, configured in /mpls ldp accept-filter menu
+
+Filters are organized in the ordered list, specifying prefixes that must include the prefix that is tested against the filter and neighbor (or wildcard).
+
+In the given example setup all routers can be configured so that they advertise labels only for routes that allow reaching the endpoints of tunnels. For this 2 advertise filters need to be configured on all routers:
+/mpls ldp advertise-filter add prefix=111.111.111.0/24 advertise=yes
+/mpls ldp advertise-filter add prefix=0.0.0.0/0 advertise=no
+
+
+
+This filter causes routers to advertise only bindings for routes that are included by the 111.111.111.0/24 prefix which covers loopbacks (111.111.111.1/32, 111.111.111.2/32, etc). The second rule is necessary because the default filter results when no rule matches are to allow the action in question.
+
+In the given setup there is no need to set up accept filter because by convention introduced by 2 abovementioned rules no LDP router will distribute unnecessary bindings.
+
+Note that filter changes do not affect existing mappings, so to take the filter into effect, connections between neighbors need to be reset. either by removing neighbors from the LDP neighbor table or by restarting the LDP instance.
+
+So on R2, for example, we get:
+[admin@R2] /mpls/ldp/remote-mapping> print 
+Flags: I - INACTIVE; D - DYNAMIC
+Columns: VRF, DST-ADDRESS, NEXTHOP, LABEL, PEER
+#    VRF   DST-ADDRESS    NEXTHOP     LABEL      PEER           
+0 ID main  111.111.111.2              17         111.111.111.3:0
+1 ID main  111.111.111.1              16         111.111.111.3:0
+2  D main  111.111.111.3  111.12.0.2  impl-null  111.111.111.3:0
+3  D main  111.111.111.4  111.12.0.2  18         111.111.111.3:0
+4 ID main  111.111.111.2              16         111.111.111.1:0
+5  D main  111.111.111.1  111.11.0.1  impl-null  111.111.111.1:0
+6 ID main  111.111.111.3              17         111.111.111.1:0
+7 ID main  111.111.111.4              18         111.111.111.1:0
+
+
+LDP on Ipv6 and Dual-Stack links
+
+RouterOS implements RFC 7552 to support LDP on dual-stack links.
+
+Supported AFIs can be selected by LDP instance, as well as explicitly configured per LDP interface.
+/mpls ldp
+add afi=ip,ipv6 lsr-id=111.111.111.1 preferred-afi=ipv6
+/mpls ldp interface
+add interface=ether2 afi=ip
+add interface=ether3 afi=ipv6
+
+The example above enables LDP instance to use IPv4 and IPv6 address families and sets the preference to IPv6 with preferred-afi parameter. LDP interface configuration on the other hand explicitly sets that ether2 supports only IPv4 and ether3 supports only IPv6.
+
+
+The main question occurs how AFI is selected when there are a mix of different AFIs and what if one of the supported AFIs flaps. 
+
+The logic behind sending hellos is as follows:
+
+    if an interface has only one AFI:
+        dual-stack element is not sent
+        sends hello only if there is an IP address on the interface from the corresponding AFI.
+    If an interface has both AFIs:
+        dual-stack element is always sent and contains the value from preferred-afi
+        sends hellos on each AFI if a corresponding address is present on the interface.
+
+
+From all received hellos peer determines which AFI to use for connection and for which AFIs to bind and send labels. For LDP to be able to use a specific AFI, receiving hello for that specific AFI is mandatory. Hello packet contains the transport address necessary for proper LDP operation. By comparing received AFI addresses, is determined active/passive role.
+
+The logic behind receiving and processing hellos is as follows:
+
+    if the LDP instance has only one AFI (it means that all interfaces can have only that specific AFI operational):
+        drop hellos from not supported AFI
+        ignore/forget the dual-stack element for the hello packet
+        the role is determined only for this one specific AFI
+        labels are sent only for this one specific AFI
+    if the LDP instance has both AFIs (interfaces can have different combinations of supported AFIs):
+        drop hellos from AFI that are not configured as supported on the interface.
+        ignore/forget the dual-stack element (preference is not taken into account) for hello packets, if an interface has only one supported AFI.
+        drop hello if received preference in dual-stack element does not match configured preferred-afi.
+
+
+If there are changes in hello packets, the existing session is terminated only in case if address family used by labels is changed, otherwise, the session is preserved.
+
+Dual-stack element in hello packets is set only if an interface is determined to be dual-stack compatible:
+
+    Normally such an interface should be able to receive hellos from both AFIs,
+        Before proceeding LDP should wait for hello from the preferred AFI.
+        if hello is received only from one AFI:
+            if hello from preferred AFI is not received then it is considered an error. 
+            otherwise, wait for missing hello for x seconds (x = 3 * hello-interval)
+                if missing hello appears within a time interval consider peer to be dual-stack
+                if missing hello did not appear, then consider peer to be single-stack
+                if missing hello appeared after the time interval then restart the session.
+    the dual-stack element indicates that LDP wants to distribute labels for both AFIs.
+
+In summary, the following combinations of AFIs and dual-stack element (ds6) are possible assuming that preferred-afi=ipv6:
+
+    ipv4 - wait X seconds, if no changes, then use the IPv4 LDP session and distribute IPv4 labels
+    ipv4+ds6 - wait for IPv6 hello, dual-stack element indicates that there should be IPv6
+    ipv6 - wait X seconds, if no changes, then use the IPv6 LDP session and distribute IPv6 labels
+    ipv6+ds6 - use IPv6 LDP session and distribute IPv6 labels
+    ipv4,ipv6 - use IPv6 LDP session and distribute IPv4 and IPv6 labels
+    ipv4,ipv6+ds6 - use IPv6 LDP session and distribute IPv4 and IPv6 labels
+
+Property Reference
+LDP Instance
+
+
+Sub-menu: /mpls
+
+Properties
+afi (ip | ipv6; Default: )	Determines supported address families by the instance.
+comments (string; Default: )	Short description of the entry
+disabled (yes | no; Default: no)	
+distribute-for-default (yes | no; Default: no)	Defines whether to map label for the default route.
+hop-limit (integer[0..255]; Default: )	Max hop limit used for loop detection. Works in combination with the loop-detect property.
+loop-detect (yes | no; Default: )	Defines whether to run LSP loop detection. Will not work correctly if not enabled on all LSRs. Should be used only on non-TTL networks such as ATMs.
+lsr-id (IP; Default: )	Unique label switching router's ID.
+path-vector-limit (IP; Default: )	Max path vector limit used for loop detection. Works in combination with the loop-detect property.
+preferred-afi (ip | ipv6; Default: ipv6)	Determining which address family connection is preferred. Value is also set in dual-stack element (if used).
+transport-addresses (IP; Default: )	Specifies LDP session connections origin addresses and also advertises these addresses as transport addresses to LDP neighbors.
+use-explicit-null (yes | no; Default: no)	Whether to distribute explicit-null label bindings.
+vrf (name; Default: main)	Name of the VRF table this instance will operate on.
+Interface
+
+Sub-menu: /mpls ldp interface
+
+
+afi (ip | ipv6; Default: )	Determines interface address family. Only AFIs that are configured as supported by the instance is taken into account. If the value is not explicitly specified then it is considered to be equal to the instance-supported AFIs.
+accept-dynamic-neighbors (yes | no; Default:)	Defines whether to discover neighbors dynamically or use only statically configured in LDP neighbors menu
+comments (string; Default: )	Short description of the entry
+disabled (yes | no; Default: no)	
+hello-interval (string; Default: )	The interval between hello packets that the router sends out on specified interface/s. The default value is 5s.
+hold-time (string; Default: )	Specifies the interval after which a neighbor discovered on the interface is declared as not reachable. The default value is 15s.
+interface (string; Default: )	Name of the interface or interface list where LDP will be listening.
+transport-addresses (List of IPs; Default: )	Used transport addresses if differs from LDP Instance settings.
+
+
+Neighbors
+
+Sub-menu: /mpls ldp neighbor
+
+List of discovered and statically configured LDP neighbors.
+
+Properties
+comments (string; Default: )	Short description of the entry
+disabled (yes | no; Default: no)	
+send-targeted (yes | no; Default: )	Specifies whether to try to send targeted hellos, used for targeted (not directly connected) LDP sessions.
+transport (IP; Default: )	Remote transport address.
+
+
+Read-only Properties
+active-connect (yes | no)	Indicates that active role have been selected and the router is trying to establish the session.
+addresses (list of IPs)	List of discovered addresses on the neighbor
+inactive (yes | no)	Whether binding is active and can be selected as a candidate for forwarding.
+dynamic (yes | no)	Whether entry was dynamically added
+local-transport (IP)	Selected local transport address.
+on-demand (yes | no)	
+
+Downstream On Demand label distribution
+operational (yes | no)	Indicates whether the peer is operational.
+passive (yes | no)	Indicates whether the peer is in a passive role.
+passive-wait (yes | no)	Indicates whether the peer is in a passive role and currently is waiting for the session to be initialized.
+path-vector-limit (integer)	
+peer (IP:integer)	LSR-ID and label space of the neighbor
+sending-targeted-hello(yes | no)	Whether targeted hellos are being sent to the neighbor.
+throttled (yes | no)	Indicates whether session is in throttled state. Session is throttled after initialization failure, max throttle time 120s. 
+used-afi (yes | no)	Used transport AFI
+vpls (yes | no)	Whether neighbor is used by VPLS tunnel
+Accept Filter
+
+Sub-menu: /mpls ldp accept-filter
+
+List of label bindings that should be accepted from LDP neighbors.
+accept (yes | no; Default: no)	Whether to accept label bindings from the neighbors for the specified prefix.
+comments (string; Default: )	Short description of the entry
+disabled (yes | no; Default: no)	
+neighbor(string; Default: )	Neighbor to which this filter applies.
+prefix (IP/mask; Default: )	Prefix to match.
+vrf (name; Default: )	
+
+
+Advertise Filter
+
+Sub-menu: /mpls ldp advertise-filter
+
+List of label bindings that should be advertised to LDP neighbors.
+advertise (yes | no; Default: no )	Whether to advertise label bindings to the neighbors for the specified prefix.
+comments (string; Default: )	Short description of the entry
+disabled (yes | no; Default: no)	
+neighbor(string; Default: )	Neighbor to which this filter applies.
+prefix (IP/mask; Default: )	Prefix to match.
+vrf (name; Default: )	
+Local Mapping
+
+Sub-menu: /mpls local-mapping
+
+This sub-menu shows labels bound to the routes locally in the router. In this menu also static mappings can be configured if there is no intention to use LDP dynamically.
+
+
+Properties
+comments (string; Default: )	Short description of the entry
+disabled (yes | no; Default: no)	
+dst-address (IP/Mask; Default: )	Destination prefix the label is assigned to.
+label (integer[0..1048576] | alert | expl-null | expl-null6 | impl-null | none; Default: )	Label number assigned to destination.
+vrf (name; Default: main)	Name of the VRF table this mapping belongs to.
+
+
+Read-only Properties
+adv-path ()	
+inactive (yes | no)	Whether binding is active and can be selected as a candidate for forwarding.
+dynamic (yes | no)	Whether entry was dynamically added
+egress (yes | no)	
+gateway (yes | no)	Whether the destination is reachable through the gateway.
+local (yes | no)	Whether the destination is locally reachable on the router
+peers (IP:label_space)	IP address and label space of the peer to which this entry was advertised.
+Remote Mapping
+
+Sub-menu: /mpls remote-mapping
+
+Sub-menu shows label bindings for routes received from other routers. Static mapping can be configured if there is no intention to use LDP dynamically. This table is used to build Forwarding Table
+
+Properties
+comments (string; Default: )	Short description of the entry
+disabled (yes | no; Default: no)	
+dst-address (IP/Mask; Default: )	Destination prefix the label is assigned to.
+label (integer[0..1048576] | alert | expl-null | expl-null6 | impl-null | none; Default: )	Label number assigned to destination.
+nexthop (IP; Default:)	
+vrf (name; Default: main)	Name of the VRF table this mapping belongs to.
+
+
+Read-only Properties
+inactive (yes | no)	Whether binding is active and can be selected as a candidate for forwarding.
+dynamic (yes | no)	Whether entry was dynamically added
+path (string)	
+
+
+
+
+    Creado por Usuario desconocido (olga), actualizado por última vez por Edgars P. el ene 24, 2025 3 min de lectura
 
 Summary
 
-It is possible to connect the GSM modem to the RouterOS device and use it to send and receive SMS messages. RouterOS lists such modem as a serial port that appears in the '/port print' listing. GSM standard defines AT commands for sending SMS messages and defines how messages should be encoded in these commands. '/tool sms send' uses standard GSM AT commands to send SMS.
-Sending
-/tool sms send
-Example
+The virtual Private Lan Service (VPLS) interface can be considered a tunnel interface just like the EoIP interface. To achieve transparent ethernet segment forwarding between customer sites.
 
-Sending command for ppp interface:
-/tool sms send usb3 "20000000" \ message="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#\$%^&*(){}[]\"'~"
+Negotiation of VPLS tunnels can be done by LDP protocol or MP-BGP - both endpoints of tunnel exchange labels they are going to use for the tunnel.
 
-For LTE interface use LTE interface name in the port field:
-/tool sms send lte1 "20000000" \ message="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#\$%^&*(){}[]\"'~"
-port (string)	Name of port from /port that GSM modem is attached to.
-phone-number (string)	Recipient phone number. Allowed characters are "0123456789*#abc". If the first character is "+" then the phone number type is set to international, otherwise, it is set to unknown.
-channel (integer)	Which modem channel to use for sending.
-message (string)	Message contents. It is encoded using GSM 7 encoding (UCS2 currently is not supported), so the message length is limited to 160 characters (characters ^{}\[]~
-smsc (string)	
-type (string)	If set to class-0, then send class 0 SMS message. It is displayed immediately and not stored in the phone.
-sms-storage (string)
-	Select storage where to save received SMS (modem/sim) 
-status-report-request (yes | no; Default: yes)
-	Set "no" to not request a confirmation message indicating whether a text message was successfully sent to the recipient.
-USSD messages
+Data forwarding in the tunnel happens by imposing 2 labels on packets: tunnel label and transport label - a label that ensures traffic delivery to the other endpoint of the tunnel.
 
-USSD (Unstructured Supplementary Service Data) messages can be used to communicate with mobile network provider to receive additional information, enabling additional services or adding funds to prepaid cards. USSD messages can be processed by using AT commands (commands can differ or even may be blocked on some modems).
 
-3G or GSM network modes must be activated to use this functionality, as it's not supported under LTE only mode (R11e-LTE modem auto switches to 3G mode to send out USSD message).
+MikroTik RouterOS implements the following VPLS features:
 
-PDU (Protocol Data Unit) message and its decrypted version are printed under LTE debug logging.
-Example
+    VPLS LDP signaling (RFC 4762)
+    Cisco style static VPLS pseudowires (RFC 4447 FEC type 0x80)
+    VPLS pseudowire fragmentation and reassembly (RFC 4623)
+    VPLS MP-BGP based autodiscovery and signaling (RFC 4761)
+    Cisco VPLS BGP-based auto-discovery (draft-ietf-l2vpn-signaling-08)
+    support for multiple import/export route-target extended communities for BGP based VPLS (both, RFC 4761 and draft-ietf-l2vpn-signaling-08)
 
-Check if LTE debug logging is active:
-/system logging print
-Flags: X - disabled, I - invalid, * - default 
-# TOPICS ACTION PREFIX 
-0 * info memory 
-1 * error memory 
-2 * warning memory 
-3 * critical echo 
 
-If there is no logging entry add it by running this command:
-/system logging add topics=lte,!raw
+VPLS Prerequisities
 
-/system logging print
-Flags: X - disabled, I - invalid, * - default 
-# TOPICS ACTION PREFIX 
-0 * info memory 
-1 * error memory 
-2 * warning memory 
-3 * critical echo 
-4 lte,!raw memory 
+For VPLS to be able to transport MPLS packets, one of the label distribution protocols should be already running on the backbone, it can be LDP, RSVP-TE, or static bindings.
 
-To receive account status from *245#
-/interface lte at-chat lte1 input="AT+CUSD=1,\"*245#\",15"
-output: OK
-/log print
-11:51:20 lte,async lte1: sent AT+CUSD=1,"*245#",15 
-11:51:20 lte,async lte1: rcvd OK 
-11:51:23 lte,async,event +CUSD: 0,"EBB79B1E0685E9ECF4BADE9E03", 0 
-11:51:23 gsm,info USSD: konta atlikums
-Receiving
+Before moving forward, familiarize yourself with the prerequisites required for LDP and prerequisites for RSVP-TE.
 
-RouterOS also supports receiving of SMS messages, can execute scripts, and even respond to the sender.
+In case, if BGP should be used as a VPLS discovery and signaling protocol, the backbone should be running iBGP preferably with route reflector/s.
 
-Before the router can receive SMS, the relevant configuration is required in the /tool sms menu. The following parameters are configurable:
-allowed-number (string; Default: "")	The sender number that will be allowed to run commands, must specify the country code ie. +371XXXXXXX
-channel (integer; Default: 0)	Which modem channel to use for receiving.
-keep-max-sms (integer; Default: 0)	Maximum number of messages that will be saved. If you set this bigger than SIM supports, new messages will not be received. Replaced with auto-erase parameter starting from RouterOS v6.44.6
-auto-erase (yes | no; Default: no)	SIM storage size is read automatically. When auto-erase=no new SMS will not be received if storage is full. Set auto-erase=yes to delete the oldest received SMS to free space for new ones automatically. Available starting from v6.44.6
-port (string; Default: (unknown))	Modem port (modem can be used only by one process "/port> print" )
-receive-enabled (yes | no; Default: no)	Must be turned on to receive messages
-secret (string; Default: "")	the secret password, mandatory
-polling (yes | no; Default: no)	checking the modem for new SMS every 10s, instead of updating the inbox only after receiving the command from the modem. Available starting from v7.16
 
-Basic Example configuration to be able to view received messages:
-/tool sms set receive-enabled=yes port=lte1
+Example Setup
 
-/tool/sms/print 
-           status: running
-  receive-enabled: yes
-             port: lte1
-          channel: 0
-           secret: 
-   allowed-number: 
-       auto-erase: no
-          sim-pin: 
-        last-ussd: 
-Inbox
-/tool sms inbox
+Let's consider that we already have a working LDP setup from the LDP configuration example.
 
-If you have enabled the reader, you will see incoming messages in this submenu:
-
-Read-only properties:
-phone (string)	Senders phone number.
-message (string)	Message body
-timestamp (time)	The time when the message was received. It is the time sent by the operator, not the router's local time.
-type (string)	Message type
-Syntax
- :cmd SECRET script NAME [[ VAR[=VAL] ] ... ]
-
-    SECRET - the password
-    NAME - the name of the script that's available in "/system script"
-    VAR - variables that will be passed to the script (can be passed as VAR or as VAR=value), separated by spaces.
-
-Other things to remember:
-
-    *Parameters can be put into quotes "VAR"="VAL" if necessary.
-    *Escaping of values is not supported (VAR="\"").
-    *Combined SMS are not supported, every SMS will be treated separately
-    * 16Bit unicode messages are not supported
-    * SMS are decoded with the standard GSM7 alphabet, so you can't send in other encodings, otherwise it will be decoded incorrectly
-
-Examples
-
-Wrong:
-:cmd script mans_skripts
-:cmd slepens script mans skripts
-:cmd slepens script mans_skripts var=
-:cmd slepens script mans_skripts var= a
-:cmd slepens script mans_skripts var=a a
-
-Right:
-:cmd slepens script mans_skripts
-:cmd slepens script "mans skripts"
-:cmd slepens script mans_skripts var
-:cmd slepens script mans_skripts var=a
-:cmd slepens script mans_skripts var="a a" 
-Debugging
-
-/tool sms send command is logging data that is written and read. It is logged with tags gsm,debug,write and gsm,debug,read For more information see system logging.
-Implementation details
-
-AT+CMGS and AT+CMGF commands are used. Port is acquired for the duration of the command and cannot be used concurrently by another RouterOS component. Message sending process can take a long time, it times out after a minute and after two seconds during the initial AT command exchange.
+Routers R1, R3, and R4 have connected Customer A sites, and routers R1 and R3 have connected Customer B sites. Customers require transparent L2 connectivity between the sites.
 
 
 
+Reference
+General
+
+Sub-menu: /interface vpls
+
+
+List of all VPLS interfaces. This menu shows also dynamically created BGP-based VPLS interfaces.
+Properties
+arp (disabled | enabled | proxy-arp | reply-only; Default: enabled)	Address Resolution Protocol
+arp-timeout (time interval | auto; Default: auto)	
+bridge (name; Default:)	
+bridge-cost (integer [1..200000000]; Default: )	Cost of the bridge port.
+bridge-horizon (none | integer; Default: none)	If set to none bridge horizon will not be used.
+bridge-pvid (integer 1..4094; Default: 1)	Used to assign port VLAN ID (pvid) for dynamically bridged interface. This property only has an effect when bridge vlan-filtering is set to yes.
+cisco-static-id (integer [0..4294967295]; Default: 0)	Cisco-style VPLS tunnel ID.
+comment (string; Default: )	Short description of the item
+disable-running-check (yes | no; Default: no)	Specifies whether to detect if an interface is running or not. If set to no interface will always have the running flag.
+disabled (yes | no; Default: yes)	Defines whether an item is ignored or used. By default VPLS interface is disabled.
+mac-address (MAC; Default: )	
+mtu (integer [32..65536]; Default: 1500)	
+name (string; Default: )	Name of the interface
+pw-l2mtu (integer [0..65536]; Default: 1500)	L2MTU value advertised to a remote peer.
+pw-type (raw-ethernet | tagged-ethernet | vpls; Default: raw-ethernet)	Pseudowire type.
+peer (IP; Default: )	The IP address of the remote peer.
+pw-control-word (disabled | enabled | default; Default: default)	Enables/disables Control Word usage. Default values for regular and cisco style VPLS tunnels differ. Cisco style by default has control word usage disabled. Read more in the VPLS Control Word article.
+vpls-id (AsNum | AsIp; Default: )	A unique number that identifies the VPLS tunnel. Encoding is 2byte+4byte or 4byte+2byte number.
+
+
+Read-only properties
+cisco-bgp-signaled (yes | no)	
+vpls (string)	name of the bgp-vpls instance used to create dynamic vpls interface
+bgp-signaled	
+bgp-vpls	
+bgp-vpls-prfx	
+dynamic (yes | no)	
+l2mtu (integer)	
+running (yes | no)	
+Monitoring
+
+Command /interface vpls monitor [id] will display the current VPLS interface status
+
+For example:
+[admin@10.0.11.23] /interface vpls> monitor vpls2
+remote-label: 800000
+local-label: 43
+remote-status: 
+transport: 10.255.11.201/32
+transport-nexthop: 10.0.11.201
+imposed-labels: 800000
+
+Available read-only properties:
+imposed-label (integer)	VPLS imposed label
+local-label (integer)	Local VPLS label
+remote-group ()	
+remote-label (integer)	Remote VPLS label
+remote-status (integer)	
+transport-nexthop (IP prefix)	Shows used transport address (typically Loopback address).
+transport (string)	Name of the transport interface. Set if VPLS is running over the Traffic Engineering tunnel.
 
 
 
-    Creado por Artis Bernāts, actualizado por última vez por GG el abr 26, 2024 5 min de lectura
-
-    Summary
-    Initial settings
-    Roaming script example
-    Failover script example
-    Setting up scheduler
+    Creado por Māris B. el may 27, 2022 2 min de lectura
 
 Summary
 
-The first script example shows how to switch between SIM slots in case mobile roaming is detected for LtAP mini devices. This could be useful for mobile vehicle applications, where cars, buses or trains could drive abroad and should use two SIM cards (one for a home network, other for a roaming network). Since RouterOS has a roaming status in the LTE monitor (displayed only when roaming) we can use this in RouterOS scripts to change SIM cards accordingly.
+VPLS allows remote sites to share an Ethernet broadcast domain by connecting sites through pseudo-wires(PW) tunnels over a packet switching network (PSN). Since VPLS encapsulation adds additional overhead, each interface in LSP should be able to transmit a large enough packet.
 
-The second script example shows how to switch between the SIM cards in case a mobile connection is lost on the currently selected one.
+Each ethernet chipset has hardware limitations on the maximum packet size that it can transmit. Even now there are Ethernets that support only one Vlan tag, meaning that the maximum packet size without Ethernet header and checksum (L2MTU) is 1504 bytes. Obviously, it is not enough to forward VPLS encapsulated Ethernet frame without fragmentation (at least 1524 L2MTU support is required). See MTU in RouterOS for maximum supported L2MTUs on RouterBOADs.
 
-Note: Keep in mind that these are just examples of how to utilize dual SIM slots. For real-life production environments, proper testing should be carried out, so try to optimize them and add new features according to your needs.
-Initial settings
+Since not even all RouterBOARDs support enough L2MTU to transmit VPLS encapsulated packet without fragmentation, RouterOS has added Pseudowire Fragmentation and Reassembly (PWE3) support according to RFC 4623 using 4-byte Control Word (CW).
+Control Word Usage
 
-First, make sure you have correctly set up LTE network parameters (provided by the mobile network operator) for each SIM card. You can use the default APN profile or create two separate ones, follow this link -  LTE#Quicksetupexample. This example uses the default APN profile.
+In RouterOS, Control Word is used for packet fragmentation and reassembly inside the VPLS tunnel and is done by utilizing optional Control Word (CW). CW is added between PW label (demultiplexor) and packet payload and adds an additional 4-byte overhead.
 
-After that, enable data roaming for connecting to other countries data-providers with the following command. This allows us to keep track of roaming status.
+Reordering OOO packets are not implemented, out of order fragments will be dropped
 
-/interface lte set [find name=lte1] allow-roaming=yes
+CW usage is controlled by the of use-control-word parameter in VPLS configuration.
 
-Then, choose which SIM slots will be used for home and roaming networks. In this example, we use slot "down" for home and slot "up" for roaming network. Use the following command to switch between active slots.
-Note: command for sim slot selection changes in v6.45.1. And some device models like SXT, have SIM slots named "a" and "b" instead of "up" and down"
+As you can see Control Word is divided into 5 fields:
 
+    0000 - 4-bits identifies that the packet is PW (not IP)
+    Flags - 4bits
+    Frag - 2bits value that indicates payload fragmentation.
+    Len - 6bits
+    Seq - 16bits sequence number used to detect packet loss / misordering.
 
-Command for pre 6.45.1:
-
-/system routerboard sim set sim-slot=down
-
-Command after 6.45.1:
-
-/system routerboard modem set sim-slot=down
-
-Command in RouterOS v7 version:
-
-/interface lte settings set sim-slot=down
-
-After changing SIM slots, LTE modem will be restarted. It can take some time (depending on the modem and board around 30 seconds) to fully initialize it, so make sure you test your modem.
-Roaming script example
-
-Now create a script that will run with a scheduler. This script will go through a few key points:
-
-    Check if the LTE interface is initialized (shown in /interface lte ), otherwise, try a power reset
-    Check if an LTE connection is established (the interface is in a "running" state), otherwise create a log entry and simply wait for the next scheduler
-    Read the currently used LTE slot and decide whether to change SIM slots based on roaming status
-
-Let's call this script "roamingScript", and see below the source:
-
-{
-# Setup and read current values, "up" SIM slot will be used for roaming, "down" for home network
-:global simSlot [/system routerboard sim get sim-slot]
-:global timeoutLTE 60
-:global timeoutConnect 60
-
-# Wait for LTE to initialize for maximum "timeoutLTE" seconds
-:local i 0
-:local isLTEinit false
-:while ($i<$timeoutLTE) do={
-    :foreach n in=[/interface lte find] do={:set $isLTEinit true}
-    :if ($isLTEinit=true) do={
-        :set $i $timeoutLTE
-    }
-    :set $i ($i+1)
-    :delay 1s
-}
-
-# Check if LTE is initialized, or try power-reset the modem
-:if ($isLTEinit=true) do={
-    # Wait for LTE interface to connect to mobile network for maximum "timeoutConnet" seconds
-    :local isConnected false
-    :set $i 0
-    :while ($i<$timeoutConnect) do={
-        :if ([/interface lte get [find name="lte1"] running]=true) do={
-            :set $isConnected true
-            :set $i $timeoutConnect
-        }
-        :set $i ($i+1)
-        :delay 1s
-    }
-    # Check if LTE is connected
-    if ($isConnected=true) do={
-        :local Info [/interface lte monitor lte1 once as-value]
-        :local isRoaming ($Info->"roaming")
-        # Check which SIM slot is used
-        :if ($simSlot="down") do={
-            # If "down" (home) slot, check roaming status
-            :if ($isRoaming=true) do={
-                :log info message="Roaming detected, switching to SIM UP (Roaming)"
-                /system routerboard sim set sim-slot=up
-            }
-        } else={
-            # Else "up" (roaming) slot, check roaming status
-            :if (!$isRoaming=true) do={
-                :log info message="Not roaming, switching to SIM DOWN (Home)"
-                /interface lte settings set sim-slot=down
-            }
-        }
-    } else={
-        :log info message="LTE interface did not connect to network, wait for next scheduler"
-    }
-} else={
-    :log info message="LTE modem did not appear, trying power-reset"
-    /system routerboard usb power-reset duration=5s
-}
-}
+According to RFC generation and processing of sequence numbers is optional.
 
 
-Failover script example
 
-Now create a script that will run with a scheduler. This script will go through a few key points:
+    Creado por Usuario desconocido (olga), actualizado por última vez el oct 08, 2020 3 min de lectura
 
-    Check if the LTE interface is initialized (shown in /interface lte), otherwise, try a power reset
-    Check if an LTE connection is established (the interface is in a "running" state), otherwise, create a log entry and simply wait for the next scheduler
-    Read the currently used LTE slot and make a decision whether to change SIM slots based on interface status
+Properties
 
-Note: Keep in mind that the SIM slot will only be changed if the current one is not able to connect to the network if you need to switch back to the main SIM card you need to schedule another action that does it at a certain time. It is not possible to know if the other SIM card is in service without switching back to it.
+Sub-menu: /interface traffic-eng
 
-Let's call this script "failoverScript", and see below the source:
 
-{
-# Setup and read current values
-:global simSlot [/system routerboard modem get sim-slot]
-:global timeoutLTE 60
-:global timeoutConnect 60
+affinity-exclude (integer; Default: not set)	Do not use interface if resource-class matches any of specified bits.
+affinity-include-all (integer; Default: not set)	Use interface only if resource-class matches all of specified bits.
+affinity-include-any (integer; Default: not set)	Use interface if resource-class matches any of specified bits.
+auto-bandwidth-avg-interval (time; Default: 5m)	Interval in which actual amount of data is measured, from which average bandwidth is calculated.
+auto-bandwidth-range (Disabled | Min[bps][-Max[bps]]; Default: 0bps)	Auto bandwidth adjustment range. Read more >>
+auto-bandwidth-reserve (integer[%]; Default: 0%)	Specifies percentage of additional bandwidth to reserve. Read more >>
+auto-bandwidth-update-interval (time; Default: 1h)	Interval during which tunnel keeps track of highest average rate.
+bandwidth (integer[bps]; Default: 0bps)	How much bandwidth to reserve for TE tunnel. Value is in bits per second. Read more >>
+bandwidth-limit (disabled | integer[%]; Default: disabled)	Defines actual bandwidth limitation of TE tunnel. Limit is configured in percent of specified tunnel bandwidth. Read more >>
+comment (string; Default: )	Short description of the item
+disable-running-check (yes | no; Default: no)	Specifies whether to detect if interface is running or not. If set to no interface will always have running flag.
+disabled (yes | no; Default: yes)	Defines whether item is ignored or used.
+from-address (auto | IP; Default: auto)	Ingress address of the tunnel. If set to auto least IP address is picked.
+holding-priority (integer [0..7]; Default: not set)	Is used to decide whether this session can be preempted by another session. 0 sets the highest priority.
+mtu (integer; Default: 1500)	Layer3 Maximum Transmission Unit
+name (string; Default: )	Name of the interface
+primary-path (string; Default: )	Primary label switching paths defined in /mpls traffic-eng tunnel-path menu.
+primary-retry-interval (time; Default: 1m)	Interval after which tunnel will try to use primary path.
+record-route (yes | no; Default: not set)	If enabled, the sender node will receive information about the actual route that the LSP tunnel traverses. Record Route is analogous to a path vector, and hence can be used for loop detection.
+reoptimize-interval (time; Default: not set)	Interval after which tunnel will re-optimize current path. If current path is not the best path then after optimization best path will be used. Read more >>
+secondary-paths (string[,string]; Default: )	List of label switching paths used by TE tunnel if primary path fails. Paths are defined in /mpls traffic-eng tunnel-path menu.
+setup-priority (integer[0..7]; Default: not set)	Parameter is used to decide whether this session can preempt another session. 0 sets the highest priority.
+to-address (IP; Default: 0.0.0.0)	Remote end of TE tunnel.
+Monitoring
 
-# Wait for LTE to initialize for maximum "timeoutLTE" seconds
-:local i 0
-:local isLTEinit false
-:while ($i<$timeoutLTE) do={
-    :foreach n in=[/interface lte find] do={:set $isLTEinit true}
-    :if ($isLTEinit=true) do={
-        :set $i $timeoutLTE
-    }
-    :set $i ($i+1)
-    :delay 1s
-}
+To verify TE tunnel's status monitor command can be used.
+/interface traffic-eng monitor 0 
+tunnel-id: 12 
+primary-path-state: on-hold 
+secondary-path-state: established 
+secondary-path: static 
+active-path: static 
+active-lspid: 3 
+active-label: 66 
+explicit-route: "S:192.168.55.10/32,L:192.168.55.13/32,L:192.168.55.17/32" 
+recorded-route: "192.168.55.13[66],192.168.55.17[59],192.168.55.18[3]" 
+reserved-bandwidth: 5.0Mbps
 
-# Check if LTE is initialized, or try power-reset the modem
-:if ($isLTEinit=true) do={
-    # Wait for LTE interface to connect to mobile network for maximum "timeoutConnet" seconds
-    :local isConnected false
-    :set $i 0
-    :while ($i<$timeoutConnect) do={
-        :if ([/interface lte get [find name="lte1"] running]=true) do={
-            :set $isConnected true
-            :set $i $timeoutConnect
-        }
-        :set $i ($i+1)
-        :delay 1s
-    }
-    # Check if LTE is connected
-    if ($isConnected=false) do={
-    # Check which SIM slot is used
-        :if ($simSlot="down") do={
-            # If "down" slot, switch to up
-        :log info message="LTE down, switching slot to UP"
-            /interface lte settings set sim-slot=up
-    }
-        :if ($simSlot="up") do={
-            # If "up" slot, switch to down
-        :log info message="LTE down, switching slot to DOWN"
-            /interface lte settings set sim-slot=down
-            }
-        } else={
-            # Else "running"
-            :if ($isConnected=true) do={
-                :log info message="LTE UP"
-            } else={
-        :log info message="LTE interface did not connect to network, wait for next scheduler"
-        }
-    } 
-    } else={
-    :log info message="LTE modem did not appear, trying power-reset"
-    /system routerboard usb power-reset duration=5s
-}
-}
 
-Setting up scheduler
+Reoptimization
 
-Last, create your scheduler that will run the previously created script. Choose a proper scheduler interval, so two or more events do not overlap with each other. For this example above, 3 minutes will be enough.
+Path can be re-optimized manually by entering the command /interface traffic-eng reoptimize [id] (where [id] is an item number or interface name). It allows network administrators to reoptimize the LSPs that have been established based on changes in bandwidth, traffic, management policy, or other factors.
 
-/system scheduler add interval=3m on-event=roamingScript name=Roaming
+Let's say TE tunnel chose another path after a link failure on best path. You can verify optimization by looking at explicit-route or recorded-route values if record-route parameter is enabled.
+/interface traffic-eng monitor 0 
+tunnel-id: 12 
+primary-path-state: established 
+primary-path: dyn 
+secondary-path-state: not-necessary 
+active-path: dyn active-lspid: 1 
+active-label: 67 
+explicit-route: "S:192.168.55.10/32,S:192.168.55.13/32,S:192.168.55.14/32, 
+S:192.168.55.17/32,S:192.168.55.18/32" 
+recorded-route: "192.168.55.13[67],192.168.55.17[60],192.168.55.18[3]" 
+reserved-bandwidth: 5.0Mbps
 
-/system scheduler add interval=3m on-event=failoverScript name=Failover
 
-Keep in mind that a "home" SIM card will consume some roaming data because changing SIM slots does not happen instantly.
+Whenever the link comes back, TE tunnel will use the same path even it is not the best path (unless reoptimize-interval is configured). To fix it we can manually reoptimize the tunnel path.
+/interface traffic-eng reoptimize 0
+
+
+/interface traffic-eng monitor 0 
+tunnel-id: 12 
+primary-path-state: established 
+primary-path: dyn 
+secondary-path-state: not-necessary 
+active-path: dyn 
+active-lspid: 2 active-label: 81 
+explicit-route: "S:192.168.55.5/32,S:192.168.55.2/32,S:192.168.55.1/32" 
+recorded-route: "192.168.55.2[81],192.168.55.1[3]" 
+reserved-bandwidth: 5.0Mbps
+
+
+Notice how explicit-route and recorded-route changed to a shorter path.
 
