@@ -1,1668 +1,1981 @@
 
 
-    Creado por Māris B., actualizado por última vez el feb 24, 2025 2 min de lectura
+    Creado por Māris B., actualizado por última vez el jul 06, 2021 1 min de lectura
 
-    Summary
-    General
-    Interface
-    Neighbor
-    Keys
+Fantasy menu is a fancy way to generate large amount of routes for testing purposes. Main benefits of this approach compared to script is the generation speed and simplicity. It is easy to remove all fantasy generated routes just by disabling fantasy rule.
 
-Summary
-
-MikroTik RouterOS implements RIP version 2 (RFC 2453). Version 1 (RFC 1058) is not supported.
-
-RIP enables routers in an autonomous system to exchange routing information. It always uses the best path (the path with the fewest number of hops (i.e. routers)) available.
-
-
-General
-
-Sub-menu: /routing rip instance
-
-
-name 	name of the instance
-vrf ( Default: main)	which VRF to use
-afi (ipv4 | ipv6; Default: )	specifies which afi to use.
-in-filter-chain (Default: )	input filter chain
-out-filter-chain (Default: )	output filter chain
-out-filter-select (Default: )	output filter select rule chain
-redistribute (bgp, bgp-mpls-vpn, connected, dhcp, fantasy, modem, ospf, rip, static, vpn; Default: )	which routes to redistribute
-originate-default ( Default:)	whether to originate default route
-routing-table ( Default: main)	in which routing table the routes will be added
-route-timeout (Default: )	route timeout
-route-gc-timeout  (Default: )	
-update-interval (time; Default: )	specifies time interval after which the route is considered invalid
-
-
-Note: The maximum metric of RIP route is 15. Metric higher than 15 is considered 'infinity' and routes with such metric are considered unreachable. Thus RIP cannot be used on networks with more than 15 hops between any two routers, and using redistribute metrics larger that 1 further reduces this maximum hop count.
-
-
-
-Interface
-
-Sub-menu: /routing rip interface-template
-
-
-name 	name of the instance
-instance	which VRF to use
-interfaces 	specifies which afi to use.
-source-addresses 	input filter chain
-cost (Default: )	output filter chain
-split-horizon (no| yes )	
-poison-reverse (no| yes )	
-mode (passive| strict)	
-key-chain (name)	Name of key-chain which contains MD5 key. Should be set only when MD5 authentication is needed. 
-password 	Password for plain text authentication. Should be set only when plain-text authentication is needed.
-
-
-
-Sub-menu: /routing rip interface
-
-Read-only properties:
-instance (name)	name of the instance
-address (address%interface )	IP address and interface name
-
-
-Neighbor
-
-Sub-menu: /routing rip neighbor
-
-
-This submenu is used to define a neighboring routers to exchange routing information with. Normally there is no need to add the neighbors, if multicasting is working properly within the network. If there are problems with exchanging routing information, neighbor routers can be added to the list. It will force the router to exchange the routing information with the neighbor using regular unicast packets.
-
-
-Read-only properties:
-address (IP address)	IP address of neighboring router
-routes	amount of routes
-packets-total	amount of all packets
-packets-bad	amount of bad packets
-entries-bad	amount of bad entries
-last-update (time)	time from last update
-
-
-Sub-menu: /routing rip static-neighbor
-instance (name)	name of used instance
-address (IP address)	IP address of neighboring router
-Keys
-
-Sub-menu: /routing rip keys
-
-
-MD5 authentication key chains.
-
-
-chain (string; Default: "")	chain name to place this key in. 
-key (string; Default: "")	authentication key. Maximal length 16 characters
-key-id (integer:0..255; Default: )	key identifier. This number is included in MD5 authenticated RIP messages, and determines witch key to use to check authentication for a specific message.
-valid-from (date and time; Default: today's date and time: 00:00:00)	key is valid from this date and time
-valid-till (date and time; Default: today's date and time: 00:00:00)	key is valid until this date and time
-
-
-
-    Creado por Māris B., actualizado por última vez el jun 17, 2025 22 min de lectura
-
-    Summary
-    BGP Terminology
-    BGP Basics
-        Instance Menu
-        Connection Menu
-        Session Menu
-        Template Menu
-    Best-Path Selection
-    Routing Filter Notes
-    Running More than One Instance
-    BGP Based VPLS
-    L3VPN (VPNv4, VPNv6)
-        Route Distinguisher
-        Properties
-    EVPN
-
-Summary
-
-The Border Gateway Protocol (BGP) allows setting up an inter-domain dynamic routing system that automatically updates routing tables of devices running BGP in case of network topology changes.
-
-BGP is an inter-autonomous system routing protocol based on the distance-vector algorithm. It is used to exchange routing information across the Internet and is the only protocol that is designed to deal with a network of the Internet's size and the only protocol that can deal well with having multiple connections to unrelated routing domains.
-
-BGP is designed to allow for sophisticated administrative routing policies to be implemented. It does not exchange information about network topology but rather reachability information. As such, BGP is better suited to inter-AS environments and special cases like informational feeds. If you just need to enable dynamic routing in your network, consider OSPF instead.
-
-The feature is not supported on SMIPS devices (hAP lite, hAP lite TC, and hAP mini).
-
-
-Standards and Technologies:
-
-    RFC 4271 Border Gateway Protocol 4
-    RFC 4456 BGP Route Reflection
-    RFC 5065 Autonomous System Confederations for BGP
-    RFC 1997 BGP Communities Attribute
-    RFC 8092 BGP Large Communities
-    RFC 4360, 5668 BGP Extended Communities
-    RFC 2385 TCP MD5 Authentication for BGPv4
-    RFC 5492 Capabilities Advertisement with BGP-4
-    RFC 2918 Route Refresh Capability
-    RFC 4760 Multiprotocol Extensions for BGP-4
-    RFC 2545 Use of BGP-4 Multiprotocol Extensions for IPv6 Inter-Domain Routing
-    RFC 4893 BGP Support for Four-octet AS Number Space
-
-    RFC 4364 BGP/MPLS IP Virtual Private Networks (VPNs)
-    RFC 4761 Virtual Private LAN Service (VPLS) Using BGP for Auto-Discovery and Signalling
-    RFC 6286 - AS-wide Unique BGP Identifier for BGP-4
-    RFC 4273 - SNMP peer table monitoring (OID 1.3.6.1.2.1.15.3.1) (IPv4 only)
-    RFC 6793 -  4-byte ASN support and Aggregator attribute.
-
-
-BGP Terminology
-
-    AS - Autonomous System
-    ASN - Autonomous System Number
-    NLRI - Network Layer Reachability Information is what is being exchanged between BGP peers and represents how to reach the prefixes.
-    IGP - Interior Gateway Protocol
-    EGP - Exterior Gateway protocol
-    RR - Route reflector is the router in the BGP network that reflects advertisements to all the neighbors, avoiding the requirement for full BGP mesh. 
-    Route server - is the BGP router that does not participate in traffic forwarding. Routes are typically not even installed in the FIB.
-    loopback address - a /32 address configured on a dummy bridge interface, that can act as a loopback.
-
-BGP Basics
-
-BGP routers exchange reachability information by means of a transport protocol, which in the case of BGP is TCP (port 179). Upon forming a TCP connection these routers exchange OPEN messages to negotiate and confirm supported capabilities.
-
-After agreeing on capabilities to use, the session is considered to be established and peers can start to exchange NLRIs via UPDATE messages. This information contains an indication of what sequence of full paths (BGP AS numbers) the route should take in order to reach the destination network (NLRI prefix).
-
-The peers initially exchange their full routing tables and after the initial exchange, incremental updates are sent as the routing tables change. Thus, BGP does not require a periodic refresh of the entire BGP routing table.
-
-BGP maintains the routing table version number which must be the same between any two given peers for the duration of the connection.
-
-KEEPALIVE messages are sent periodically to ensure that the connection is up and running, if KEEPALIVE messages are not received within the Hold Time interval, the connection will be closed.
-
-To respond to errors or special conditions, NOTIFICATION messages can be generated and sent to the remote peer, notification message type also indicates whether the connection should be immediately closed.
-
-There can be two types of BGP connections:
-
-    iBGP - is an "internal" link connecting peers from the same AS
-    eBGP - is an "external" link connecting peers belonging to two different AS-es
-
-A particular AS might have multiple BGP speakers and provide transit service to other AS-es. This implies that BGP speakers must maintain a consistent view of routing within the AS.  A consistent view of the routes exterior to the AS is provided by having all BGP routers within the AS establish direct iBGP connections with each other (full mesh) or by utilizing a Router Reflector setup.
-
-Using a set of administrative policies BGP speakers within the AS come to an agreement as to which entry/exit point to use for a particular destination. This information is communicated to the interior routers of the AS using the interior routing protocol (IGP), for example, OSPF, RIP, or static routing. In certain setups, iBGP can take the IGP protocol role as well.
-
-For certain BGP attributes handling behavior may change depending on what type of connection is set up, for example, the LOCAL-PREF attribute is not advertised to eBGP peers.
-
-RouterOS divides configuration and session monitoring into four menus:
-
-    instance menu (/routing/bgp/instance)
-
-    connection menu (/routing/bgp/connection)
-    sessions menu(/routing/bgp/session)
-    template menu (/routing/bgp/template)
-
-Instance Menu
-
-Starting from ROSv7.20, instead of auto detecting instance based on router-ids, BGP routing instances are now explicitly defined in instance menu.
-
-BGP routing instance is necessary for best path route selection and other instance dependant features like VPN, EVPN and so on.
-Property	Description
-as (integer [0..4294967295]; Default: )	32-bit BGP autonomous system number. Value can be entered in AS-Plain and AS-Dot formats. The parameter is also used to set up the BGP confederation, in the following format: confederation_as/as. For example, if your AS is 34 and your confederation AS is 43, then as configuration should be as=43/34.
-cluster-id (IP address; Default: )	In case this instance is a route reflector: the cluster ID of the router reflector cluster to this instance belongs. This attribute helps to recognize routing updates that come from another route reflector in this cluster and avoid routing information looping. Note that normally there is only one route reflector in a cluster; in this case, 'cluster-id' does not need to be configured and BGP router ID is used instead
-ignore-as-path-len (yes | no; Default: no)	Whether to ignore the AS_PATH attribute in the BGP route selection algorithm. Works on input.
-router-id (IP | name; Default: main )	
-
-BGP Router ID to be used. Use the ID from the /routing/router-id configuration by specifying the reference name, or set the ID directly by specifying IP.
-
-Equal router-ids are also used to group peers into one instance.
-routing-table (string; Default: )	Name of the routing table, to install routes in. 
-vrf (name; Default: main )	Name of the VRF BGP connections operates on. By default always use the "main" routing table.
-Connection Menu
-
-Let's look at a very basic eBGP configuration example assuming, that Router1 IP is 192.168.1.1, AS 65531 and Router2 IP 192.168.1.2, AS 65532:
-#Router1
-/routing/bgp/instnace
-add name=i1 as=65531
-
-/routing/bgp/connection
-add name=toR2 remote.address=192.168.1.2 instance=i1 local.role=ebgp
-#Router2
-/routing/bgp/instnace
-add name=i1 as=65532
-
-/routing/bgp/connection
-add name=toR1 remote.address=192.168.1.1 instance=i1 local.role=ebgp
-
-The BGP connection menu defines BGP outgoing connections as well as acts as a template matcher for incoming BGP connections.
-
- local.role parameter is used to indicate that this connection will be the eBGP. Also, notice that the connection does not require a remote AS number to be specified, RouterOS can determine a remote AS number dynamically from the first received OPEN message.
-
-The parameter equivalent to other vendors and older RouterOS "update-source" is "local.address". In most cases, it can be left unconfigured, and let the router determine the address.
-
-When a local address is not specified, BGP will try to guess the local address depending on the current setup:
-
-    if the peer is iBGP
-        if loopback available
-            pick the highest loopback address
-        if loopback is not available
-            pick any highest IP address on the router
-    if the peer is eBGP
-        if a remote peer's IP is not from a directly connected network:
-            and multihop is not set, then throw an error
-            and multihop is enabled:
-                if loopback available
-                    pick the highest loopback address
-                if loopback is not available
-                    pick any highest IP address on the router
-        if a remote peer's IP is from a directly connected network:
-            and multihop is not set:
-                pick the local routers IP address from that connected network
-            and multihop is set:
-                if loopback available
-                    pick the highest loopback address
-                if loopback is not available
-                    pick any highest IP address on the router
-
-
-In addition to connection-specific parameters, template-specific parameters are also directly exposed in this menu, for easier configuration in simple scenarios (when templates are not necessary).
-
-Listening on subnets should not be enabled in unsafe environments, denial of service is possible with such configuration. Firewall must be configured to protect the router.
-See "listen" parameter for more details.
-
-A list of all connection-specific parameters can be seen in the table below:
-Property	Description
-name (string; Default: )	Name of the BGP connection
-connect (yes | no; Default: yes)	Whether to allow the router to initiate the connection.
-listen (yes | no; Default: yes)	
-
-Whether to listen for incoming connections.
-
-    If remote.address is a host address and listening is enabled, then close the listening socket right after the first successful "accept". 
-    If remote.address is a subnet and listening is enabled, then listening socket stays open after first successful "accept" and there is a hard coded limit that allows 256 open connections.
-
-local - a group of parameters associated with the local side of the connection
-
-	.address (IPv4/6; Default: ::)	Local connection address.
-
-	.port(integer [0..65535]; Default:179 )	Local connection port.
-
-	.role(ebgp | ebgp-customer | ebgp-peer | ebgp-provider | ebgp-rs | ebgp-rs-client | ibgp | ibgp-rr; Default: )	BGP role, in most common scenarios it should be set to iBGP or eBGP. More information on BGP roles can be found in the corresponding RFC draft https://datatracker.ietf.org/doc/draft-ietf-idr-bgp-open-policy/?include_text=1)
-
-	.ttl (integer [1..255]; Default:)	Time To Live (hop limit) that will be recorded in sent TCP packets.
-remote - a group of parameters associated with the remote side of the connection
-
-
-
-	.address (IPv4/6; Default: ::)	Remote address used to connect and/or listen to.
-.port(integer [0..65535]; Default:179 )	Local connection port.
-.as(integer []; Default: )	Remote AS number. If not specified BGP will determine remote AS automatically from the OPEN message.
-.allowed-as()	Name of the num-list containing remote AS numbers that will be allowed to connect. Useful for dynamic peer configuration.
-.ttl (integer [1..255]; Default:)	Acceptable minimum Time To Live, the hop limit for this TCP connection. For example, if 'ttl=255' then only single-hop neighbors will be able to establish the connection. This property only affects EBGP peers.
-tcp-md5-key (string; Default: )	The key used to authenticate the connection with TCP MD5 signature as described in RFC 2385. If not specified, authentication is not used.
-templates (name[,name]; Default: default)	List of the template names, to inherit parameters from. Useful for dynamic BGP peers.
-instance (name[,name]; Default: default)	Name of the instance this connection is assigned to.
-Session Menu
-
-To see the actual active sessions with selected template parameters and negotiated capabilities refer to the BGP sessions menu:
-[admin@MikroTik] /routing/bgp/session> print 
-Flags: E - established 
- 0 E name="toR2" 
-     remote.address=192.168.1.2 .as=65532 .id=192.168.1.1 .refused-cap-opt=no 
-     .capabilities=mp,rr,as4 .afi=ip,ipv6 .messages=43346 .bytes=3635916 .eor="" 
-     local.address=192.168.1.1 .as=65531 .id=192.168.44.2 .capabilities=mp,rr,gr,as4 .messages=2 
-     .bytes=71 .eor="" 
-     output.procid=97 .keep-sent-attributes=no 
-     .last-notification=ffffffffffffffffffffffffffffffff0015030601 
-     input.procid=97 .limit-process-routes=500000 ebgp limit-exceeded 
-     hold-time=3m keepalive-time=1m uptime=4s70ms
-
-This menu shows read-only cached BGP session information. It will show the current status of the session, flags, last received notification, and negotiated session parameters.
-
-Even if the BGP session is not active anymore, the cache can still be stored for some time. Routes received from a particular session are removed only if the cache expires, this allows mitigating extensive routing table recalculations if the BGP session is flapping.
-
-
-Also, in this menu is located a session-specific set of commands.
-clear	
-
-Clear the session flags. For example, to be able to re-establish a session after the prefix limit is reached "limit-exceeded" flag must be cleared. It can be done by specifying "flag" parameter, which is able to take the following values:
-
-    input-last-notification  
-    limit-exceeded  
-    output-last-notification  
-    refused-cap-opt  
-    stopped
-
-dump-saved-advertisements	Dump saved advertisements from specified BGP session in the *.pcap file. The filename to store data is set by "save-to" parameter.
-refresh	Send route refresh to a specified BGP session. Is used to trigger re-sending all the routes from the remote peer. "address-family" parameters allow specifying for which address family to send route refresh.
-resend	
-
-Resend prefixes to a specified BGP session. The command takes two parameters:
-
-    "address-family" - parameters allow specifying for which address family to resend prefixes.
-    "save-to" - the name of the pcap file where to dump resent messages, can be used for debugging purposes.
-
-reset	Reset specified BGP session.
-stop	Stop specified BGP session.
-
-
-Template Menu
-
-
-The template contains all BGP protocol-related configuration options. It can be used as a template for dynamic peers and to apply a similar configuration to a group of peers. Note that this is not the same as peer groups on Cisco devices, where the group is more than just a common configuration.
-
-
-List of available template parameters:
-Property	Description
-add-path-out (all
-|none; Default: )	
-afi (ip | ipv6 | l2vpn | l2vpn-cisco | vpnv4; Default: ip)	List of address families about which this peer will exchange routing information. The remote peer must support (they usually do) BGP capabilities optional parameter to negotiate any other families than IP.
-as (integer [0..4294967295]; Default: )	32-bit BGP autonomous system number. Value can be entered in AS-Plain and AS-Dot formats. The parameter is also used to set up the BGP confederation, in the following format: confederation_as/as. For example, if your AS is 34 and your confederation AS is 43, then as configuration should be as=43/34. Overrides instance ASN.
-cisco-vpls-nlri-len-fmt (auto-bits | auto-bytes | bits | bytes; Default: )	VPLS NLRI length format type. Used for compatibility with Cisco VPLS. [[Read more>>]].
-disabled (yes | no; Default: no)	Whether the template is disabled.
-hold-time (time[3s..1h] | infinity; Default: 3m)	Specifies the BGP Hold Time value to use when negotiating with peers.
-
-According to the BGP specification, if the router does not receive successive KEEPALIVE and/or UPDATE and/or NOTIFICATION messages within the period specified in the Hold Time field of the OPEN message, then the BGP connection to the peer will be closed.
-
-The minimal hold-time value of both peers will be used (note that the special value 0 or 'infinity' is lower than any other value)
-
-    infinity - never expire the connection and never send keepalive messages.
-
-input - a group of parameters associated with BGP input
-
-	.accept-comunities (string; Default: )	A quick way to filter incoming updates with specific communities. It allows filtering incoming messages directly before they are even parsed and stored in memory, that way significantly reducing memory usage. Regular input filter chain can only reject prefixes which means that it will still eat memory and will be visible in /routing route table as "not active, filtered". Changes to be applied required session refresh.
-.accept-ext-communities(string; Default: )	A quick way to filter incoming updates with specific extended communities. It allows filtering incoming messages directly before they are even parsed and stored in memory, that way significantly reducing memory usage. Regular input filter chain can only reject prefixes which means that it will still eat memory and will be visible in /routing route table as "not active, filtered". Changes to be applied required session refresh.
-.accept-large-comunities (string; Default: )	A quick way to filter incoming updates with specific large communities. It allows filtering incoming messages directly before they are even parsed and stored in memory, that way significantly reducing memory usage. Regular input filter chain can only reject prefixes which means that it will still eat memory and will be visible in /routing route table as "not active, filtered". Changes to be applied required session refresh.
-.accept-nlri(string; Default: )	Name of the ipv4/6 address-list. A quick way to filter incoming updates with specific NLRIs. It allows filtering incoming messages directly before they are even parsed and stored in memory, that way significantly reducing memory usage. Regular input filter chain can only reject prefixes which means that it will still eat memory and will be visible in /routing route table as "not active, filtered". Changes to be applied required session restart.
-.filter-unknown(string; Default: )	A quick way to filter incoming updates with specific "unknown" attributes. It allows filtering incoming messages directly before they are even parsed and stored in memory, that way significantly reducing memory usage. Regular input filter chain can only reject prefixes which means that it will still eat memory and will be visible in /routing route table as "not active, filtered". Changes to be applied required session refresh.
-.affinity(afi  | alone | instance | main | remote-as | vrf; Default: alone )	
-
-Configure input multi-core processing. Read more in Routing Protocol Multi-core Support article.
-
-    alone - input and output of each session are processed in its own process, most likely the best option when there are a lot of cores and a lot of peers
-    afi, instance, vrf, remote-as - try to run input/output of new session in process with similar parameters
-    main - run input/output in the main process (could potentially increase performance on single-core even possibly on multi-core devices with a small amount of cores)
-    input - run output in the same process as input (can be set only for output affinity)
-
-.allow-as (integer [0..10]; Default: )	Indicates how many times to allow your own AS number in AS-PATH, before discarding a prefix.
-.filter (name; Default: )	Name of the routing filter chain to be used on input prefixes. This happens after NLRIs are processed. If the chain is not specified, then BGP by default accepts everything.
-.filter-comunities (string; Default: )	A quick way to filter incoming updates with specific communities. It allows filtering incoming messages directly before they are even parsed and stored in memory, that way significantly reducing memory usage. Regular input filter chain can only reject prefixes which means that it will still eat memory and will be visible in /routing route table as "not active, filtered". Changes to be applied required session refresh.
-.filter-ext-communities(string; Default: )	A quick way to filter incoming updates with specific extended communities. It allows filtering incoming messages directly before they are even parsed and stored in memory, that way significantly reducing memory usage. Regular input filter chain can only reject prefixes which means that it will still eat memory and will be visible in /routing route table as "not active, filtered". Changes to be applied required session refresh.
-.filter-large-comunities (string; Default: )	A quick way to filter incoming updates with specific large communities. It allows filtering incoming messages directly before they are even parsed and stored in memory, that way significantly reducing memory usage. Regular input filter chain can only reject prefixes which means that it will still eat memory and will be visible in /routing route table as "not active, filtered". Changes to be applied required session refresh.
-.filter-nlri(string; Default: )	Name of the filter chain that will filter incoming IPv4/IPv6 NLRIs directly before they are  stored in memory, that way significantly reducing memory usage. Regular input filter chain can only reject prefixes which means that it will still eat memory and will be visible in /routing route table as "not active, filtered". Changes to be applied required session restart.
-.filter-unknown(string; Default: )	A quick way to filter incoming updates with specific "unknown" attributes. It allows filtering incoming messages directly before they are even parsed and stored in memory, that way significantly reducing memory usage. Regular input filter chain can only reject prefixes which means that it will still eat memory and will be visible in /routing route table as "not active, filtered". Changes to be applied required session refresh.
-.limit-nlri-diversity (integer; Default: )	
-.limit-process-routes-ipv4 (integer; Default: )	Try to limit the amount of received IPv4 routes to the specified number. This number does not represent the exact number of routes going to be installed in the routing table by the peer. BGP session "clear" command must be used to reset the flag if the limit is reached.
-.limit-process-routes-ipv6 (integer; Default: )	Try to limit the amount of received IPv6 routes to the specified number. This number does not represent the exact number of routes going to be installed in the routing table by the peer. BGP session "clear" command must be used to reset the flag if the limit is reached.
-keepalive-time (time [1s..30m]; Default: )	The interval between keepalive messages, if not set by default keepalive is 1/3 of the hold-time. 
-multihop (yes | no; Default: no)	Specifies whether the remote peer is more than one hop away.
-
-This option affects outgoing next-hop selection as described in RFC 4271 (for EBGP only, excluding EBGP peers local to the confederation).
-
-It also affects:
-
-    whether to accept connections from peers that are not in the same network (the remote address of the connection is used for this check);
-    whether to accept incoming routes with NEXT_HOP attribute that is not in the same network as the address used to establish the connection;
-    the target-scope of the routes installed from this peer; routes from multi-hop or IBGP peers resolve their next-hops through IGP routes by default.
-
-name (string; Default: )	Name of the BGP template
-nexthop-choice (default | force-self | propagate; Default: default)	Affects the outgoing NEXT_HOP attribute selection. Note that next-hops set in filters always take precedence. Also note that the next-hop is not changed on route reflection, except when it's set in the filter.
-
-    default - select the next-hop as described in RFC 4271
-    force-self - always use a local address of the interface that is used to connect to the peer as the next-hop;
-    propagate - try to propagate further the next-hop received; i.e. if the route has BGP NEXT_HOP attribute, then use it as the next-hop, otherwise, fall back to the default case
-
-output - a group of parameters associated with BGP output
-
-	.as-override (yes | no; Default: no)	
-
-If set, then all instances of the remote peer's AS number in the BGP AS-PATH attribute are replaced with the local AS number before sending a route update to that peer. Happens before routing filters and prepending.
-.affinity(afi  | alone | instance | main | remote-as | vrf; Default: )	
-
-Configure output multicore processing. Read more in Routing Protocol Multi-core Support article.
-
-    alone - input and output of each session is processed in its own process, the most likely best option when there are a lot of cores and a lot of peers
-    afi, instance, vrf, remote-as - try to run input/output of new session in process with similar parameters
-    main - run input/output in the main process (could potentially increase performance on single-core even possibly on multicore devices with small amount of cores)
-    input - run output in the same process as input (can be set only for output affinity)
-
-.default-originate (always | if-installed | never; Default: never)   	Specifies default route (0.0.0.0/0) distribution method. 
-default-prepend (integer [0..255]; Default: )	
-.filter-chain (name; Default: )	Name of the routing filter chain to be used on the output prefixes. If the chain is not specified, then BGP by default accepts everything.
-.filter-select (name; Default: )	Name of the routing select chain to be used for prefix selection. If not specified, then default selection is used.
-.keep-sent-attributes (yes | no; Default: no)	Store in memory sent prefix attributes, required for "dump-saved-advertisements" command to work. By default, sent-out prefixes are not stored to preserve the router's memory. An option should be enabled only for debugging purposes when necessary to see currently advertised prefixes.
-.network(name; Default: )	Name of the address list used to send local networks. The network is sent only if a matching IGP route exists in the routing table.
-.no-client-to-client-reflection (yes | no; Default: )	Disable client-to-client route reflection in Route Reflector setups.
-.no-early-cut (yes | no; Default: )	The early cut is the mechanism, to guess (based on default RFC behavior) what would happen with the sent NPLRI when received by the remote peer. If the algorithm determines that the NLRI is going to be dropped, a peer will not even try to send it. However such behavior may not be desired in specific scenarios, then then this option should be used to disable the early cut feature.
-redistribute (bgp, connected, bgp-mpls-vpn , dhcp, fantasy, modem, ospf, rip, static, vpn; Default:)	Enable redistribution of specified route types.
-remove-private-as (yes | no; Default: no	If set, then the BGP AS-PATH attribute is removed before sending out route updates if the attribute contains only private AS numbers.
-
-The removal process happens before routing filters are applied and before the local, AS number is prepended to the AS path.
-
-	
-
-
-routing-table (string; Default: )	Name of the routing table, to install routes in. Overrides instance parameter.
-save-to (string; Default: )	Filename to be used to save BGP protocol-specific packet content (Exported PDU) into pcap file. This method allows much simpler peer-specific packet capturing for debugging purposes. Pcap files in this format can also be loaded to create virtual BGP peers to recreate conditions that happened at the time when packet capture was running.
-templates (name[,name]; Default: )	List of template names from which to inherit parameters. Useful feature, to easily configure groups with overlapping configuration options.
-use-bfd (yes | no; Default: no)	Whether to use the BFD protocol for faster connection state detection.
-vrf (name; Default: main )	Name of the VRF BGP connections operates on. By default always use the "main" routing table. Overrides instance parameter.
-
-
-
-Best-Path Selection
-
-BGP routers can receive multiple copies of the global routing table from multiple providers.
-
-There should be some way to compare those multiple BGP routing tables and select the best route to the destination, the solution is the BGP Best Path Selection Algorithm.
-
-The route is evaluated by the algorithm only if it is valid. In general, the route is considered valid if:
-
-    NEXT_HOP of the route is valid and reachable
-    AS_PATH received from external peers does not contain the local AS
-    the route is not rejected by routing filters
-
-For more information read nexthop selection and validation.
-
-The best path algorithm also compares routes received only by a single BGP instance. Routes installed by different BGP instances are compared by the general algorithm, i.e. route distances are compared and the route with a lower distance is preferred.
-
-If all the criteria are met, then the following actions take place:
-
-    The first path received is automatically considered the 'best path'. Any further received paths are compared to the first received to determine if the new path is better.
-    Prefer the path with the highest WEIGHT.
-    This parameter is not a part of the BGP standard, it is invented to quickly locally select the best route. A parameter is local to the router (assigned with routing filters in the BGP input) and cannot be advertised. A route without assigned WEIGHT has a default value of 0.
-    Prefer the path with the highest LOCAL_PREF.
-    This attribute is used only within an AS. A path without the LOCAL_PREF attribute has a value of 100 by default.
-    Prefer the path with the shortest AS_PATH. (skipped if input.ignore-as-path-len set to yes).
-    Each AS_SET counts as 1, regardless of the set size. The AS_CONFED_SEQUENCE and AS_CONFED_SET are not included in the AS_PATH length.
-    Prefer the path that was locally originated via aggregate or BGP network
-    Prefer the path with the lowest ORIGIN type.
-
-    Interior Gateway Protocol (IGP) is lower than Exterior Gateway Protocol (EGP), and EGP is lower than INCOMPLETE
-    in other words IGP < EGP < INCOMPLETE
-    Prefer the path with the lowest multi-exit discriminator (MED).
-
-    The router compares the MED attribute only for paths that have the same neighboring (leftmost) AS unless input.always-compare-med is enabled. 
-    Paths without explicit MED value are treated with MED of 0.
-    Prefer eBGP over iBGP paths
-    Prefer lowest IGP metric.
-    Prefer the route that comes from the BGP router with the lowest router ID. If a route carries the ORIGINATOR_ID attribute, then the ORIGINATOR_ID is used instead of the router ID.
-    Prefer the route with the shortest route reflection cluster list. Routes without a cluster list are considered to have a cluster list of length 0.
-    Prefer the path that comes from the lowest neighbor address
-
-
-Routing Filter Notes
-
-On BGP output routing filters are executed before BGP itself is modifying attributes, for example, if nexthop-choice is set to force-self, then the gateway set in the routing filters will be overridden.
-
-On BGP input routing filters are applied to the received attributes, which means that, for example, setting the gateway will work no matter what nexhop-choice value is set.
-Running More than One Instance
-
-As we already know for best path selection to work properly, BGP routes must be received from the same instance. But in certain scenarios it is necessary to run multiple BGP instances with their own separate tables.
-BGP determines whether sessions belongs to the same instance by comparing configured local router IDs.
-
-For example config below will run each peer in its own BGP instance
-/routing/bgp/connection
-add name=inst1_peer remote.address=192.168.1.1 as=1234 local.role=ebgp router-id=1.1.1.1
-add name=inst2_peer remote.address=192.168.1.2 as=5678 local.role=ebgp router-id=2.2.2.2
-
-
-When router-id is not specified BGP will pick the "default" ID from /routing id.
-
-Starting from v7.20 instance is no longer determined by router-id.
-
-
-BGP Based VPLS
-
-Sub Menu: /routing/bgp/vpls
-
-This menu lists all the configured BGP-based VPLS instances. These instances allow the router to advertise VPLS BGP NLRI and indicate that the router belongs to a specific customer VPLS network.
-
-MP-BGP-based autodiscovery and signaling (RFC 4761).
-
-Cisco VPLS BGP-based auto-discovery (draft-ietf-l2vpn-signaling-08).
-
-Support for multiple import/export route target extended communities for BGP-based VPLS (both, RFC 4761 and draft-ietf-l2vpn-signaling-08).
-bridge (name)	The name of the bridge where dynamically created VPLS interfaces should be added as ports.
-bridge-cost (integer [0..4294967295])	
-bridge-horizon (none | integer [0..4294967295])	If set to none bridge horizon will not be used.
-bridge-pvid (integer 1..4094)	Used to assign port VLAN ID (pvid) for dynamically bridged interface.
-cisco-id ()	Unique identifier. A parameter must be set for cisco-style VPLS signaling. In most cases this should not be used, any modern software supports RFC 4761 style signaling (see site-id parameter). Parameter is a merge of l2-router-id and RD, for example: 10.155.155.1&6550:123
-comment (string)	Short description of the item.
-disabled (yes | no)	Defines whether an item is ignored or used.
-export-route-target (list of RTs)	The setting is used to tag BGP NLRI with one or more route targets which on the remote side is used by import-route-targets.
-import-route-targets (list of RTs)	The setting is used to determine if BGP NLRI is related to a particular VPLS, by comparing route targets received from BGP NLRI.
-local-pref (integer[0..4294967295])	
-name (string; Default: )	
-pw-control-word (default | disabled | enabled)	Enables/disables Control Word usage. Read more in the VPLS Control Word article.
-pw-l2mtu (integer[32..65535])	Advertised pseudowire MTU value.
-pw-type (raw-ethernet | tagged-ethernet | vpls)	The parameter is available starting from v5.16. It allows choosing advertised encapsulation in NLRI used only for comparison. It does not affect the functionality of the tunnel. See pw-type usage example >>
-rd (string)	Specifies the value that gets attached to VPLS NLRI so that receiving routers can distinguish advertisements that may otherwise look the same. This implies that a unique route-distinguisher for every VPLS must be used. It is not necessary to use the same route distinguisher for some VPLS on all routers forming that VPLS as distinguisher is not used for determining if some BGP NLRI is related to a particular VPLS (Route Target attribute is used for this), but it is mandatory to have different distinguishers for different VPLSes. Accepts 3 types of formats. Read more>>
-site-id (integer [0..65535])	Unique site identifier. Each site must have a unique site-id. A parameter must be set for RFC 4761 style VPLS signaling.
-vrf (name)	Name of the VRF table.
-L3VPN (VPNv4, VPNv6)
-
-Sub Menu: /routing/bgp/vpn
-Route Distinguisher
-
-Route Distinguisher is a 64-bit integer, which is divided into three parts:
-
-    type (always 2 bytes),
-    administrator subfield,
-    value or service provider subfield.
-
-Currently, there are three format types defined.
-2bytes	2bytes	2bytes	2bytes
-Type1	ASN	4byte value
-Type2	4-byte IP	value
-Type3	4-byte ASN	value
-
-
-Properties
-disabled (yes | no)	
-export - a group of parameters associated with the vpnv4 export
-
-
-
-	.filter-chain (name)	The name of the routing filter chain that is used to filter prefixes before exporting.
-.filter-select(name)	The name of the select filter chain that is used to select prefixes to be exported exporting.
-.redistribute(bgp | connected | dhcp | fantasy | modem | ospf | rip | static | vpn)	Enable redistribution of specified route types from VRF to VPNv4.
-.route-targets(rt[,rt])	List of route targets added when exporting VPNv4 routes. The accepted RT format is similar to the one for Route Distinguishers.
-import - a group of parameters associated with the vpnv4 import
-
-	.filter-chain (name)	The name of the routing filter chain that is used to filter prefixes during import.
-.route-targets(rt[,rt])	List of route targets that will be used to import VPNv4 routes. The accepted RT format is similar to the one for Route Distinguishers.
-.router-id(name | ip)	The router ID of the BGP instance that will be used for the BGP best path selection algorithm.
-label-allocation-policy (per-prefix | per-vrf)	
-name	
-route-distinguisher (rd)	Helps to distinguish between overlapping routes from multiple VRFs. Should be unique per VRF. Accepts 3 types of formats. Read more>>
-vrf (name)	Name of the VRF table that this VPN instance will use.
-instance (name)
-	Name of the instance this VPN is assigned to.
-EVPN
-
-Sub-menu: /routing bgp evpn
-
-See EVPN documentation.
-Property	Description
-name (string; Default: )	Name of the entry
-instance (name)	BGP instance this EVPN is assigned to.
-export - a group of parameters associated with the route export
-
-	.route-targets (Iist of RTs)	List of route targets that will be added to EVPN routes when exporting.
-import - a group of parameters associated with the route import
-
-	.route-targets (Iist of RTs)	List of route targets that will be used to import EVPN routes.
-rd (string)	Specifies the value that gets attached to route so that receiving routers can distinguish advertisements that may otherwise look the same. Used to distinguish between tenants using overlapping IP ranges. Also can be used to simplify convergence and redundancy within Virtual Network. RDs form MLAG pairs should be unique, too.
-vni (range of integers[0..4294967295])	Range of Virtual Network Identifiers. 
-vrf (name)	
-
-
-
-
-    Creado por Māris B., actualizado por última vez el may 09, 2024 2 min de lectura
-
-Overview
-
-RouterOS implements the Resource Public Key Infrastructure (RPKI) to Router Protocol defined in RFC8210. RTR is a very lightweight low memory footprint protocol, to reliably get prefix validation data from RPKI validators.
-More information on RPKI and how to set up validators can be found in the RIPE blog:
-https://blog.apnic.net/2019/10/28/how-to-installing-an-rpki-validator/
-Basic Example
-
-Let's consider that we have our own RTR server on our network with IP address 192.168.1.1:
-/routing/bgp/rpki
-add group=myRpkiGroup address=192.168.1.1 port=8282 refresh-interval=20
-
-If the connection is established and a database from the validator is received, we can check prefix validity:
-[admin@rack1_b33_CCR1036] /routing> rpki-check group=myRpkiGroup prfx=70.132.18.0/24 origin-as=16509
-    valid
-
-Now the cached database can be used by routing filters to accept/reject prefixes based on RPKI validity. At first, we need to set up a filter rule which defines against which RPKI group performs the verification. After that filters are ready to match the status from the RPKI database. Status can have one of three values:
-
-    valid - database has a record and origin AS is valid.
-    invalid - the database has a record and origin AS is invalid.
-    unknown - database does not have information of prefix and origin AS.
-    unverified - set when none of the RPKI sessions of the RPKI group has synced database. This value can be used to handle the total failure of the RPKI.
-
-
-/routing/filter/rule
-add chain=bgp_in rule="rpki-verify myRpkiGroup"
-add chain=bgp_in rule="if (rpki invalid) { reject } else { accept }"
+Fantasy uses random generator from hashed route sequence number, seed and other parameters. 
 Configuration Options
+comment (string)	
+count (integer:[0..4294967295])	How many routes to generate.
+dealer-id (start-[end]:: integer:[0..4294967295])	
+disabled (yes | no)	ID reference is not used.
+dst-address(Prefix)	Prefix from which route will be generated. 
+gateway (string)	
+instance-id (start-[end]:: integer:[0..4294967295])	
+name (string)	Reference name
+offset (integer:[0..4294967295])	Route sequence number offset
+prefix-length (start-[end]:: integer:[0..4294967295] )	Prefix length for generated route (can be specified as integer range). For example dst-address 192.168.0.0/16 and prefix-length 24 will generate /24 routes from 192.168.0.0/16 subnet.
+priv-offset (start-[end]:: integer: [0..4294967295])	
+priv-size (start-[end]:: integer: [0..100000])	
+scope (start-[end]:: integer: [0..255])	Scope to be set, can be set as range
+seed (string)	Random generator seed
+target-scope (start-[end]:: integer: [0..255])	Target scope to be set, can be set as range
+use-hold (yes | no)	
 
-Sub-Menu: /routing/rpki
 
 
-address (IPv4/6) mandatory	Address of the RTR server
-disabled(yes | no; Default: no)	Whether the item is ignored.
-expire-interval (integer [600..172800]; Default: 7200)	Time interval [s] polled data is considered valid in the absence of a valid subsequent update from the validator.
-group (string) mandatory	Name of the group a database is assigned to.
-port (integer [0..65535]; Default: 323)	Connection port number
-preference (integer [0..4294967295]; Default: 0)	
 
-If there are multiple RTR sources, the preference number indicates a more preferred one. A higher number is preferred.
 
-If preference is not configured then lowest remote IP within a group is preferred, if IPs are equal then lowest remote port is preferred.
-refresh-interval (integer [1..86400]; Default: 3600)	Time interval [s] to poll the newest data from the validator.
-retry-interval (integer [1..7200]; Default: 600)	Time Interval [s] to retry after the failed data poll from the validator.
-vrf(name; Default: main)	Name of the VRF table used to bind the connection to.
+    Creado por Māris B., actualizado por última vez el feb 04, 2022 4 min de lectura
 
+A read-only table that lists routes from all the address families as well as all filtered routes with all possible route attributes.
 
 
-    Creado por Māris B., actualizado por última vez el jun 19, 2025 13 min de lectura
-
-    Route Filtering
-        Filter Syntax
-            Only Readable Properties
-            Writeable Properties
-            Commands
-            Operators
-                Matcher Operators
-                Num Prop Operators
-                Prefix Operators
-                BGP Community Operators
-                String Operators
-        Deleting BGP Communities
-        AS-PATH Regexp Matching
-            Regex Testing Tool
-            Supported Operators
-        Community and Num Lists
-    Route Selection
-    Routing Filter Wizard
-    Property Reference
-        /routing/filter/chain
-
-Route Filtering
-Filter Syntax
-
-The routing filter rule implements script-like syntax. The example below is a quick demonstration of a routing filter that matches prefixes with a prefix length greater than 24 from subnet 192.168.1.0/24 and increments the default distance by 1. If there is no match then subtract the default distance by one.
-/routing filter rule 
-  add chain=myChain \
-  rule="if (dst in 192.168.1.0/24 && dst-len>24) {set distance +1; accept} else {set distance -1; accept}"
-
-
-Filter rule may consist of multiple matchers and actions:
-if ( [matchers] ) { [actions] } else { [actions] }
-
-
-There are two types of properties:
-
-    only readable - ones that value is only readable and cannot be rewritten, these properties can be used only by matchers
-    readable/writable - ones that value is readable and writeable, used by filter actions, and also can be used by matchers
-
-Readable properties can be matched by other readable properties (for numeric properties only) or constant values using boolean operators. 
-[matchers]:
-[prop readable] [bool operator] [prop readable]
-
-[actions]:
-[action] [prop writeable] [value]
-
-The boolean operator is not used if there is only one possible operation.
-
-Example without boolean operator:
-if ( protocol connected ) { accept }
-
-Example with boolean operator:
-if ( bgp-med < 30 ) { accept }
-
-With readable flag properties, matcher is used without specified boolean operator and without value
-if ( ospf-dn ) { reject }
-
-Be aware that the default action of the routing filter chain is "reject"
-Only Readable Properties
-
-
-Property	Type	Description
-Numeric properties
-dst-len	
-	Destination prefix length
-bgp-path-len	
-	The current length of the BGP AS-PATH
-bgp-input-local-as	
-	AS number of the local peer to which the prefix was sent
-bgp-input-remote-as	
-	AS number of the remote peer from which the prefix was received
-bgp-output-local-as	
-	AS number of the peer that will advertise the prefix
-bgp-output-remote-as	
-	AS number of the peer to which the prefix will be advertised
-ospf-metric	
-	Current OSPF metric
-ospf-tag	
-	Current OSPF tag
-rip-metric	
-	Current RIP metric
-rip-tag	
-	Current RIP tag
-Flag properties
-active	
-	indicates whether the route is active
-bgp-atomic-aggregate	
-	
-bgp-communities-empty	
-	indicates if the BGP Communities attribute is empty
-bgp-ext-communities-empty	
-	indicates if the BGP Extended Communities attribute is empty
-bgp-large-communities-empty	
-	indicates if the BGP Large Communities attribute is empty
-bgp-network	
-	Indicates if the prefix is originated from BGP networks
-ospf-dn	
-	Indicates if the OSPF route has DN bit set.
-Prefix properties
-dst	
-	Destination
-ospf-fwd	
-	Current OSPF forwarding address
-bgp-input-local-addr	
-	The IP address of the local peer to which the prefix was sent
-bgp-input-remote-addr	
-	The IP address of the remote peer from which the prefix was received
-bgp-output-local-addr	
-	The IP address of the peer that will advertise the prefix
-bgp-output-remote-addr	
-	The IP address of the peer to which the prefix will be advertised
-Other Properties
-afi	ipv4 | ipv6 | l2vpn | l2vpn-cisco | vpnv4 | vpnv6	The address family of the route.
-bgp-as-path	numeric_regexp	AS path matching, read more>>
-bgp-as-path-slow-legacy	string_regexp	Deprecated. Extremely slow old-style AS path matching. This parameter should be used only as a temporary matcher while migrating from an old ROS v6 config. Read more>>
-chain	chain_name	
-ospf-type	ext1 | ext2 | inter | intra | nssa1 | nssa2	
-
-Type of the OSPF route:
-
-    ext1 - external (Type 5 LSA) with type1 metric
-    ext2 - external (Type 5 LSA) with type2 metric
-    inter - inter-area-route (Type 3 LSA)
-    intra - intra-area-route (Type 4 LSA)
-    nssa1 - Type 7 LSA with type1 metric
-    nssa2 - Type 7 LSA with type1 metric
-
-protocol	bgp | connected | dhcp | fantasy | modem | ospf | rip | static | vpn	Protocol type from which the route was imported.
-rpki	invalid | unknown | valid | unverified	RPKI validation status of the prefix
-rtab	routing_table_name	Name of the routing table the route was imported from
-vrf	vrf_name	Name of the VRF the route was imported from
-Writeable Properties
-Property	Type	Description
-Numeric properties
-distance	
-	route distance
-scope	
-	
-scope-target	
-	target scope
-bgp-weight	
-	BGP WEIGHT attribute
-bgp-med	
-	BGP MED attribute is local to the router. It is also used in the output of iBGP peers.
-bgp-out-med	
-	BGP MED attribute to be sent to a remote peer. Should be used in the output chain of eBGP peers.
-bgp-local-pref	
-	BGP LOCALPREF attribute
-bgp-igp-metric	
-	BGP IGP METRIC
-bgp-path-peer-prepend	
-	
-
-Prepend last received remote peers ASN. If the prefix is originated from the router, then this parameter will not do anything on the router's output, because ASN does not exist yet.
-
-
-If used as a matcher in BGP input, it is possible to filter prefixes exceeding a certain number of prepends. For example, if a remote peer prepends its ASN 5 times, but we want to allow max 4 times prepended ASN, then we can use: "if (bgp-path-peer-prepend > 4) {reject}"
-
-
-This parameter also overrides any prepends received from the remote peer, for example, if the remote peer prepended it's AS 3 times, we can remove this prepend by setting "bgp-path-peer-prepend 1" in BGP input
-bgp-path-prepend	
-	Prepend routers ASN, should be used in BGP output.
-ospf-ext-metric	
-	OSPF External route metric
-ospf-ext-tag	
-	OSPF external route tag
-rip-ext-metric	
-	RIP External route metric
-rip-ext-tag	
-	RIP External route tag
-Flag properties
-ospf-ext-dn	
-	DN bit for external OSPF routes
-blackhole	
-	
-suppress-hw-offload	
-	Whether to suppress L3 HW offloading
-use-te-nexthop	
-	
-Other properties
-gw	ipv4/6 address	
-
-IPv4/IPv6 address or interface name. In the case of BGP output, a gateway can be adjusted in the following setups:
-
-    is BGP reflector
-    nexthop-choice is set to propagate
-    is not eBGP and nexthop-choice=force-self is not set.
-
-gw-interface	interface_name	Interface part of the gateway. Should be used if it is required to attach a specific interface for next-hop, like (1.2.3.4%ether1)
-gw-check	none|arp|icmp|bfd|bfd-mh	
-pref-src	ipv4/6 address	
-bgp-origin	igp|egp|incomplete	
-ospf-ext-fwd	ipv4/6 address	Forwarding address of External OSPF route
-ospf-ext-type	type1|type2	OSPF External route type
-comment	string	
-bgp-communities	inline_community_set | community_list_name	BGP Communities attribute is defined in RFC 1997. Each community is 32-bit in size.
-bgp-ext-communities	inline_ext_community_set | ext_community_list_name	BGP Extended Communities attribute is defined in RFC 4360. RouterOS parses site-of-origin (prefixed with soo:) and route-target (prefixed with rt:) extended communities. For example, "set bgp-ext-communities rt:1111:2.3.4.5;". It is possible to set/match RAW extended communities value in 64-bit hex, for example, "set bgp-ext-community 0x.........;"
-bgp-large-communities	inline_large_community_set | large_community_list_name	BGP Large Communities attribute is defined in RFC 8092. Suitable for use with all ASNs including 32-bit ASNs. Each community is 12-bytes in length and consists of 3 parts: "global_admin:locap_part_1:local_part_2".
-Commands
-accept	
-	accept matched prefix
-reject	
-	reject matched prefix, the prefix will be stored in the memory as "filtered" and will not be the candidate to be selected as the best path.
-return	
-	return to the parent chain
-jump	jump chain_name	jump to a specified chain
-unset	unset prop_name	used to unset the value of the following properties:
-pref-src|bgp-med|bgp-out-med|bgp-local-pref
-append	
-	append at the end of the list or string. Following property values can be appended: bgp-communities, bgp-ext-communities, bgp-large-communities, comment
-filter	
-	Inverse of the delete action (Delete everything except the specified values). Values of the following properties can be filtered: bgp-communities, bgp-ext-communities, bgp-large-communities
-delete	
-	Delete the value of the specified property. Values of the following properties can be deleted: bgp-communities, bgp-ext-communities, bgp-large-communities
-set	set prop_writeable value	The command is used to set a new value to writeable properties. Value can be set from other readable properties of matching types. For numeric properties, it is possible to prefix the value with +/- which will increment or decrement the current property value by a given amount. For example, "set bgp-local-ref +1" will increment current LOCAL_PREF by one, or extract value from other readable num property, "set distance +ospf-ext-metric"
-rpki-verify	rpki-verify rpki_group_name	Enable RPKI verification in the current chain from the specified RPKI group.
-Operators
-Matcher Operators
-&&	Logical AND operator	if (dst in 192.168.0.0/16 && dst-len in 16-32) {reject;}
-||	Logical OR operator	
-not	Logical NOT operator	if ( not bgp-network) {reject; }
-Num Prop Operators
-in	return true if the value is in provided numeric range. Numeric range can be written in following formats: {int..int}, {int-int}
-==	return true if numeric values are equal
-!=	return true if numeric values are not equal
->	return true if the left numeric value is greater than the right numeric value
-<	return true if the left numeric value is less than the right numeric value
->=	return true if the left numeric value is greater than or equal to the right numeric value
-<=	return true if the left numeric value is less than or equal to the right numeric value
-Prefix Operators
-in	Return true if the prefix is the subnet of the provided network. If an operator is used to match prefixes from the address list (e.g "dst in list_name"), then it will match only the exact prefix.
-!=	Return true if the prefix is not equal to the provided value
-==	Return true if the prefix is equal to the provided value
-
-Address lists by design are matching host address which menas that it will match also  /32 prefix that belongs to any range from the address list. Workaround to exclude /32  prefixes from being advertised is to use dst-len "if (dst in list_name && dst-len < 32) {}"
-BGP Community Operators
-equal	return true if provided communities are equal to the routes property value	
-equal-list	return true if communities from provided community-list are equal to the route's property value	
-any	returns true if the route's property value contains at least one of provided communities	
-any-list	returns true if the route's property value contains at least one community from the provided list	
-includes	returns true if the route's property value includes specified communities	
-includes-list	returns true if the route's property value includes all communities from the specified communities-list	
-subset	returns true if route community subset matches communities from the list	
-
-1:1,3:3 will match 1:1,2:2,3:3
-subset-list	the same as "subset", but matches communities form the community list.	
-any-regexp	the same as "any", but matched by regexp	
-subset-regexp	the same as "subset", but matched by regexp	
-String Operators
-find	Check if provided substring is part of the property value
-regexp	Match string regexp of the property value
-Deleting BGP Communities
-
-Routing filters allow to clear BGP communities by using "delete" command. Delete command accepts several parameters based on the type of the community type:
-
-    communities: 
-        "wk" - will match and remove well known communities
-        "other" - will match and remove other communities that are not well known 
-        "regexp" - regexp pattern to match communities that should be deleted
-        "<community-list name>" - deletes communities from specified community-list
-    ext-communities:
-        "rt" - will match and remove RouteTarget
-        "soo" - will match and remove Site-of-Origin
-        "other" - will match and remove other ext communities that are not RT or SSO 
-        "regexp" - regexp pattern to match ext communities that should be deleted
-        "<community-ext-list name>" - deletes communities from specified community-ext-list
-    large-communities:
-        "all" - removes everything
-        "regexp" - regexp pattern to match large communities that should be deleted
-        "<community-large-list name>" - deletes large communities from specified community-large-list
-
-
-It is possible to specify multiple community types, for example delete all SSOs, other type of ext communities and specific RTs from the community-ext list:
-/routing/filter/community-ext-list
-add list=myRTList communities="rt:1.1.1.1:222"
-/routing/filter/rule
-add chain=myChain rule="delete bgp-ext-communities sso,other,myRTList;"
-
-
-AS-PATH Regexp Matching
-
-AS Path is the sequence of autonomous system numbers (ASNs), for example AS Path 123 456 789 would indicate, that route originated from AS with the number 789, and to reach the destination, the packet would need to travel through two autonomous systems: 456 and 789. To apply specific routing policies administrator might want to match specific AS numbers or set of numbers in the AS Path (for example, reject prefixes that travel through AS 456), which can be achieved using regular expression (regexp).
-
-There are two common ways how to operate with AS Path data:
-
-    convert whole AS path to string and let regexp operate on the string (ROS v6 or Cisco style)
-    let regexp operate on each entry in the AS path as a number (ROS v7, Juniper style)
-
-Basically, the first method is performing the match per character, the second method is performing the match per whole AS number. As you would imagine the latter method is much faster and less resource-intensive than the string matching approach.
-
-This change would require administrators to implement new Regex strategies. Old Regex patterns from RouterOS v6 cannot be directly copied/pasted as they will result either in syntax errors or unexpected results.
-
-Let us take a very basic AS Path filter rule.
-/routing/filter/rule
-add chain=myChain rule="if (bgp-as-path .1234.) {accept}"
-
-In ROS v7 this Regex pattern will match ASN 1234 anywhere in the middle of the AS-path, the same pattern in ROS v6 would match any AS path that contains ASN consisting of at least 6 characters and contains a string of "1234".  Obviously, if we directly copy/paste the Regex pattern from one implementation to another it will lead to unexpected/dangerous results. An equivalent pattern in ROS v6 would look something like this: "._1234_.".
-
-Let's take another example from ROS v6, say we have a pattern "1234[5-9]" what it does is it matches 12345 to 12349 anywhere in the string, which means that valid matches are AS-path "12345 3434", "11 9123467 22" and so on. If you enter the same pattern in ROS v7 it will match AS path containing exact ASN 1234 followed by ASN in a range from 5 to 9 (matching AS-paths would be "1234 7 111", "111 1234 5 222" etc., it will not match "12345 3434").
-
-Do not copy Regex patterns directly from ROS v6 or Cisco configurations, they are not directly compatible. It can lead to unexpected or even dangerous configurations in some scenarios.
-
-AS-Path parameter must exist for regexp matcher to be applied. This means that it is not possible to match non-existent (empty) AS-Path with regular expression, aka "^$". bgp-path-len should be used instead.
-
-
-Regex Testing Tool
-
-RouterOS now has a built-in regex checking tool to simplify the hard life of the administrators. This tool supports also num-list so now exact regex can be tested against any as-path before applying it to the routing filters.
-/routing/filter/num-list add list=test range=100-1500
-
-/routing/filter/test-as-path-regexp regexp="[[:test:]]5678\$" as-path="1234,5678"
-
-
-
-Supported Operators
-^	Represents the beginning of the path	^1234 	will match AS-path starting with ASN 1234	
-$	Represents the end of the path	1234$	will match AS-path of origin ASN 1234	
-*	Zero or more occurrences of the  listed ASN	^1234*$	will match Null as-path or as-path where ASN 1234 may or may not appear multiple times	
-
-Match:
-
-1234
-
-1234 1234 1234
-
-Null path
-
-No Match:
-
-1234 5678
-+	One or more occurrences of the listed ASN	1234+	will match AS-path where ASN 1234 appears at least once	
-
-Match:
-
-1234
-
-3 1234 6
-
-No match:
-
-12345 678
-?	Zero or one occurrence of the listed ASN	^1234? 5678	will match AS-path that may or may not start with ASN 1234 appearing once.	
-
-Match:
-
-5678
-
-1234 5678
-
-No match:
-
-1234 1234 5678
-
-12345 5678
-.	One occurrence of any ASN	^.$ 	will match any AS-path with the length of one.	
-
-Match:
-
-12345
-
-45678
-
-No match:
-
-1234 5678
-|	Match one of two ASNs on each side	^(1234|5678) 	will match AS-path starting with ASN 1234 or 5678	
-
-Match:
-
-1234
-
-5678
-
-1234 5678
-
-No Match:
-
-91011
-
-[ ]
-
-[^ ]
-	
-
-Represents the set of AS numbers where one AS number from the list must match.
-
-Use ^ after opening the bracket to negate the set.
-
-It is also possible to reference the pre-defined num-lists from num-list with [[:numset_name:]] 
-	
-
-^[1234 5678 1-100]
-
-
-	will match the AS-path that starts with 1234 or 5678 or from the range of 1 to 100	
-
-Match:
-
-1234
-
-99
-
-5678
-
-No Match:
-
-101
-
-()
-	Group of regexp terms to match	^(1234$|5678)	will match AS-path that starts and ends with 1234 or AS-path that starts with 5678	
-
-Match:
-
-1234
-
-5678 9999
-
-No Match:
-
-1234 5678
-
-Repetition ranges {} are not supported.
-Community and Num Lists
-
-A list of commonly used numbers can be configured from the /routing/filter/num-list menu. These lists of numbers can be used in the filter rules to simplify the filter setup process.
-
-In a similar manner, you are allowed to define also community, extended community, and large community lists. Community sets can be used for matching, appending, and setting.
-
-For example match communities from the list and clear the attribute:
-/routing/filter/community-list
-add communities=111:222 list=myCommunityList
-
-/routing/filter/rule
-add chain=myChain rule="if (bgp-communities equal-list myCommunityList) {delete bgp-communities wk,other; accept;}"
-
-
-
-
-/routing/filter/community-list
-Property	Description
-comment (string; Default: )	
-communities (list of communities; Default: )	
-
-List of communities expressed either as well-known name or in the following format: "as:number", where each section can be integer [0..65535].
-
-Accepted well known names:
-
-accept-own     graceful-shutdown  no-advertise         no-llgr         route-filter-6      
-accept-own-nh  internet           no-export            no-peer         route-filter-xlate-4
-blackhole      llgr-stale         local-as  route-filter-4  route-filter-xlate-6
-disabled (yes | no)	
-name (integer [string; Default: )	Reference name.
-regexp (string)	Regexp matcher to match communities. The community set with only the regexp parameter cannot be used to append/delete communities.
-
-/routing/filter/community-ext-list
-Property	Description
-comment (string; Default: )	
-communities (list of ext communities; Default: )	
-
-List of extended communities expressed as raw integer value or in the typed format: "type:value", where type can be:
-
-    rt - route-target
-    soo -  site of origin
-
-Value depends on the type, for more info on RT and SoO values ask google.
-disabled (yes | no)	
-name (integer [string; Default: )	Reference name.
-regexp (string)	Regexp matcher to match communities. The community set with only the regexp parameter cannot be used to append/delete communities.
-
-/routing/filter/community-large-list
-Property	Description
-comment (string; Default: )	
-communities (list of large communities; Default: )	
-
-List of large communities expressed in following format: "admin:value1:value2", where each section can be integer [0..4294967295].
-disabled (yes | no)	
-name (integer [string; Default: )	Reference name.
-regexp (string)	Regexp matcher to match communities. The community set with only the regexp parameter cannot be used to append/delete communities.
-
-
-Route Selection
-
-Route selection rules allow controlling how output routes are selected from available candidate routes. By default, (if no selection rules are set) output always picks the best route.
-
-For example, if we look at the routing table below, we can see that there are 2 candidate routes and one best route. By default when BGP selects which route to send out, it will pick the active route.
-[admin@4] /routing/route> print where dst-address=1.0.0.0/24
-Flags: A - ACTIVE; b, y - COPY
+Default example output of the table with various route types:
+[admin@MikroTik] /routing/route> print 
+Flags: A - ACTIVE; c, s, a, l, y - COPY; H - HW-OFFLOADED
 Columns: DST-ADDRESS, GATEWAY, AFI, DISTANCE, SCOPE, TARGET-SCOPE, IMMEDIATE-GW
-   DST-ADDRESS  GATEWAY         AFI  DISTANCE  SCOPE  TARGET-SCOPE  IMMEDIATE-GW         
- b 1.0.0.0/24   10.155.101.217  ip4        19     40            30  10.155.109.254%ether1
-Ab 1.0.0.0/24   10.155.101.232  ip4        20     40            30  10.155.109.254%ether1
- b 1.0.0.0/24   10.155.101.231  ip4        20     40            30  10.155.109.254%ether1
-
-But there might be cases where you would want preference for other routes, not the active ones, and here come in-play selection rules.
-
-Selection rules in RouterOS are configured from /routing/filter/select-rule menu.
-
-Select rules can also call routing filters where routes get selected based on filter rules. For example, to mimic default output selection we can set up the following rule sets:
-/routing filter rule 
-add chain=get_active rule="if (active) {accept}"
-
-/routing filter select-rule
-add chain=my_select_chain do-where=get_active
-
-
-Routing Filter Wizard
-
-Cmd: /routing/filter/filter-wizard
-
-Due to incresed complexity of writing filters in script like manner, v7.20 introduces new routing filter wizard that allows to generate filter rules with ROSv6-like syntax.
-Quick demonstration:
-[admin@CCR2004_2XS_111] /routing/filter> filter-wizard <tab>
-action        dst                   ospf-type         scope-target      set-gw-check                use-te-nexthop   
-afi           dst-len               protocol          set-bgp-...       set-scope                   
-bgp-...       gateway               routing-table     set-blackhole     set-scope-target            
-blackhole     jump-target-chain     rpki              set-comment       set-suppress-hw-offload     
-chain         match-chain           rpki-verify       set-distance      set-use-te-nexthop          
-distance      ospf-metric           scope             set-gateway       suppress-hw-offload   
-
-[admin@CCR2004_2XS_111] /routing/filter> filter-wizard action=accept chain=vpn-in afi=vpnv4 set-bgp-ext-communities=rt:2:2
-  result: Filter rule 'if (afi vpnv4) { set bgp-ext-communities rt:2:2; accept; }' added
-
-[admin@CCR2004_2XS_111] /routing/filter> /routing/filter/rule/print 
-Flags: X - disabled, I - inactive 
- 0   ;;; added by filter-wizard
-     chain=vpn-in rule="if (afi vpnv4) { set bgp-ext-communities rt:2:2; accept; }" 
-
-Filter wizard adds rules at the end of the list and will have a comment "added by filter-wizard". 
-
-Returned errors when trying to add filter with unacceptable values will be printed in CLI and logged in system log with "route,error" topics. 
-[admin@CCR2004_2XS_111] /routing/filter> filter-wizard action=accept chain=vpn-in afi=vpnv4 match-chain=vpn-in 
-  result: Error adding 'if (chain vpn-in && afi vpnv4) { accept; }'match with 'vpn-in' creates chain loop (6)
-
-[admin@CCR2004_2XS_111] /routing/filter> /log/print 
- 2025-05-19 13:05:15 route,error Error adding 'if (chain vpn-in && afi vpnv4) { accept; }'match with 'vpn-in' creates chain loop (6)
+    DST-ADDRESS                 GATEWAY           AFI   D  SCOPE  TA  IMMEDIATE-GW       
+ lH 10.0.0.0/8                                    ip4   0                                
+;;; defconf
+As  10.0.0.0/8                  10.155.130.1      ip4   1     30  10  10.155.130.1%ether1
+ lH 10.155.130.0/25                               ip4   0                                
+Ac  10.155.130.0/25             ether1            ip4   0     10      ether1             
+ aH 10.155.130.12/32                              ip4   0                                
+ lH 111.13.0.0/24                                 ip4   0                                
+Ac  111.13.0.0/24               ether2            ip4   0     10      ether2             
+ aH 111.13.0.1/32                                 ip4   0                                
+Ac  111.111.111.2/32            loopback@vrfTest  ip4   0     10      loopback           
+Ac  2111:4::/64                 ether2            ip6   0     10      ether2             
+Ac  fe80::%ether1/64            ether1            ip6   0     10      ether1             
+Ac  fe80::%ether2/64            ether2            ip6   0     10      ether2             
+Ac  fe80::%ether3/64            ether3            ip6   0     10      ether3             
+Ac  fe80::%ether4/64            ether4            ip6   0     10      ether4             
+Ac  3333::2/128                 loopback@vrfTest  ip6   0     10      loopback           
+Ac  fe80::%loopback/64          loopback@vrfTest  ip6   0     10      loopback           
+Ay  111.111.111.2/32&65530:100  loopback@vrfTest  vpn4  0     10   5  loopback           
+Ay  3333::2/128&65530:100       loopback@vrfTest  vpn6  0     10   5  loopback           
+A H ether1                                        link  0                                
+A H ether2                                        link  0                                
+A H ether3                                        link  0                                
+A H ether4                                        link  0                                
+A H loopback                                      link  0 
 
 
+Detailed example output with some BGP, OSPF, and other routes:
+[admin@MikroTik] /routing/route> print detail 
+Flags: X - disabled, F - filtered, U - unreachable, A - active; 
+c - connect, s - static, r - rip, b - bgp, o - ospf, d - dhcp, v - vpn, m - modem, a - ldp-address, l - ldp-mapping, y - copy; H - hw-offloaded; 
++ - ecmp, B - blackhole 
+  o   afi=ip4 contribution=best-candidate dst-address=0.0.0.0/0 routing-table=main gateway=10.155.101.1%ether1 immediate-gw=10.155.101.1%ether1 
+       distance=110 scope=20 target-scope=10 belongs-to="OSPF route" 
+       ospf.metric=2 .tag=111 .type=ext-type-1 
+       debug.fwp-ptr=0x203425A0 
 
-Property Reference
-/routing/filter/chain
+ Ad + afi=ip4 contribution=active dst-address=0.0.0.0/0 routing-table=main pref-src="" gateway=10.155.101.1 immediate-gw=10.155.101.1%ether1 
+       distance=1 scope=30 target-scope=10 vrf-interface=ether1 belongs-to="DHCP route" 
+       debug.fwp-ptr=0x20342060 
 
-Dynamic list of filter rule chains that can be referenced in BGP/OSPF configuration.
+ As + afi=ip4 contribution=active dst-address=0.0.0.0/0 routing-table=main pref-src="" gateway=10.155.101.1 immediate-gw=10.155.101.1%ether1 
+       distance=1 scope=30 target-scope=10 belongs-to="Static route" 
+       debug.fwp-ptr=0x20342060 
 
-Read-only properties:
+ Fb   afi=ip4 contribution=filtered dst-address=1.0.0.0/24 routing-table=main gateway=10.155.101.1 immediate-gw=10.155.101.1%ether1 distance=20 
+       scope=40 target-scope=10 belongs-to="BGP IP routes from 10.155.101.217" rpki=valid 
+       bgp.peer-cache-id=*B000002 .aggregator="13335:172.68.180.1" .as-path="65530,100,9002,13335" .atomic-aggregate=yes .origin=igp 
+       debug.fwp-ptr=0x20342960 
+
+
+
 Property	Description
+active (yes | no)	A flag indicates whether the route is elected as Active and eligible to be added to the FIB.
+afi (ip4 | ip6 | link)	Address family this route belongs to.
+belongs-to (string)	Descriptive info showing from where the route was received.
+bgp (yes | no)	A flag indicates whether this route was added by the BGP protocol.
+bgp - a group of parameters associated with the BGP protocol
+
+	.as-path(string)	value of the AS_PATH BGP attribute
+
+	.aggregator (string)	
+
+	.atomic-aggregate (yes | no)	
+
+	.cluster-list (string)	
+
+	.communities (string)	value of the COMMUNITIES BGP attribute
+
+	.ext-communities (string)	value of the EXTENDED_COMMUNITIES BGP attribute
+
+	.igp-metric(string)	value of the IGP_METRIC BGP attribute
+
+	.large-communities (string)	value of the LARGE_COMMUNITIES BGP attribute
+
+	.local-pref (string)	value of the LOCAL_PREF BGP attribute
+
+	.med (string)	value of the MED BGP attribute
+
+	.nexthop (string)	
+
+	.origin (string)	
+
+	.originator-id (string)	
+
+	.out-nexthop(string)	
+
+	.peer-cache-id (string)	The ID of the BGP session that installed the route. See /routing/bgp/session menu.
+
+	.unknown (string)	hex blob of unknown BGP attributes
+
+	.weight (string)	
+blackhole (yes | no)	A flag indicates whether it is a blackhole route
+check-gateway (ping | arp | bfd)	Currently used check-gateway option.
+comment (string)	
+connect (yes | no)	A flag indicates whether it is a connected network route.
+contribution (string)	Shows the route status contributing to the election process, e.g "filtered, active, candidate"
+copy (yes | no)	A flag indicates a copy of the route to be redistributed as the L3VPN route. VPNv4/6 related attributes are attached to this "copy" route.
+create-time (string)	
+debug - a group of debugging parameters
+
+	
+	
+dhcp (yes | no)	A flag indicates whether the route was added by the DHCP service.
+disabled (yes | no)	A flag indicates whether the route is disabled.
+distance (integer)	
+dst-address (prefix)	Route destination.
+ecmp (yes | no)	A flag indicates whether the route is added as an Equal-Cost Multi-Path route in the FIB. Read more>>
+filtered (yes | no)	A flag indicates whether the route was filtered by routing filters and excluded from being used as the best route.
+gateway (string)	Configured gateway, for the actually resolved gateway, see immediate-gw parameter.
+hw-offloaded (yes | no)	Indicates whether the route is eligible to be hardware offloaded on supported hardware.
+immediate-gw (string)	Shows actual (resolved) gateway and interface that will be used for packet forwarding. Displayed in format [ip%interface].
+label (integer)	
+ldp-address (yes | no)	A flag indicates whether the route entry is an LDP address.
+ldp-mapping (yes | no)	A flag indicates whether the route entry is the LDP mapping
+ldp - a group of parameters associated with the LDP protocol
+
+	.label (integer)	LDP mapped MPLS label.
+
+	.peer-id ()	
+local-address (IP)	Local IP address of the connected network.
+modem (yes | no)	A flag indicates whether the route is added by the LTE or 3g modems.
+mpls - group of generic parameters associated with the MPLS
+
+	.in-label ()	Mapped MPLS ingress label
+
+	.labels ()	
+
+	.out-label ()	Mapped MPLS egress label
+nexthop-id ()	
+ospf (yes | no)	A flag indicates whether the route was added by the OSPF routing protocol.
+ospf - group of parameters associated with the OSPF protocol
+
+	.metric (integer)	
+
+	.type (string)	
+pref-src ()	
+received-from ()	
+rip (yes | no)	A flag indicates whether the route was added by the RIP routing protocol
+rip - group of parameters associated with the RIP protocol
+
+	.metric ()	
+
+	.route-tag ()	
+route-cost ()	
+routing-table ()	Routing table this route belongs to.
+rpki (valid | invalid | unknown)	Current status of the prefix from the RPKI validation process.
+scope (integer)	Scope used in the next-hop lookup process. Read more>>
+static (yes | no)	A flag indicates statically added routes.
+target-scope (integer)	Target scope used in next-hop lookup process. Read more>>
+te-tunnel-id ()	Traffic Engineering tunnel ID
+total-cost ()	
+unreachable (yes | no)	A flag indicates whether the route next-hop is unreachable.
+update-time ()	
+
+	ve-block-offset	
+
+	ve-block-size	
+
+	ve-id	
+vpn (yes | no)	A flag indicates whether the route was added by one of the VPN protocols (PPPoE, L2TP, SSTP, etc.)
+vrf-interface ()	Internal use only parameter which allows identifying to which VRF route should be added. Used by services that add routes dynamically, for example, DHCP client. Shown for debugging purposes.
+
+
+
+
+    Creado por Māris B., actualizado por última vez el jul 04, 2024 1 min de lectura
+
+Global Router ID election configuration. ID can be configured explicitly or set to be elected from one of the Routers IP addresses.
+
+For each VRF table RouterOS adds dynamic ID instance, that elects the ID from one of the IP addresses belonging to a particular VRF:
+[admin@rack1_b33_CCR1036] /routing/id> print 
+Flags: D - DYNAMIC, I - INACTIVE
+Columns: NAME, DYNAMIC-ID, SELECT-DYNAMIC-ID, SELECT-FROM-VRF
+#   NAME   DYNAMIC-ID      SELECT-D   SELE
+0 D main   111.111.111.2   only-vrf   main
+Configuration Options
+comment (string)	
+disabled (yes | no)	ID reference is not used.
+id(IP)	Parameter to explicitly set the Router ID. If ID is not explicitly specified, then it can be elected from one of the configured IP addresses on the router. See parameters select-dynamic-id and select-from-vrf.
+name (string)	Reference name
+select-dynamic-id(any | lowest | only-active | only-loopback | only-static | only-vrf)	States what IP addresses to use for the ID election:
+
+    any - any address found on the router can be elected as the Router ID.
+    lowest - pick the lowest IP address.
+    only-active - pick an ID only from active IP addresses.
+    only-loopback - pick an ID only from loopback addresses (loopback address is considered any non point to point /32 address).
+    only-vrf - pick an ID only from selected VRF. Works with select-from-vrf property.
+
+select-from-vrf (name)	VRF from which to select IP addresses for the ID election.
+
+
+Read-only Properties
 dynamic (yes | no)	
-inactive (yes | no)	
-name (string)	
-
-/routing/filter/select-chain
-
-Dynamic list of filter select chains that can be referenced in BGP/OSPF configuration.
-
-Read-only properties:
-Property	Description
-dynamic (yes | no)	
-inactive (yes | no)	
-name (string)	
-
-
-
-Multicast
-
-    Creado por Māris B., actualizado por última vez por Edgars P. el jun 08, 2022 1 min de lectura
-
-In This Section:
-
-        Group Management Protocol
-        IGMP Proxy
-        PIM-SM
-
+dynamic-id (IP)	Currently selected ID.
+inactive (yes | no)	If there was a problem to get a valid ID, then item can become inactive.
 
     Sin etiquetas 
 
 
 
 
-    Creado por Edgars P., actualizado por última vez por Usuario desconocido (aleksis) el jun 13, 2022 2 min de lectura
 
-    Introduction
-    Configuration options
-    Examples
-
-Introduction
-
-The Group Management Protocol allows any of the interfaces to become a receiver for the multicast stream. It allows testing the multicast routing and switching setups without using dedicated IGMP or MLD clients. The option is available since RouterOS v7.4 and it supports IGMP v1, v2, v3 and MLD v1, v2 protocols. 
-
-Interfaces are using IGMP v3 and MLD v2 by default. In case IGMP v1, v2 or MLD v1 queries are received, the interfaces will fall back to the appropriate version. Once Group Management Protocol is created on the interface, it will send an unsolicited membership report (join) packet and respond to query messages. If the configuration is removed or disabled, the interface will send a leave message.
-Configuration options
-
-This section describes the Group Management Protocol configuration options.
-
-Sub-menu: /routing gmp
-groups (IPv4 | IPv6; Default: )	The multicast group address to be used by the interface, multiple group addresses are supported.
-interfaces (name; Default: )	Name of the interface, multiple interfaces and interface lists are supported.
-exclude (Default: )	
-
-When exclude is set, the interface expects to reject multicast data from the configured sources. When this option is not used, the interfaces will emit source specific join for the configured sources.
-sources (IPv4 | IPv6; Default: )	The source address list used by the interface, multiple source addresses are supported. This setting has an effect when IGMPv3 or MLDv2 protocols are active.
-Examples
-
-This example shows how to configure a simple multicast listener on the interface.
-
-First, add an IP address on the interface:
-/ip address
-add address=192.168.10.10/24 interface=ether1 network=192.168.10.0
-
-Then configure Group Management Protocol on the same interface:
-/routing gmp
-add groups=229.1.1.1 interfaces=ether1
-
-It is now possible to check your multicast network to see if routers or switches have created the appropriate multicast forwarding entries and whether multicast data is being received on the interface (see the interface stats, or use a Packet Sniffer and Torch). 
-
-
-
-    Creado por Edgars P., actualizado por última vez el may 31, 2022 4 min de lectura
-
-    Summary
-    Configuration options
-    Examples
+    Creado por Māris B., actualizado por última vez el jun 16, 2023 2 min de lectura
 
 Summary
 
-Internet Group Management Protocol (IGMP) proxy can implement multicast routing. It is forwarding IGMP frames and is commonly used when there is no need for a more advanced protocol like PIM.
+Bidirectional Forwarding Detection (BFD) is a low-overhead and short-duration protocol intended to detect faults in the bidirectional path between two forwarding engines, including physical interfaces, sub-interfaces, data link(s), and to the extent possible the forwarding engines themselves, with potentially very low latency. It operates independently of media, data protocols, and routing protocols.
 
-IGMP proxy features:
+BFD is basically a hello protocol for checking bidirectional neighbor reachability. It provides sub-second link failure detection support. BFD is not routing protocol specific, unlike protocol hello timers or such.
 
-    The simplest way how to do multicast routing;
-    Can be used in topologies where PIM-SM is not suitable for some reason;
-    It takes slightly less resources than PIM-SM;
-    Ease of configuration.
+BFD Control packets are transmitted in UDP packets with destination port 3784, BFD also uses port 4784 for multihop paths. The source port is in the range 49152 through 65535. And BFD Echo packets are encapsulated in UDP packets with destination port 3785.
 
-On the other hand, IGMP proxy is not well suited for complicated multicast routing setups. Compared to PIM-based solutions, IGMP proxy does not support more than one upstream interface and routing loops are not detected or avoided.
+Standards and Technologies:
 
-By default, IGMP proxy upstream interface will send IGMPv3 membership reports and it will detect what IGMP version the upstream device (e.g. multicast router) is using based on received queries. In case IGMPv1/v2 queries are received, the upstream port will fall back to the lower IGMP version. It will convert back to IGMPv3 when IGMPv1/v2 querier present timer (400s) expires. Downstream interfaces of IGMP proxy will only send IGMPv2 queries.
+    RFC 5880 Bidirectional Forwarding Detection (BFD)
+    RFC 5881 BFD for IPv4 and IPv6
+    RFC 5882 Generic Application of BFD
+    RFC 5883 Bidirectional Forwarding Detection (BFD) for Multihop Paths
 
-RouterOS v7 has IGMP proxy configuration available in the main system package. Older RouterOS versions need an additional multicast package installed in order to use IGMP proxy. See more details about Packages.
-Configuration options
 
-General IGMP proxy configuration.
+Features not yet supported
 
-Sub-menu: /routing igmp-proxy
-query-interval (time: 1s..1h; Default: 2m5s)	How often to send out IGMP Query messages over downstream interfaces.
-query-response-interval (time: 1s..1h; Default: 10s)	How long to wait for responses to an IGMP Query message.
-quick-leave	Specifies action on IGMP Leave message. If quick-leave is on, then an IGMP Leave message is sent upstream as soon as a leave message is received from the first client on the downstream interface. Use yes only in case there is only one subscriber behind the proxy.
+    echo mode
+    enabling BFD for ip route gateways
+    authentication
 
-Configure what interfaces will participate as IGMP proxy interfaces on the router. If an interface is not configured as an IGMP proxy interface, then all IGMP traffic received on it will be ignored.
 
-Sub-menu: /routing igmp-proxy interface
-alternative-subnets (IP/Mask; Default: )	By default, only packets from directly attached subnets are accepted. This parameter can be used to specify a list of alternative valid packet source subnets, both for data or IGMP packets. Has an effect only on the upstream interface. Should be used when the source of multicast data often is in a different IP network.
-interface (name; Default: all)	Name of the interface.
-threshold  (integer: 0..4294967295; Default: 1)	Minimal TTL. Packets received with a lower TTL value are ignored
-upstream (yes | no; Default: no)	The interface is called "upstream" if it's in the direction of the root of the multicast tree. An IGMP forwarding router must have exactly one upstream interface configured. The upstream interface is used to send out IGMP membership requests.
+Configuration
 
-It is possible to get detailed status information for each interface using the print status command.
-[admin@MikroTik] /routing igmp-proxy interface print status 
-Flags: X - disabled, I - inactive, D - dynamic; U - upstream 
- 0  U interface=ether2 threshold=1 alternative-subnets="" upstream=yes source-ip-address=192.168.10.10 rx-bytes=3018487500 rx-packets=2012325 tx-bytes=0 tx-packets=0 
+Allowing or forbidding BFD sessions can be done from the /routing bfd configuration menu. For example:
+/routing bfd configuration
+add interfaces=sfp12 forbid-bfd=yes
+add interfaces=static
 
- 1    interface=ether3 threshold=1 alternative-subnets="" upstream=no querier=yes source-ip-address=192.168.20.10 rx-bytes=0 rx-packets=0 tx-bytes=2973486000 tx-packets=1982324 
+Configuration entries are order sensitive, which means that in the example above we are forbidding BFD sessions explicitly on the "sfp12" interface and allowing on the rest of the interfaces belonging to the "static" interface list.
 
- 2    interface=ether4 threshold=1 alternative-subnets="" upstream=no querier=yes source-ip-address=192.168.30.10 rx-bytes=0 rx-packets=0 tx-bytes=152019000 tx-packets=101346 
-querier (read-only; yes|no)	Whether the interface is acting as an IGMP querier.
-source-ip-address  (read-only; IP address)	The detected source IP for the interface.
-rx-bytes (read-only; integer)	The total amount of received multicast traffic on the interface.
-rx-packet (read-only; integer)	The total amount of received multicast packets on the interface.
-tx-bytes (read-only; integer)	The total amount of transmitted multicast traffic on the interface.
-tx-packet (read-only; integer)	The total amount of transmitted multicast packets on the interface.
 
-Multicast forwarding cache (MFC) status.
+To be able to filter multi-hop sessions, addresses or address-list properties can be used to match the destination, as well as the appropriate VRF, if a session is not running in the "main" VRF.
+/ip firewall address-list
+add address=10.155.255.183 list=bgp_allow_bfd
+add address=10.155.255.217 list=bgp_allow_bfd
 
-Sub-menu: /routing igmp-proxy mfc
-active-downstream-interfaces (read-only: name)	The packet stream is going out of the router through this interface.
-bytes (read-only: integer)	The total amount of received multicast traffic.
-group (read-only: IP address)	IGMP group address.
-packets (read-only: integer)	The total amount of received multicast packets.
-source (read-only: IP address)	The multicast data originator address.
-upstream-interface (read-only: name)	The packet stream is coming into the router through this interface.
-wrong-packets (read-only: integer)	
+/routing bfd configuration
+add addresses=111.111.0.0/16 vrf=vrf1
+add address-list=bgp_allow_bfd
 
-The total amount of received multicast packets that arrived on a wrong interface, for example, a multicast stream that is received on a downstream interface instead of an upstream interface.
 
-RouterOS support static multicast forwarding rules for IGMP proxy. If a static rule is added, all dynamic rules for that group will be ignored. These rules will take effect only if IGMP-proxy interfaces are configured (upstream and downstream interfaces should be set) or these rules won't be active.
-downstream-interfaces (name; Default: )	The received stream will be sent out to the listed interfaces only.
-group (read-only: IP address)	The multicast group address this rule applies.
-source (read-only: IP address)	The multicast data originator address.
-upstream-interface (read-only: name)	The interface that is receiving stream data.
-Examples
+Everything else that is not explicitly listed in the configuration by default is forbidden.
+BFD with BGP
 
-To forward all multicast data coming from the ether2 interface to the downstream bridge interface, where subscribers are connected, use the configuration below. Both interfaces should have an IP address.
-/routing igmp-proxy interface
-add interface=ether2 upstream=yes
-add interface=bridge1
+To enable the use of BFD for BGP sessions, enable use-bfd for required entries in /routing bgp connection menu.
 
-[admin@MikroTik] /routing igmp-proxy interface print
-Flags: U - UPSTREAM
-Columns: INTERFACE, THRESHOLD
-#   INTERFACE  THRESHOLD
-0 U ether2             1
-1   bridge1            1
+A useful feature is that the BGP session will show that the BFD session for that particular BGP session is down:
+[admin@dr_02_BGP_MUM] /routing/bgp/session> print 
+Flags: E - established 
+ 0 E ;;; BFD session down
+     name="ovpn_test1-1" 
+     remote.address=111.111.11.11@vrf1 .as=65530 .id=10.155.101.217 
+     .capabilities=mp,rr,as4 .hold-time=infinity .messages=40717 
+     .bytes=3436281 .eor="" 
+     local.address=111.111.11.12@vrf1 .as=555 .id=111.111.11.12 
+     .capabilities=mp,rr,gr,as4 .messages=1 .bytes=19 .eor="" 
+     output.procid=20 
+     input.procid=20 .filter=bgp-in ebgp 
+     hold-time=infinity use-bfd=yes uptime=3s210ms 
+     last-started=2023-05-19 09:54:04 prefix-count=3853 
+BFD with OSPF
 
-You may also need to configure alternative-subnets on the upstream interface in case the multicast sender address is in an IP subnet that is not directly reachable from the local router:
-/routing igmp-proxy interface
-set [find upstream=yes] alternative-subnets=192.168.50.0/24,192.168.60.0/24
+To enable the use of BFD for OSPF neighbors, enable use-bfd for required entries in /routing ospf interface-template menu.
+Session Status
 
-To enable quick-leave, use the setting below:
-/routing igmp-proxy
-set quick-leave=yes
+The status of the currently available sessions can be observed from /routing bfd session menu:
+[admin@dr_02_BGP_MUM] /routing/bfd/session> print 
+Flags: U - up, I - inactive 
+ 0 I ;;; BFD forbidden for destination address
+     multihop=yes remote-address=10.155.101.183 local-address="" desired-tx-interval=0ms required-min-rx=0ms 
+     multiplier=0 
+
+ 1   multihop=no remote-address=111.111.11.11%ovpn-out1@vrf1 local-address=111.111.11.12@vrf1 state=down 
+     state-changes=0 desired-tx-interval=200ms required-min-rx=200ms remote-min-rx=1us multiplier=5 
+     packets-rx=0 packets-tx=7674 
+
+
+BFD is picking the highest value between the local tx interval and remote minimum rx interval as desired transmit interval. If the session is not established then desired minimum tx interval is set to 1 second.
 
 
 
-    Creado por Māris B., actualizado por última vez por Edgars P. el oct 23, 2023 9 min de lectura
 
-    Summary
-    Basic multicast routing on single device
-    Multicast routing with static RP
-    Property Reference
-        Instance
-        Interface template
-        Interface
-        Neighbor
-        Static RP
-        Upstream Information Base
+    Creado por Māris B., actualizado por última vez el ene 27, 2025 3 min de lectura
 
-Summary
+    Overview
+    IS-IS Terminology
+    Basic Configuration Example
+    Troubleshooting
+        ISIS does not work and prints warning message "invalid 3way tlv"
 
-IP Multicast is a technology that allows data to be efficiently shared with many recipients over the Internet. Senders transmit their data to a specific multicast IP address, and receivers indicate their interest in receiving data sent to that address. The network then takes care of delivering the data from senders to receivers.
+Overview
 
-If both the sender and receiver for a multicast group are on the same local network segment, routers are not required for the process. Communication can happen directly, and this can be enhanced with the use of IGMP snooping switches. However, if the sender and receiver are on different network segments, a multicast routing protocol must be used to establish the path for data transmission between them.
+The IS-IS (Intermediate System - Intermediate System) protocol is an Interior Gateway Protocol (IGP) used to distribute IP routing information throughout a single Autonomous System.
 
-Protocol Independent Multicast - Sparse Mode (PIM-SM or PIM) enables RouterOS to support multicast streaming over the network area. PIM stands for Platform Independent Multicast, meaning it's not tied to any particular unicast routing. SM stands for Sparse-Mode, which means that specific control messages ensure that data is delivered only to network segments where there are receivers that want it. In addition to the routing protocols that manage data transmission between network segments, routers need a way to discover local receivers on their directly connected network segment. For IPv4, this is achieved through the Internet Group Management Protocol (IGMP), and Multicast Listener Discovery (MLD) for IPv6.
+It was originally developed as a routing protocol for CLNP but later extended to include IP routing when IP became popular.  An extended version is sometimes referred to as Integrated IS-IS.
 
-RouterOS v7 has PIM-SM configuration available in the main system package. Older RouterOS versions need an additional multicast package installed in order to use PIM-SM. See more details about Packages.
+IS-IS belongs to the link-state protocol family, which exchanges topology information between nearest neighbors and floods it throughout the AS. The main advantage is that complete knowledge of the network topology allows one to choose the best path to the destination. It can also be useful for traffic engineering purposes.
 
-The feature is not supported on SMIPS devices (hAP lite, hAP lite TC and hAP mini).
-Basic multicast routing on single device
+Neighbours periodically exchange Hello packets, forms adjacency and selects designated IS based on the negotiation. Hello packets are sent individually for Level-1 and Level-2.
 
-Picture this scenario, you have got a router with two interfaces, namely ether1 and ether2, and each of them is set up in separate networks. Normally, the router will create connected routes and hosts on both networks will be able to communicate using unicast traffic. However, if you want to enable multicast communication between these networks, you'll need to configure multicast routing separately because it won't work otherwise. In this scenario, we are going to create a simple configuration. This involves creating a PIM instance and configuring the required interfaces.
+Standards and Technologies:
 
-Begin by ensuring that IP addresses are set up on the router's interfaces.
-/ip address
-add address=192.168.10.1/24 interface=ether1 network=192.168.10.0
-add address=192.168.20.1/24 interface=ether2 network=192.168.20.0
+    RFC 1195 Use of OSI IS-IS for Routing in TCP/IP and Dual Environments
+    RFC 5302 Domain-Wide Prefix Distribution with Two-Level IS-IS
+    RFC 5303 Three-Way Handshake for IS-IS Point-to-Point Adjacencies
+    RFC 5305 IS-IS Extensions for Traffic Engineering (only wide metric support)
+    RFC 5308 Routing IPv6 with IS-IS
 
-Configure PIM instance. For this example, the default settings should work fine.
-/routing pimsm instance
-add name=pimsm-instance-1
+IS-IS Terminology
 
-Last, add interfaces and specify the PIM instance you created earlier.
-/routing pimsm interface-template
-add interfaces=ether1,ether2 instance=pimsm-instance-1
 
-Now router starts listening to IGMP membership reports (client join messages) and will route multicast traffic to clients interested in receiving it.
+    IS - Intermediate System is a router capable of forwarding traffic between distantly located hosts.
+    LSP - Link State PDU contains information on the router's local state (usable interfaces, reachable neighbours, and the cost of the interfaces)
+    SPF - Shortest-path-first algorithm
+    DIS - designated intermediate system. DIS ensures that all routes in the network maintain synchronised database. Separate DISs are elected for L1 and L2 routing. Election of the DIS is based on the highest interface priority.
+    Level-1 (L1) routing - Controls distribution of routing information within an IS-IS area. L1 routing is based on system ID.
+    Level-2 (L2) routing - Controls distribution of routing information between IS-IS areas. L2 routing is based on area ID.
+    IS-IS Adjacency - link between IS-IS neighbours. The type of adjacency formed depends on the parameters exchanged in the IS-IS Hello packets. Each of the the adjacent routers runs the DIS election process to determine whether it is eligible to be an L1 or L2 DIS on the broadcast network.
 
-To test the configuration, you can configure a multicast sender using RouterOS traffic-generator and IGMP client using GMP.
-# Multicast Sender
-/ip address
-add address=192.168.10.10/24 interface=ether1 network=192.168.10.0
-/tool traffic-generator packet-template
-add interface=ether1 ip-dst=229.1.1.2 mac-dst=01:00:5E:01:01:02/FF:FF:FF:FF:FF:FF name=multicast
-/tool traffic-generator quick tx-template=multicast mbps=10
 
-# Multicast Client
-/ip address
-add address=192.168.20.10/24 interface=ether1 network=192.168.20.0
-/routing gmp
-add disabled=no groups=229.1.1.2 interfaces=ether1
+Basic Configuration Example
 
-To verify whether multicast traffic is being properly routed, monitor the received packet counters on the client interface or use tools like Torch or a Packet Sniffer.
+Basic IS-IS setup between three routers.
 
-It is also possible to monitor active multicast group on router:
-/routing pimsm uib-g print
-Columns: INSTANCE, GROUP
-# INSTANCE          GROUP    
-0 pimsm-instance-1  229.1.1.2
+R1:
+/routing isis instance
+add afi=ip areas=49.2222 disabled=no name=isis-instance-1 system-id=90ab.cdef.0001
+/routing isis interface-template
+add instance=isis-instance-1 interfaces=ether1 levels=l1,l2
 
-/routing pimsm uib-sg print
-Flags: K - KEEPALIVE; S - SPT-BIT
-Columns: INSTANCE, GROUP, SOURCE
-#    INSTANCE          GROUP      SOURCE       
-0 KS pimsm-instance-1  229.1.1.2  192.168.10.10
 
-Multicast routing with static RP
+[] /routing/isis/neighbor> print 
+ 0 instance=isis-instance-1 interface=ether1 level-type=l2 snpa=08:00:27:22:B4:A2 srcid="1111.2222.aded" state=up 
 
-In the upcoming example, we'll be working with multiple PIM routers, as shown in the diagram below. PIM-SM uses shared trees and to make this work, we need to designate a specific node as the multicast root distribution point. In PIM, this router is called the Rendezvous Point, or RP. There are various methods for selecting an RP in PIM, such as the Bootstrap Router (BSR) method. However, for this example, we'll be using a straightforward approach known as static RP configuration. This means that the administrator can manually specify one or more RPs for specific multicast groups.
+ 1 instance=isis-instance-1 interface=ether1 level-type=l2 snpa=D4:CA:6D:78:2F:2E srcid="1111.2222.cded" state=up 
 
-To get started, we'll need to configure IP addresses and set up unicast routing. In this example, we'll use OSPF to exchange routing information between the routers. See more details about OSFP.
-# R1 Rendezvous Point:
+ 2 instance=isis-instance-1 interface=ether1 level-type=l1 snpa=08:00:27:22:B4:A2 srcid="1111.2222.aded" state=up 
+
+ 3 instance=isis-instance-1 interface=ether1 level-type=l1 snpa=D4:CA:6D:78:2F:2E srcid="1111.2222.cded" state=up 
+
+
+[] /routing/route> print where is-is
+Flags: A - ACTIVE; i - IS-IS
+Columns: DST-ADDRESS, GATEWAY, AFI, DISTANCE, SCOPE, TARGET-SCOPE, IMMEDIATE-GW
+   DST-ADDRESS        GATEWAY                AFI  DISTANCE  SCOPE  TARGET-SCOPE  IMMEDIATE-GW         
+ i 0.0.0.0/0          10.155.101.214%ether1  ip4       115     20            10  10.155.101.214%ether1
+ i 10.155.101.0/24    10.155.101.216%ether1  ip4       115     20            10  10.155.101.216%ether1
+Ai 10.255.255.162/32  10.155.101.216%ether1  ip4       115     20            10  10.155.101.216%ether1
+
+
+R2:
+/routing isis instance
+add afi=ip areas=49.2222 disabled=no l1.originate-default=always l2.originate-default=always name=isis-instance-1 \
+    system-id=1111.2222.cded
+/routing isis interface-template
+add instance=isis-instance-1 interfaces=sfp12 levels=l1,l2
+add instance=isis-instance-1 interfaces=lo levels=l2
+
+
+[] /routing/isis/neighbor> print 
+ 0 instance=isis-instance-1 interface=sfp12 level-type=l1 snpa=08:00:27:22:B4:A2 srcid="1111.2222.aded" state=up 
+
+ 1 instance=isis-instance-1 interface=sfp12 level-type=l1 snpa=C4:AD:34:43:EA:5C srcid="90ab.cdef.0001" state=up 
+
+ 2 instance=isis-instance-1 interface=sfp12 level-type=l2 snpa=08:00:27:22:B4:A2 srcid="1111.2222.aded" state=up 
+
+ 3 instance=isis-instance-1 interface=sfp12 level-type=l2 snpa=C4:AD:34:43:EA:5C srcid="90ab.cdef.0001" state=up 
+
+
+
+R3 Cisco:
+interface Loopback0
+ ip address 10.255.255.162 255.255.255.255
+ ip router isis 
+!
+interface GigabitEthernet1
+ ip address dhcp
+ ip router isis 
+ negotiation auto
+!
+router isis
+ net 49.2222.1111.2222.aded.00
+!
+
+
+
+# show isis neighbors 
+
+Tag null:
+System Id      Type Interface   IP Address      State Holdtime Circuit Id
+90AB.CDEF.0001 L1   Gi1         10.155.101.183  UP    27       1111.2222.CDED.01  
+90AB.CDEF.0001 L2   Gi1         10.155.101.183  UP    27       1111.2222.CDED.01  
+1111.2222.CDED L1   Gi1         10.155.101.214  UP    9        1111.2222.CDED.01  
+1111.2222.CDED L2   Gi1         10.155.101.214  UP    9        1111.2222.CDED.01 
+
+# show ip route
+
+i*L1  0.0.0.0/0 [115/11] via 10.155.101.214, 4w5d, GigabitEthernet1
+      10.0.0.0/8 is variably subnetted, 5 subnets, 2 masks
+C        10.155.101.0/24 is directly connected, GigabitEthernet1
+L        10.155.101.216/32 is directly connected, GigabitEthernet1
+i L2     10.155.255.214/32 [115/10] via 10.155.101.183, 2w3d, GigabitEthernet1
+
+
+Troubleshooting
+ISIS does not work and prints warning message "invalid 3way tlv"
+This warning indicates that most likely remote neighbor does not comply  to 3-way handshake for point-to-point networks from RFC 5302. For example, on Cisco you have to enable "isis three-way-handshake ietf" on interface to have 15byte TLV.
+
+
+
+    Creado por Māris B., actualizado por última vez el jun 26, 2025 11 min de lectura
+
+    Overview
+    Terminology
+    Route list
+    Configuration Examples
+        Basic Configuration Example
+        Bridged EVPN VXLAN Overlay with Arista's Eos and ROS
+            Topology
+            Underlay Configuration
+                Ros_Spine
+                Ros_Leaf_3
+                Eos_Leaf
+            BGP EVPN Overlay
+                Ros_Spine
+                Ros_Leaf_3
+                Eos_Leaf
+                Verify BGP Connectivity
+            VXLAN and EVPN configuration
+                Ros_Leaf_3
+                Eos_Leaf
+                Host_1
+                Host_3
+            Validate L2VPN Service 
+        Bridged EVPN Overlay with Arista ESI LAG
+            Topology
+            Configuration Prerequisities
+            Port Channel configuration
+            Validate setup
+
+Overview
+
+Ethernet Virtual Private Network (EVPN) is a technology to extend Layer 2 and 3 connectivity between different network segments. MPLS or VXLAN encapsulations can be used to transfer ethernet frames over MPLS or IP-based networks.
+
+BGP EVPN  is used as a control plane for multiple data-planes encapsulations (for both Layer2 and Layer3 VPN services). MP-BGP carries MAC addresses, MAC/IP bindings and IP prefixes. 
+
+RFC7432 is initial EVPN standard thad defines BGP as control plane for MPLS data plane. RFC8365 extends the use of additional data planes, VXLAN, NVGRE and MPLS over GRE and defines the use of EVPN as Network Virtualization Overlay (NVO).
+Terminology
+
+    NVO: Network Virtualization Overlay used to deliver Layer2 and Layer 3 VPN services.
+    NVE: Network Virtualization Endpoint is Provider Edge (PE) node within the NVO environment. It is responsible for encapsulation/decapsulation of VPN traffic. In case of VXLAN this defines VTEP (Virtual Tunnel End Point).
+    VNI: Virtual Network Identifier 
+    EVI: EVPN Instance
+    RD: Route Distinguisher is a 64-bit prefix appended to IP prefix to make it unique, multiple tenants can use overlapping IP range.
+    RT: Route Target is BGP extended community used to control import and export of routes. Typically, RT is based on the AS number and the VNI of the MAC-VRF
+    MAC-VRF: VRF table for MAC addresses on a PE (VTEP). Requires RD and RT.
+    BUM:  Broadcast, unknown Unicast and Multicast traffic is a multi-destination layer2 traffic in vxlan networks.
+    Ingress replication: unicast approach to handle BUM traffic. It uses IMET routes to auto-discover remote peers.  Ingress device replicates BUM traffic to all the VTEPS associated with the Layer-2 VNI.
+    ESI - Ethernet Segment Identifier
+
+For MP-BGP to carry EVPN, new AFI/SAFI was defined 25(L2 VPN)/70(EVPN). Next-hop address within the NLRI is an IP address of the VTEP advertising the EVPN route.
+
+There are five EVPN route types:
+
+    Type-1: (Ethernet A-D) announces reachability of multi-homed ethernet segment
+    Type-2:( MAC advertisement MACIP) advertises MAC address of MAC/IP binding learned by specific EVI
+    Type-3: (Inclusive multicast IMET) advertises membership of a Layer 2 domain, allowing to auto discover VTEPs 
+    Type-4: (Ethernet segment) is used to discover VTEPs attached to the same shared Ethernet Segment for EVPN multi-homing model (active-active, active-standby forwarding)
+    Type-5: (IP prefix) Advertising IP prefix into the EVPN domain allows to create classic Layer 3 VPN. 
+
+Data plane encapsulation is defined with encapsulation extended community value:
+
+    8 - VXLAN (currently only one supported by ROS)
+    9 - NVGRE
+    10 - MPLS
+    11 - MPLSoGRE
+
+There are two methods for supporting inter-subnet routing with EVPN: symmetric and asymmetric integrated routing and bridging (IRB). The main difference between the two methods is that the symmetric method supports both routing and bridged on both the ingress and egress VTEPs, where the asymmetric method supports routing on the ingress, but only bridging on the egress.
+
+
+Route list
+
+RouterOS will show local and received EVPN routes in the /routing/route list
+
+Locally generated routes will hace e-evpn flag. for example:
+[admin@ros_leaf_3] /routing/route> print where evpn 
+Flags: e - EVPN
+Columns: DST-ADDRESS, GATEWAY, AFI, DISTANCE, SCOPE, TARGET-SCOPE
+  DST-ADDRESS                                     GATEWAY        AFI   DISTANCE  SCOPE  TARGET-SCOPE
+e [10.155.101.133:1010]macip:0|0C:50:85:84:00:01  203.0.255.133  evpn       200     40            10
+e [10.155.101.133:1010]imet:0|203.0.255.133       203.0.255.133  evpn       200     40            10
+e [203.0.255.133:4]imet:0|203.0.255.133           203.0.255.133  evpn       200     40            10
+
+
+EVPN data is encoded in dst-address parameter:
+
+    Dst [rd]type:x|y
+         ^  ^    ^ 
+         |  |    + - where x - tag or ESI; y - type specific data (can show mac addresses, ip addresses, ethernet segments etc.)
+         |  +------- name of the EVPN route type (macip, imet, es, ad, prefix)
+         +---------- route distinguisher in square brackets
+
+
+
+Configuration Examples
+Basic Configuration Example
+
+Basic Layer2 EVPN Vxlan configuration:
 /interface bridge
-add name=loopback
-/ip address
-add address=10.0.0.1 interface=loopback network=10.0.0.1
-add address=10.0.1.1/24 interface=ether2 network=10.0.1.0
-add address=10.0.2.1/24 interface=ether3 network=10.0.2.0
-/routing ospf instance
-add disabled=no name=ospf-instance-1 router-id=10.0.0.1
-/routing ospf area
-add disabled=no instance=ospf-instance-1 name=ospf-area-1
-/routing ospf interface-template
-add area=ospf-area-1 disabled=no interfaces=loopback,ether2,ether3
+add name=bridge1 vlan-filtering=yes pvid=40
+/interface bridge port
+add bridge=bridge1 interface=sfp-sfpplus3 pvid=40
 
-# R2:
+/ip address 
+add address=203.0.113.1 interface=lo
+
+/interface vxlan
+add bridge=bridge1 bridge-pvid=40 local-address=203.0.113.1 name=vxlan1 vni=100040 learning=no
+
+/routing bgp instance
+add as=65000 name=evpn-inst
+
+/routing bgp connection
+add afi=evpn instance=evpn-inst local.address=203.0.113.1 .role=ebgp multihop=yes name=to-leaf-lo remote.address=203.0.113.2 .as=65001
+
+/routing bgp evpn
+add instance=evpn-inst name=bgp-evpn-1o vni=100040
+
+For simple setups with only one vni, there is no need to set route distinguisher and import/export route targets.
+ 
+When RTs or RD are not specified, values are derived automatically. Route targets are set to <PE ASN>:<VNI>, route distinguishers <PE address>:<num derived from config id>).
+
+EVPN configuration is directly mapped to VXLAN configurations with matching VNIs
+
+
+Bridged EVPN VXLAN Overlay with Arista's Eos and ROS
+Topology
+
+For this example we will use the following topology:
+
+
+    203.0.255.0/24 address range is used for loopback addresses
+    Subnets from 172.16.0.0/16 range is used for underlay connectivity of leaf and spine routers
+    Subnets from 192.168.0.0/16 range is used for host addressing on vlans.
+
+Underlay Configuration
+
+Underly connectivity can depend on already existing setups, it can be eBGP, OSPF, ISIS or even static routing. In this case we will be using OSPF as underly routing protocol to advertise routes for addresses associated with loopback interfaces.
+Ros_Spine
+/ip address
+add address=203.0.255.138 interface=lo
+add address=172.16.1.1/30 interface=ether3
+add address=172.16.2.1/30 interface=ether4
+add address=172.16.3.1/30 interface=ether5
+add address=172.16.4.1/30 interface=ether6
+add address=172.16.5.1/30 interface=ether7
+
+/routing ospf instance
+add name=evpn_underlay
+/routing ospf area
+add disabled=no instance=evpn_underlay name=evpn-underlay-bb
+/routing ospf interface-template
+add area=evpn-underlay-bb disabled=no networks=172.16.0.0/16
+add area=evpn-underlay-bb disabled=no interfaces=lo passive
+
+
+Ros_Leaf_3
+/ip address
+add address=203.0.255.133 interface=lo
+add address=172.16.3.2/30 interface=ether10
+
+/routing ospf instance
+add name=evpn_underlay
+/routing ospf area
+add disabled=no instance=evpn_underlay name=evpn-underlay-bb
+/routing ospf interface-template
+add area=evpn-underlay-bb disabled=no networks=172.16.0.0/16
+add area=evpn-underlay-bb disabled=no interfaces=lo passive
+
+
+Eos_Leaf
+interface Ethernet1
+   no switchport
+   ip address 172.16.5.2/30
+!
+interface Loopback0
+   ip address 203.0.255.128/32
+!
+ip routing
+!
+router ospf 100
+   router-id 203.0.255.135
+   redistribute connected
+   network 172.16.1.0/30 area 0.0.0.0
+!
+
+
+BGP EVPN Overlay
+
+For BGP overly we will be using multihop eBGP that uses loopback addresses.
+
+To simplify configuration we will utilize BGP template to set common parameters and set connection to listen on all loopback address range. This is great for scalability, if we will want to add more leaf routers we won't need to configure anything on the spine routers.
+
+Also it is recommended to set nexthop-choice to propagate especially if there is more than one spine. In case if iBGP is used as overlay then spines should be route reflectors and nexthop propagation is happening by default.
+Ros_Spine
+/routing bgp instance
+add as=65000 name=bgp-instance-1
+/routing bgp template
+set default afi=evpn multihop=yes nexthop-choice=propagate
+/routing bgp connection
+add instance=bgp-instance-1 local.address=203.0.255.138 .role=ebgp name=evpn_leafs remote.address=\
+    203.0.255.0/24 templates=default
+
+
+Ros_Leaf_3
+/routing bgp instance
+add as=65003 disabled=no name=bgp-instance-1
+/routing bgp connection
+add afi=evpn instance=bgp-instance-1 local.address=203.0.255.133 .role=ebgp multihop=yes name=to_spine remote.address=\
+    203.0.255.138
+
+
+Eos_Leaf
+service routing protocols model multi-agent
+!
+router bgp 65005
+   neighbor SPINE_EVPN peer group
+   neighbor SPINE_EVPN remote-as 65000
+   neighbor SPINE_EVPN update-source Loopback0
+   neighbor SPINE_EVPN ebgp-multihop 10
+   neighbor SPINE_EVPN send-community extended
+   neighbor 203.0.255.138 peer group SPINE_EVPN
+   !
+   address-family evpn
+      neighbor SPINE_EVPN activate
+!
+
+
+Verify BGP Connectivity
+
+Eos_Leaf
+localhost#show bgp summary 
+BGP summary information for VRF default
+Router identifier 203.0.255.128, local AS number 65005
+Neighbor               AS Session State AFI/SAFI                AFI/SAFI State   NLRI Rcd   NLRI Acc
+------------- ----------- ------------- ----------------------- -------------- ---------- ----------
+203.0.255.138       65000 Established   IPv4 Unicast            Advertised              0          0
+203.0.255.138       65000 Established   L2VPN EVPN              Negotiated              6          6
+
+Ros_Leaf_3
+[admin@ros_leaf_3] /routing/bgp/session> print 
+Flags: E - established 
+ 0 E name="to_spine-1" instance=bgp-instance-1 
+     remote.address=203.0.255.138 .as=65000 .id=203.0.255.138 .capabilities=mp,rr,gr,as4 .afi=evpn .messages=7 .bytes=682 .eor="" 
+     local.address=203.0.255.133 .as=65003 .id=203.0.255.133 .cluster-id=203.0.255.133 .capabilities=mp,rr,gr,as4 .afi=evpn .messages=7 
+     .bytes=698 .eor="" 
+     output.procid=20 
+     input.procid=20 ebgp 
+     multihop=yes hold-time=3m keepalive-time=1m uptime=1s620ms last-started=2025-05-29 11:01:38 prefix-count=0 
+
+
+
+VXLAN and EVPN configuration
+Ros_Leaf_3
+
+Just for demonstration purposes, on RouterOS leaf we will be sending vlan tagged traffic to the host.
+
+VXLAN learning should be disabled as we are using BGP EVPN for discovery.
 /interface bridge
-add name=loopback
+add name=bridge1 pvid=10 vlan-filtering=yes
+/interface vxlan
+add bridge=bridge1 bridge-pvid=10 learning=no local-address=203.0.255.133 mac-address=C2:16:F6:B2:CC:D3 name=vxlan1 vni=1010
+/interface bridge port
+add bridge=bridge1 interface=ether11 pvid=10
 /ip address
-add address=10.0.0.2 interface=loopback network=10.0.0.2
-add address=10.0.1.2/24 interface=ether1 network=10.0.1.0
-add address=192.168.20.1/24 interface=ether12 network=192.168.20.0
-/routing ospf instance
-add disabled=no name=ospf-instance-1 router-id=10.0.0.2
-/routing ospf area
-add disabled=no instance=ospf-instance-1 name=ospf-area-1
-/routing ospf interface-template
-add area=ospf-area-1 disabled=no interfaces=loopback,ether1,ether12
+add address=192.168.10.133/24 interface=bridge1
+/routing bgp evpn
+add disabled=no export.route-targets=1010:1010 import.route-targets=1010:1010 instance=bgp-instance-1 name=bgp-evpn-1 vni=1010
 
-# R3:
-/interface bridge
-add name=loopback
+
+Eos_Leaf
+
+On the Arista router we are setting vlan trunk, untagged traffic will be sent to the host
+vlan 10
+!
+interface Ethernet2
+   switchport trunk allowed vlan 10
+   switchport mode trunk
+!
+interface Vlan10
+   ip address 192.168.10.128/24
+!
+interface Vxlan1
+   vxlan source-interface Loopback0
+   vxlan vlan 10 vni 1010
+!
+router bgp 65501
+   vlan 10
+      rd 203.0.255.128:1010
+      route-target both 1010:1010
+      redistribute learned
+
+
+Host_1
 /ip address
-add address=10.0.0.3 interface=loopback network=10.0.0.3
-add address=10.0.2.3/24 interface=ether1 network=10.0.2.0
-add address=192.168.30.1/24 interface=ether12 network=192.168.30.0
-/routing ospf instance
-add disabled=no name=ospf-instance-1 router-id=10.0.0.3
-/routing ospf area
-add disabled=no instance=ospf-instance-1 name=ospf-area-1
-/routing ospf interface-template
-add area=ospf-area-1 disabled=no interfaces=loopback,ether1,ether12
-
-As in the previous example with a single router, we need to configure the PIM instance and add the necessary interfaces on all routers.
-# R1 Rendezvous Point:
-/routing pimsm instance
-add disabled=no name=pimsm-instance-1
-/routing pimsm interface-template
-add instance=pimsm-instance-1 interfaces=loopback,ether2,ether3
-
-# R2:
-/routing pimsm instance
-add disabled=no name=pimsm-instance-1
-/routing pimsm interface-template
-add instance=pimsm-instance-1 interfaces=loopback,ether1,ether12
-
-# R3:
-/routing pimsm instance
-add name=pimsm-instance-1
-/routing pimsm interface-template
-add instance=pimsm-instance-1 interfaces=loopback,ether1,ether12
-
-Now, let's take a look at our PIM neighbors and their current statuses. On R1, there are two neighbors, while on R2 and R3, there's only one neighbor each.
-# R1 Rendezvous Point:
-/routing pimsm neighbor print
-Flags: R - DESIGNATED-ROUTER; J - JOIN-TRACKING
-Columns: INSTANCE, ADDRESS, PRIORITY
-#    INSTANCE          ADDRESS          PRIORITY
-0 RJ pimsm-instance-1  10.0.1.2%ether2  1       
-1 RJ pimsm-instance-1  10.0.2.3%ether3  1       
-
-# R2:
-/routing pimsm neighbor print 
-Flags: R - DESIGNATED-ROUTER; J - JOIN-TRACKING
-Columns: INSTANCE, ADDRESS, PRIORITY
-#    INSTANCE          ADDRESS          PRIORITY
-0  J pimsm-instance-1  10.0.1.1%ether1  1       
-
-# R3:
-/routing pimsm neighbor print 
-Flags: J - JOIN-TRACKING
-Columns: INSTANCE, ADDRESS, PRIORITY
-#   INSTANCE          ADDRESS          PRIORITY
-0 J pimsm-instance-1  10.0.2.1%ether1  1       
-
-Finally, we will select one router to act as our Rendezvous Point (RP). We will configure the R1 loopback IP address on all PIM routers. It's important to ensure that each router has the correct routing information to reach the R1 loopback address.
-# R1 Rendezvous Point:
-/routing pimsm static-rp
-add address=10.0.0.1 instance=pimsm-instance-1
-
-# R2:
-/routing pimsm static-rp
-add address=10.0.0.1 instance=pimsm-instance-1
-
-# R3:
-/routing pimsm static-rp
-add address=10.0.0.1 instance=pimsm-instance-1
-Property Reference
-Instance
-
-The instance menu defines the main PIM-SM settings. The instance is then used for all other PIM-related configurations like interface-template, static RP, and Bootstrap Router.
-
-Sub-menu: /routing pimsm instance
-afi (ipv4 | ipv6; Default: ipv4)	Specifies address family for PIM.
-bsm-forward-back (yes | no; Default: )	Currently not implemented.
-crp-advertise-contained (yes | no; Default: )	
-
-Currently not implemented.
-name (text; Default: )	Name of the instance.
-rp-hash-mask-length (integer: 0..4294967295; Default: 30 (IPv4), or 126 (IPv6))	The hash mask allows changing how many groups to map to one of the matching RPs.
-rp-static-override (yes | no; Default: no)	Changes the selection priority for static RP. When disabled, the bootstrap RP set has a higher priority. When enabled, static RP has a higher priority.
-ssm-range (IPv4 | IPv6; Default: )	Currently not implemented.
-switch-to-spt (yes | no; Default: yes)	Whether to switch to Shortest Path Tree (SPT) if multicast data bandwidth threshold is reached. The router will not proceed from protocol phase one (register encapsulation) to native multicast traffic flow if this option is disabled. It is recommended to enable this option.
-switch-to-spt-bytes (integer: 0..4294967295; Default: 0)	Multicast data bandwidth threshold. Switching to Shortest Path Tree (SPT) happens if this threshold is reached in the specified time interval. If a value of 0 is configured, switching will happen immediately.
-switch-to-spt-interval (time; Default: )	Time interval in which to account for multicast data bandwidth, used in conjunction with switch-to-spt-bytes to determine if the switching threshold is reached.
-vrf (name; Default: main)	Name of the VRF.
-Interface template
-
-The interface template menu defines which interfaces will participate in PIM and what per-interface configuration will be used.
-
-Sub-menu: /routing pimsm interface-template
-hello-delay (time; Default: 5s)	Randomized interval for the initial Hello message on interface startup or detecting new neighbor.
-hello-period (time; Default: 30s)	Periodic interval for Hello messages.
-instance (name; Default: )	Name of the PIM instance this interface template belongs to.
-interfaces (name; Default: all)	List of interfaces that will participate in PIM.
-join-prune-period (time; Default: 1m)	
-join-tracking-support (yes | no; Default: yes)	
-
-Sets the value of a Tracking (T) bit in the LAN Prune Delay option in the Hello message. When enabled, a router advertises its willingness to disable Join suppression. it is possible for upstream routers to explicitly track the join membership of individual downstream routers if Join suppression is disabled. Unless all PIM routers on a link negotiate this capability, explicit tracking and the disabling of the Join suppression mechanism are not possible.
-override-interval (time; Default: 2s500ms)	Sets the maximum time period over which to randomize when scheduling a delayed override Join message on a network that has join suppression enabled.
-priority (integer: 0..4294967295; Default: 1)	The Designated Router (DR) priority. A single Designated Router is elected on each network. The priority is used only if all neighbors have advertised a priority option. Numerically largest priority is preferred. In case of a tie or if priority is not used - the numerically largest IP address is preferred.
-propagation-delay (time; Default: 500ms)	
-
-Sets the value for a prune pending timer. It is used by upstream routers to figure out how long they should wait for a Join override message before pruning an interface that has join suppression enabled.
-source-addresses (IPv4 | IPv6; Default: )	
-Interface
-
-The interface menu shows all interfaces that are currently participating in PIM and their statuses. This menu contains dynamic and read-only entries that get created by defined interface templates.
-
-Sub-menu: /routing pimsm interface
-address (IP%interface@vrf)	Shows IP address, interface, and VRF.
-designated-router (yes | no)	
-dr (yes | no)	
-dynamic (yes | no)	
-instance (name)	Name of the PIM instance this interface template belongs to.
-join-tracking (yes | no)	
+add address=192.168.10.132/24 interface=ether2
 
 
-override-interval (time)	
-priority (integer: 0..4294967295)	
-propagation-delay (time)	
-Neighbor
+Host_3
+/interface vlan
+add interface=ether2 name=vlan10 vlan-id=10
+/ip address
+add address=192.168.10.129/24 interface=vlan10
 
-The neighbor menu shows all detected neighbors that are running PIM and their statuses. This menu contains dynamic and read-only entries.
 
-Sub-menu: /routing pimsm neighbor
-address (IP%interface)	Shows the neighbor's IP address and local interface the neighbor is detected on.
-designated-router (yes | no)	
+Validate L2VPN Service 
 
-Shows whether the neighbor is elected as Designated Router (DR).
-instance (name)	Name of the PIM instance this neighbor is detected on.
-join-tracking (yes | no)	
+Lets verify that IMET routes are present on leaf routers and that vteps are discovered
+[admin@ros_leaf_3] /routing/route> print where dst-address~"imet"
+Flags: A - ACTIVE; b - BGP, e - EVPN
+Columns: DST-ADDRESS, GATEWAY, AFI, DISTANCE, SCOPE, TARGET-SCOPE, IMMEDIATE-GW
+   DST-ADDRESS                               GATEWAY        AFI   DISTANCE  SCOPE  TARGET-SCOPE  IMMEDIATE-GW      
+Ab [203.0.255.128:1010]imet:0|203.0.255.128  203.0.255.128  evpn        20     40            30  172.16.3.1%ether10
+ e [203.0.255.133:256]imet:0|203.0.255.133   203.0.255.133  evpn       200     40            10                    
 
-Indicates the neighbor's value of a Tracking (T) bit in the LAN Prune Delay option in the Hello message.
-override-interval (time)	Indicates the neighbor's value of the override interval in the LAN Prune Delay option in the Hello message.
-priority (integer: 0..4294967295)	Indicates the neighbor's priority value.
-propagation-delay (time)	Indicates the neighbor's value of the propagation delay in the LAN Prune Delay option in the Hello message.
-timeout (time)	Shows the reminding time after the neighbor is removed from the list if no new Hello message is received. The hold time equals to neighbor's hello-period * 3.5. 
-Static RP
 
-The static-rp menu allows manually defining the multicast group to RP mappings. Such a mechanism is not robust to failures but does at least provide a basic interoperability mechanism.
+[admin@ros_leaf_3] /interface/vxlan/vteps> print 
+Flags: D - DYNAMIC
+Columns: INTERFACE, REMOTE-IP
+#   INTERFACE  REMOTE-IP    
+0 D vxlan1     203.0.255.128
 
-Sub-menu: /routing pimsm static-rp
-address (IPv4 | IPv6; Default: )	The IP address of the static RP.
-group (IPv4 | IPv6; Default: 224.0.0.0/4)	The multicast group that belongs to a specific RP.
-instance (name; Default: )	Name of the PIM instance this static RP belongs to.
-Upstream Information Base
+On Arista:
+localhost#show bgp evpn route-type imet
+BGP routing table information for VRF default
+Router identifier 203.0.255.135, local AS number 65501
+Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
+                    c - Contributing to ECMP, % - Pending BGP convergence
+Origin codes: i - IGP, e - EGP, ? - incomplete
+AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
 
-The upstream information base menus show the any-source multicast (*,G) and source-specific multicast (S,G) groups and their statuses. These menus contain only read-only entries.
+          Network                Next Hop              Metric  LocPref Weight  Path
+ * >      RD: 203.0.255.128:1010 imet 203.0.255.128
+                                 -                     -       -       0       i
+ * >      RD: 203.0.255.133:256 imet 203.0.255.133
+                                 203.0.255.133         -       100     0       65000 65003 i
 
-Sub-menu: /routing pimsm uib-g
-group (IPv4 | IPv6)	The multicast group address.
-instance (name)	Name of the PIM instance the multicast group is created on.
-rp (IPv4 | IPv6)	
+localhost#show interfaces vxlan1
+Vxlan1 is up, line protocol is up (connected)
+  Hardware is Vxlan
+  Source interface is Loopback0 and is active with 203.0.255.128
+  Listening on UDP port 4789
+  Replication/Flood Mode is headend with Flood List Source: EVPN
+  Remote MAC learning via EVPN
+  VNI mapping to VLANs
+  Static VLAN to VNI mapping is 
+    [10, 1010]       
+  Note: All Dynamic VLANs used by VCS are internal VLANs.
+        Use 'show vxlan vni' for details.
+  Static VRF to VNI mapping is not configured
+  Headend replication flood vtep list is:
+    10 203.0.255.133 
+  Shared Router MAC is 0000.0000.0000
 
-The address of the Rendezvous Point for this group.
-rp-local (yes | no)	Indicates whether the multicast router itself is RP.
-rpf (IP%interface)	The Reverse Path Forwarding (RPF) indicates the router address and outgoing interface that a Join message for that group is directed to.
 
-Sub-menu: /routing pimsm uib-sg
-group (IPv4 | IPv6)	The multicast group address.
-instance (name)	Name of the PIM instance the multicast group is created on.
-keepalive (yes | no)	
-register (join | join-pending | prune)	
-rpf (IP%interface)	The Reverse Path Forwarding (RPF) indicates the router address and outgoing interface that a Join message for that group is directed to.
-source (IPv4 | IPv6)	The source IP address of the multicast group.
-spt-bit (yes | no)	
+localhost#show vxlan flood vtep vlan 10
+          VXLAN Flood VTEP Table
+--------------------------------------------------------------------------------
 
-The Shortest Path Tree (SPT) bit indicates whether forwarding is taking place on the (S,G) Shortest Path Tree or on the (*,G) tree. A router can have an (S,G) state and still be forwarding on a (*,G) state during the interval when the source-specific tree is being constructed. When SPT bit is false, only the (*,G) forwarding state is used to forward packets from S to G. When SPT bit is true, both (*,G) and (S,G) forwarding states are used.
+VLANS                            Ip Address
+-----------------------------   ------------------------------------------------
+10                              203.0.255.133  
+                                
 
 
 
-    Creado por Māris B., actualizado por última vez el may 30, 2022 1 min de lectura
+At this point we can try to ping host_3 from host_1:
+[admin@host_1] /interface> print 
+...
+1 R ether2  ether           1500  0C:50:85:84:00:01
 
-Routing stats.
+[admin@host_1] /ip/address> /ping 192.168.10.129
+  SEQ HOST                                     SIZE TTL TIME       STATUS                                                 
+    0 192.168.10.129                             56  64 17ms26us  
+    1 192.168.10.129                             56  64 13ms119us 
+    2 192.168.10.129                             56  64 17ms192us 
 
-
-/routing/stats/origin
-
-
-/routing/stats/process
-
-This menu allows to monitor debugging information of all the routing processes.
-[admin@rack1_b35_CCR1036] /routing/stats/process> print interval=1
-Columns: TASKS, PRIVATE-MEM-BLOCKS, SHARED-MEM-BLOCKS, PSS, RSS, VMS, RETIRED, ID, PID, RPID, PROCESS-TIME, KERNEL-TIME, CUR-BUSY, MAX-BUSY, CUR-CALC, MAX-CALC
- # TASKS                         PRIVATE-  SHARED-ME  PSS        RSS     VMS      RETIRED  ID       PID  RPID  PROCESS  KERNEL-TIME  CUR-BUSY  MAX-BUSY  CUR-CALC  MAX-CALC
- 0 routing tables                768.0KiB  1792.0KiB  2399.0KiB  6.4MiB  22.1MiB       34  main     317     0  2s260ms  1s940ms      10ms      170ms     20ms      1s210ms 
-   rib                                                                                                                                                                     
- 1 fib                           0         0          2263.0KiB  6.2MiB  22.3MiB           fib      351     1  250ms    1s720ms                1s210ms             1s210ms 
- 2 ospf                          256.0KiB  256.0KiB   2559.0KiB  6.6MiB  22.3MiB           ospf     384     1  4s710ms  5s210ms                20ms                20ms    
- 3 pimsm                         256.0KiB  0          2252.0KiB  5.8MiB  22.3MiB           pim      386     1  200ms    450ms                  10ms                10ms    
- 4 fantasy                       0         0          2031.0KiB  5.1MiB  22.3MiB           fantasy  388     1  270ms    390ms                  10ms                10ms    
- 5 configuration and reporting   0         512.0KiB   2351.0KiB  6.4MiB  22.3MiB           static   389     1  310ms    430ms                  10ms                10ms    
- 6 ldp                           256.0KiB  256.0KiB   2455.0KiB  6.4MiB  22.3MiB           mpls     387     1  340ms    350ms                  40ms                40ms    
-   Copy                                                                                                                                                                    
- 7 rip                           256.0KiB  0          2230.0KiB  5.7MiB  22.3MiB           rip      377     1  230ms    380ms                  10ms                10ms    
- 8 routing policy configuration  512.0KiB  512.0KiB   2355.0KiB  5.6MiB  22.3MiB           policy   358     1  240ms    390ms                  10ms                10ms    
- 9 BGP service                   512.0KiB  0          2592.0KiB  6.3MiB  22.3MiB           bgp      364     1  360ms    600ms                  10ms                10ms    
-10 BFD service                   256.0KiB  0          2206.0KiB  5.7MiB  22.3MiB           12       371     1  230ms    370ms                  10ms                10ms    
-11 BGP Input 111.11.0.1          512.0KiB  512.0KiB   2560.0KiB  6.4MiB  22.3MiB        1  22       679     1  140ms    350ms                  10ms                10ms    
-   BGP Output 111.11.0.1                                                                                                                                                   
-12 Global memory                           256.0KiB                                        global     0     0  
+host-3
+[admin@host_1] /interface> print 
+...
+1 R ether2  ether           1500  0C:74:39:88:00:01
 
 
 
-/routing/stats/step
+Now we should be able to see that EVPN is used to learn remote MAC addresses by looking at MACIP routes.
+
+If we look at routes on ros_leaf, we can see that router 203.0.255.128 sent the macip route for 0C:74:39:88:00:01 mac address which is the host_1 mac address located behind eos_leaf.
+
+Eos also sends MAC/IP binding which is used for arp/nd suppression. Unfortunately at the time of writing this article RouterOS does not have this functionality.
+[admin@ros_leaf_3] /routing/route> print where dst-address~"macip"    
+Flags: A - ACTIVE; b - BGP, e - EVPN
+Columns: DST-ADDRESS, GATEWAY, AFI, DISTANCE, SCOPE, TARGET-SCOPE, IMMEDIATE-GW
+   DST-ADDRESS                                                   GATEWAY        AFI   DISTANCE  SCOPE  TARGET-SCOPE  IMMEDIATE-GW      
+Ab [203.0.255.128:1010]macip:0|0C:74:39:88:00:01                 203.0.255.128  evpn        20     40            30  172.16.3.1%ether10
+ e [203.0.255.133:256]macip:0|0C:50:85:84:00:01                  203.0.255.133  evpn       200     40            10                    
+Ab [203.0.255.128:1010]macip:0|0C:74:39:88:00:01|192.168.10.129  203.0.255.128  evpn        20     40            30  172.16.3.1%ether10
+
+
+Arista allows additionally to see remotely learned mac addresses in "vxlan mac table" and "vlan mac-address table" includes local mac addresses as well:
+localhost#show bgp evpn route-type mac-ip detail 
+BGP routing table information for VRF default
+Router identifier 203.0.255.128, local AS number 65005
+BGP routing table entry for mac-ip 0c50.8584.0001, Route Distinguisher: 203.0.255.133:256
+ Paths: 1 available
+  65000 65003
+    203.0.255.133 from 203.0.255.138 (203.0.255.138)
+      Origin IGP, metric -, localpref 100, weight 0, tag 0, valid, external, best
+      Extended Community: Route-Target-AS:1010:1010 TunnelEncap:tunnelTypeVxlan
+      VNI: 0 ESI: 0000:0000:0000:0000:0000
+BGP routing table entry for mac-ip 0c74.3988.0001, Route Distinguisher: 203.0.255.128:1010
+ Paths: 1 available
+  Local
+    - from - (0.0.0.0)
+      Origin IGP, metric -, localpref -, weight 0, tag 0, valid, local, best
+      Extended Community: Route-Target-AS:1010:1010 TunnelEncap:tunnelTypeVxlan
+      VNI: 1010 ESI: 0000:0000:0000:0000:0000
+BGP routing table entry for mac-ip 0c74.3988.0001 192.168.10.129, Route Distinguisher: 203.0.255.128:1010
+ Paths: 1 available
+  Local
+    - from - (0.0.0.0)
+      Origin IGP, metric -, localpref -, weight 0, tag 0, valid, local, best
+      Extended Community: Route-Target-AS:1010:1010 TunnelEncap:tunnelTypeVxlan
+      VNI: 1010 ESI: 0000:0000:0000:0000:0000
+
+
+localhost#show vxlan address-table vlan 10
+          Vxlan Mac Address Table
+----------------------------------------------------------------------
+
+VLAN  Mac Address     Type      Prt  VTEP             Moves   Last Move
+----  -----------     ----      ---  ----             -----   ---------
+  10  0c50.8584.0001  EVPN      Vx1  203.0.255.133    1       1:30:49 ago
+Total Remote Mac Addresses for this criterion: 1
+
+
+
+localhost#show mac address-table vlan 10
+          Mac Address Table
+------------------------------------------------------------------
+
+Vlan    Mac Address       Type        Ports      Moves   Last Move
+----    -----------       ----        -----      -----   ---------
+  10    0c50.8584.0001    DYNAMIC     Vx1        1       1:31:17 ago
+  10    0c74.3988.0001    DYNAMIC     Et2        1       1 day, 23:45:18 ago
+Total Mac Addresses for this criterion: 2
+
+          Multicast Mac Address Table
+------------------------------------------------------------------
+
+Vlan    Mac Address       Type        Ports
+----    -----------       ----        -----
+Total Mac Addresses for this criterion: 0
+
+
+
+Bridged EVPN Overlay with Arista ESI LAG
+
+ESI-LAG (Ethernet Segment Identifier - Link Aggregation) or EVPN-LAG  is a networking concept that enables multihoming using EVPN (Ethernet Virtual Private Network) technology, where client devices (like access switches) can connect to core devices (like distribution switches) through multiple links, forming a logical LAG interface.
+Topology
+
+Lets extend the topology from the previous example. Host_2 is a RouterOS device with LACP enabled on links connecting to two ARISTA Leafs, forming active-active multihoming setup.
+
+
+Configuration Prerequisities
+
+On how to set up underly and EVPN overly configuration refer to example above. In this example we will focus on ESI LAG configuration and setup validation.
+
+
+Port Channel configuration
+
+Assuming that underly and overly is configured, and is up and running, we will proceed to port channel configuration on Arista switches:
+
+leaf_2 and leaf_4 config is exactly the same
+interface Port-Channel3
+   switchport access vlan 10
+   switchport trunk allowed vlan 10
+   switchport mode trunk
+   !
+   evpn ethernet-segment
+      identifier 0000:0000:0000:0333:3333
+      route-target import 00:00:03:33:33:33
+   lacp system-id 0000.0333.3333
+!
+interface Ethernet2
+   channel-group 3 mode active
+
+
+ros_host_2
+/interface bonding
+add mode=802.3ad name=bond1 slaves=ether2,ether3
+/interface vlan
+add interface=bond1 mtu=1496 name=vlan10 vlan-id=10
+/ip address
+add address=192.168.10.130/24 interface=vlan10
+
+
+Validate setup
+
+Now if we look at evpn routes we should see some new route types. Both Arista switches are advertising Type-1 AD routes and Type-4 Ethernet Segment (ES) routes to discover multihoming VTEPs 
+[admin@gns3_spine1_ros] /routing/route>  print where afi=evpn dst-address~"(ad|es)"
+Flags: A - ACTIVE; b - BGP
+Columns: DST-ADDRESS, GATEWAY, AFI, DISTANCE, SCOPE, TARGET-SCOPE
+   DST-ADDRESS                                                      GATEWAY        AFI   DISTANCE  SCOPE  TA
+Ab [203.0.255.127:1]ad:4294967295|00:00:00:00:00:00:03:33:33:33     203.0.255.127  evpn        20     40  30
+Ab [203.0.255.127:1]es:00:00:00:00:00:00:03:33:33:33|203.0.255.127  203.0.255.127  evpn        20     40  30
+Ab [203.0.255.127:1010]ad:0|00:00:00:00:00:00:03:33:33:33           203.0.255.127  evpn        20     40  30
+
+Ab [203.0.255.134:1]ad:4294967295|00:00:00:00:00:00:03:33:33:33     203.0.255.134  evpn        20     40  30
+Ab [203.0.255.134:1]es:00:00:00:00:00:00:03:33:33:33|203.0.255.134  203.0.255.134  evpn        20     40  30
+Ab [203.0.255.134:1010]ad:0|00:00:00:00:00:00:03:33:33:33           203.0.255.134  evpn        20     40  30
+
+
+
+If we check both Eos leafs, we will see that designated forwarder 203.0.255.127 (eos_leaf_4) is selected:
+eos_leaf_2#show bgp evpn instance vlan 10
+EVPN instance: VLAN 10
+  Route distinguisher: 203.0.255.134:1010
+  Route target import: Route-Target-AS:1010:1010
+  Route target export: Route-Target-AS:1010:1010
+  Service interface: VLAN-based
+  Local VXLAN IP address: 203.0.255.134
+  VXLAN: enabled
+  MPLS: disabled
+  Local ethernet segment:
+    ESI: 0000:0000:0000:0333:3333
+      Type: 0 (administratively configured)
+      Interface: Port-Channel3
+      Mode: all-active
+      State: up
+      ES-Import RT: 00:00:03:33:33:33
+      DF election algorithm: modulus
+      Designated forwarder: 203.0.255.127
+      Non-Designated forwarder: 203.0.255.134
+
+
+Lets suspend the link from host2 to eos_leaf_4 and see what happens:
+
+eos_leaf_2#show bgp evpn instance vlan 10
+EVPN instance: VLAN 10
+  Route distinguisher: 203.0.255.134:1010
+  Route target import: Route-Target-AS:1010:1010
+  Route target export: Route-Target-AS:1010:1010
+  Service interface: VLAN-based
+  Local VXLAN IP address: 203.0.255.134
+  VXLAN: enabled
+  MPLS: disabled
+  Local ethernet segment:
+    ESI: 0000:0000:0000:0333:3333
+      Type: 0 (administratively configured)
+      Interface: Port-Channel3
+      Mode: all-active
+      State: up
+      ES-Import RT: 00:00:03:33:33:33
+      DF election algorithm: modulus
+      Designated forwarder: 203.0.255.134
+
+
+
+[admin@spine1_ros] /routing/route>  print interval=1 where dst-address~"ad|es"
+Flags: A - ACTIVE; b - BGP
+Columns: DST-ADDRESS, GATEWAY, AFI, DISTANCE, SCOPE, TARGET-SCOPE
+   DST-ADDRESS                                                      GATEWAY        AFI   DISTANCE  SCOPE  TA
+Ab [203.0.255.134:1]ad:4294967295|00:00:00:00:00:00:03:33:33:33     203.0.255.134  evpn        20     40  30
+Ab [203.0.255.134:1]es:00:00:00:00:00:00:03:33:33:33|203.0.255.134  203.0.255.134  evpn        20     40  30
+Ab [203.0.255.134:1010]ad:0|00:00:00:00:00:00:03:33:33:33           203.0.255.134  evpn        20     40  30
+
+
+[admin@host_2] /interface/bonding> /ping 192.168.10.132 interval=500ms
+  SEQ HOST                                     SIZE TTL TIME       STATUS                                    
+    0 192.168.10.132                             56  64 2ms90us   
+    1 192.168.10.132                             56  64 2ms172us  
+    2 192.168.10.132                             56  64 2ms503us  
+    3 192.168.10.132                                               timeout                                   
+    4 192.168.10.132                                               timeout                                   
+    5 192.168.10.132                                               timeout                                   
+    6 192.168.10.132                             56  64 2ms191us  
+    7 192.168.10.132                             56  64 2ms31us   
+
+eos_leaf_2 became forwarder, eos_leaf_4 withdraw  ES and AD routes and traffic switched to other LACP link.
+
+
+
+
+
+
+
+    Creado por Oskars K., actualizado por última vez por Lība Klepecka el jun 02, 2025 21 min de lectura
+
+Scripting language manual
+
+This manual provides an introduction to RouterOS's built-in powerful scripting language.
+
+Scripting host provides a way to automate some router maintenance tasks by means of executing user-defined scripts bounded to some event occurrence.
+
+Scripts can be stored in the Script repository or can be written directly to the console. The events used to trigger script execution include, but are not limited to the System Scheduler, the Traffic Monitoring Tool, and the Netwatch Tool generated events.
+
+If you are already familiar with scripting in RouterOS, you might want to see our Tips & Tricks.
+Line structure
+
+The RouterOS script is divided into a number of command lines. Command lines are executed one by one until the end of the script or until a runtime error occurs.
+Command-line
+
+The RouterOS console uses the following command syntax:
+
+[prefix] [path] command [uparam] [param=[value]] .. [param=[value]]
+
+    [prefix] - ":" or "/" character which indicates if a command is ICE or path. It may not be required.
+    [path] - relative path to the desired menu level. It may not be required.
+    command - one of the commands available at the specified menu level.
+    [uparam] - unnamed parameter, must be specified if the command requires it.
+    [params] - a sequence of named parameters followed by respective values
+
+The end of the command line is represented by the token “;” or NEWLINE. Sometimes “;” or NEWLINE is not required to end the command line.
+
+Single command inside (), [] or {} does not require any end-of-command character. The end of the command is determined by the content of the whole script
+:if ( true ) do={ :put "lala" }
+
+Each command line inside another command line starts and ends with square brackets "[ ]" (command concatenation).
+:put [/ip route get [find gateway=1.1.1.1]]; 
+
+Notice that the code above contains three command lines:
+
+    :put
+    /ip route get
+    find gateway=1.1.1.1
+
+Command-line can be constructed from more than one physical line by following line joining rules.
+Physical Line
+
+A physical line is a sequence of characters terminated by an end-of-line (EOL) sequence. Any of the standard platform line termination sequences can be used:
+
+    Unix – ASCII LF;
+    Windows – ASCII CR LF;
+    mac – ASCII CR;
+
+Standard C conventions for newline characters can be used ( the \n character).
+Comments
+
+The following rules apply to a comment:
+
+    A comment starts with a hash character (#) and ends at the end of the physical line.
+    RouterOS does not support multiline comments.
+    If a # character appears inside the string it is not considered a comment.
+
+Example
+# this is a comment 
+# next line comment
+:global a; # another valid comment
+
+:global myStr "part of the string # is not a comment"
+Line joining
+
+Two or more physical lines may be joined into logical lines using the backslash character (\).
+
+The following rules apply to using backslash as a line-joining tool:
+
+    A line ending in a backslash cannot carry a comment.
+    A backslash does not continue a comment.
+    A backslash does not continue a token except for string literals.
+    A backslash is illegal elsewhere on a line outside a string literal.
+
+Example
+:if ($a = true \
+	and $b=false) do={ :put "$a $b"; } 
+:if ($a = true \ # bad comment 
+	and $b=false) do={ :put "$a $b"; }
+# comment \
+	continued - invalid (syntax error)
+Whitespace between tokens
+
+Whitespace can be used to separate tokens. Whitespace is necessary between two tokens only if their concatenation could be interpreted as a different token. Example:
+{  
+	:local a true; :local b false;
+# whitespace is not required 
+	:put (a&&b); 
+# whitespace is required  
+	:put (a and b); 
+}
+
+Whitespace characters are not allowed
+
+    between '<parameter>='
+    between 'from=' 'to=' 'step=' 'in=' 'do=' 'else='
+
+Example:
+#incorrect: 
+:for i from = 1 to = 2 do = { :put $i } 
+#correct syntax: 
+:for i from=1 to=2 do={ :put $i } 
+:for i from= 1 to= 2 do={ :put $i } 
+
+#incorrect 
+/ip route add gateway = 3.3.3.3 
+#correct 
+/ip route add gateway=3.3.3.3
+Scopes
+
+Variables can be used only in certain regions of the script called scopes. These regions determine the visibility of the variable. There are two types of scopes - global and local. A variable declared within a block is accessible only within that block and blocks enclosed by it, and only after the point of declaration.
+Global scope
+
+Global scope or root scope is the default scope of the script. It is created automatically and can not be turned off.
+Previously set global variable can be used in scripts by declaring it without setting the value.
+Local scope
+
+User can define their own groups to block access to certain variables, these scopes are called local scopes. Each local scope is enclosed in curly braces ("{ }").
+{  
+	:local a 3;
+	{  
+		:local b 4;  
+		:put ($a+$b); 
+	} #line below will show variable b in light red color since it is not defined in scope  
+	:put ($a+$b); 
+}
+
+In the code above variable, b has local scope and will not be accessible after a closing curly brace.
+Each line written in the terminal is treated as local scope
+
+So for example, the defined local variable will not be visible in the next command line and will generate a syntax error
+
+[admin@MikroTik] > :local myVar a;
+[admin@MikroTik] > :put $myVar
+syntax error (line 1 column 7)
+
+Do not define global variables inside local scopes.
+
+Note that even variable can be defined as global, it will be available only from its scope unless it is not referenced to be visible outside of the scope.
+{  
+	:local a 3; 
+	{  
+		:global b 4; 
+	}  
+	:put ($a+$b); 
+}
+
+The code above will output 3, because outside of the scope b is not visible. 
+
+The following code will fix the problem and will output 7:
+{  
+	:local a 3; 
+	{  
+		:global b 4; 
+	}
+	:global b;  
+	:put ($a+$b); 
+}
+
+
+Keywords
+
+The following words are keywords and cannot be used as variable and function names:
+
+and       or       in
+
+Delimiters
+
+The following tokens serve as delimiters in the grammar:
+
+()  []  {}  :   ;   $   / 
+
+Data types
+
+RouterOS scripting language has the following data types:
+num (number)	- 64bit signed integer, possible hexadecimal input;
+bool (boolean)	- values can bee true or false;
+str (string)	- character sequence;
+ip	- IP address;
+ip-prefix	- IP prefix;
+ip6	- IPv6 address
+ip6-prefix	- IPv6 prefix
+id (internal ID)	- hexadecimal value prefixed by '*' sign. Each menu item has an assigned unique number - internal ID;
+time	- date and time value;
+array	- sequence of values organized in an array;
+nil	- default variable type if no value is assigned;
+Constant Escape Sequences
+
+Following escape sequences can be used to define certain special characters within a string:
+\"	Insert double quote
+\\	Insert backslash
+\n	Insert newline
+\r	Insert carriage return
+\t	Insert horizontal tab
+\$	Output $ character. Otherwise, $ is used to link the variable.
+\?	Output ? character. Otherwise ? is used to print "help" in the console. Removed since v7.1rc2
+\_	- space
+\a	- BEL (0x07)
+\b	- backspace (0x08)
+\f	- form feed (0xFF)
+\v	Insert vertical tab
+\xx	A print character from hex value. Hex numbers should use capital letters.
+Example
+
+:put "\48\45\4C\4C\4F\r\nThis\r\nis\r\na\r\ntest";
+
+which will show on the display
+HELLO
+This
+is
+a
+test
+Operators
+Arithmetic Operators
+
+Usual arithmetic operators are supported in the RouterOS scripting language
+"+"	binary addition	:put (3+4);
+"-"	binary subtraction	:put (1-6);
+"*"	binary multiplication	:put (4*5);
+"/"	binary division	:put (10 / 2); :put ((10)/2)
+"%"	modulo operation	:put (5 % 3);
+"-"	unary negation	{ :local a 1; :put (-a); }
+
+Note: for the division to work you have to use braces or spaces around the dividend so it is not mistaken as an IP address
+Relational Operators
+"<"	less	:put (3<4);
+">"	greater	:put (3>4);
+"="	equal	:put (2=2);
+"<="	less or equal	
+">="	greater or equal	
+"!="	not equal	
+
+To negate an expression, you can use "expression=false". To print all interfaces that are not "ethernet", you can use expression negation like this:
+/interface/print where (name~"ether")=false
+
+Or to do the opposite, you can use "expression=true":
+/interface/print where (name~"ether")=true
+Logical Operators
+“!”	logical NOT	:put (!true);
+“&&”, “and”	logical AND	:put (true&&true)
+“||”, “or”	logical OR	:put (true||false);
+“in”	
+	:put (1.1.1.1/32 in 1.0.0.0/8);
+Bitwise Operators
+
+Bitwise operators are working on number, IP, and IPv6 address data types.
+“~”	bit inversion	:put (~0.0.0.0)
+:put (~::ffff)
+“|”	bitwise OR. Performs logical OR operation on each pair of corresponding bits. In each pair the result is “1” if one of the bits or both bits is “1”, otherwise the result is “0”.	:put (192.168.88.0|0.0.0.255)
+:put (2001::1|::ffff)
+“^”	bitwise XOR. The same as OR, but the result in each position is “1” if two bits are not equal, and “0” if the bits are equal.	:put (1.1.1.1^255.255.0.0)
+:put (2001::ffff:1^::ffff:0)
+“&”	bitwise AND. In each pair, the result is “1” if the first and second bit is “1”. Otherwise, the result is “0”.	:put (192.168.88.77&255.255.255.0)
+:put (2001::1111&ffff::)
+“<<”	left shift by a given amount of bits, not supported for IPv6 address data type	:put (192.168.88.77<<8)
+“>>”	right shift by a given amount of bits, not supported for IPv6 address data type	:put (192.168.88.77>>24)
+
+Calculate the subnet address from the given IP and CIDR Netmask using the "&" operator:
+{ 
+:local IP 192.168.88.77; 
+:local CIDRnetmask 255.255.255.0; 
+:put ($IP&$CIDRnetmask); 
+}
+
+Get the last 8 bits from the given IP addresses:
+ :put (192.168.88.77&0.0.0.255);
+
+Use the "|" operator and inverted CIDR mask to calculate the broadcast address:
+{ 
+:local IP 192.168.88.77; 
+:local Network 192.168.88.0; 
+:local CIDRnetmask 255.255.255.0; 
+:local InvertedCIDR (~$CIDRnetmask); 
+:put ($Network|$InvertedCIDR) 
+}
+Concatenation Operators
+"."	concatenates two strings	:put ("concatenate" . " " . "string");
+","	concatenates two arrays or adds an element to the array	:put ({1;2;3} , 5 );
+
+It is possible to add variable values to strings without a concatenation operator:
+:global myVar "world"; 
+
+:put ("Hello " . $myVar); 
+# next line does the same as above 
+:put "Hello $myVar";
+
+By using $[] and $() in the string it is possible to add expressions inside strings:
+:local a 5; 
+:local b 6; 
+:put " 5x6 = $($a * $b)"; 
+
+:put " We have $[ :len [/ip route find] ] routes";
+Other Operators
+
+
+“[]”	command substitution. Can contain only a single command line	:put [ :len "my test string"; ];
+“()”	subexpression or grouping operator	:put ( "value is " . (4+5));
+“$”	substitution operator	:global a 5; :put $a;
+“~”	the binary operator that matches value against POSIX extended regular expression	Print all routes whose gateway ends with 202:
+/ip route print where gateway~"^[0-9 \\.]*202\$"
+“->”	Get an array element by key	
+
+[admin@x86] >:global aaa {a=1;b=2}
+[admin@x86] > :put ($aaa->"a")
+1
+[admin@x86] > :put ($aaa->"b")
+2
+
+Variables
+
+The scripting language has two types of variables:
+
+    global - accessible from all scripts created by the current user, defined by global keyword;
+    local - accessible only within the current scope, defined by local keyword.
+
+There can be undefined variables. When a variable is undefined, the parser will try to look for variables set, for example, by DHCP lease-script or Hotspot on-login
+
+Every variable, except for built-in RouterOS variables, must be declared before usage by local or global keywords. Undefined variables will be marked as undefined and will result in a compilation error. Example:
+# following code will result in compilation error, because myVar is used without declaration 
+:set myVar "my value"; 
+:put $myVar
+
+Correct code:
+:local myVar; 
+:set myVar "my value"; 
+:put $myVar;
+
+The exception is when using variables set, for example, by DHCP lease-script
+/system script 
+add name=myLeaseScript policy=\ 
+	ftp,reboot,read,write,policy,test,winbox,password,sniff,sensitive,api \ 
+	source=":log info \$leaseActIP\r\ 
+	\n:log info \$leaseActMAC\r\ 
+	\n:log info \$leaseServerName\r\ 
+	\n:log info \$leaseBound" 
+
+/ip dhcp-server set myServer lease-script=myLeaseScript
+
+Valid characters in variable names are letters and digits. If the variable name contains any other character, then the variable name should be put in double quotes. Example:
+#valid variable name 
+:local myVar; 
+#invalid variable name 
+:local my-var; 
+#valid because double quoted 
+:global "my-var";
+
+If a variable is initially defined without value then the variable data type is set to nil, otherwise, a data type is determined automatically by the scripting engine. Sometimes conversion from one data type to another is required. It can be achieved using data conversion commands. Example:
+#convert string to array 
+:local myStr "1,2,3,4,5"; 
+:put [:typeof $myStr]; 
+:local myArr [:toarray $myStr]; 
+:put [:typeof $myArr]
+
+Variable names are case-sensitive.
+:local myVar "hello" 
+# following line will generate error, because variable myVAr is not defined 
+:put $myVAr 
+# correct code 
+:put $myVar
+
+Set command without value will un-define the variable (remove from environment, new in v6.2)
+#remove variable from environment 
+:global myVar "myValue" 
+:set myVar;
+
+Use quotes on the full variable name when the name of the variable contains operators. Example:
+:local "my-Var";
+:set "my-Var" "my value";
+:put $"my-Var";
+Reserved variable names
+
+All built-in RouterOS properties are reserved variables. Variables that will be defined the same as the RouterOS built-in properties can cause errors. To avoid such errors, use custom designations.
+
+For example, the following script will not work:
+{ 
+:local type "ether1"; 
+/interface print where name=$type; 
+}
+
+But will work with different defined variables:
+ { 
+:local customname "ether1"; 
+/interface print where name=$customname; 
+}
+Commands
+Global commands
+
+Every global command should start with the ":" token, otherwise, it will be treated as a variable.
+/	
+	go to the root menu	
+..	
+	go back by one menu level	
+?	
+	list all available menu commands and brief descriptions	
+global	:global <var> [<value>]	define a global variable	:global myVar "something"; :put $myVar;
+local	:local <var> [<value>]	define the local variable	{ :local myLocalVar "I am local"; :put $myVar; }
+beep	:beep frequency=[num] length=[num]	beep built-in speaker	
+convert	:convert from=[arg] to=[arg]	
+
+Converts specified value from one format to another. By default uses an automatically parsed value, if the "from" format is not specified (for example, "001" becomes "1", "10.1" becomes "10.0.0.1", etc.).
+
+from specifies the format of the value - base32, base64, byte-array, hex, num, raw, url.
+
+to specifies the format of the output value - base32, base64, bit-array-lsb, bit-array-msb, byte-array, hex, num, raw, url.
+
+transform to transform values - lc (transforms value to be in lowercases), uc (uppercases), lcfirst (first value to lowercase), ucfirst (first value to uppercase), crlf, ed25519-private-to-x25519-private, none, rot 13, x25519-private-to-x25519-public, ed25519-private-to-ed25519-public, ed25519-public-to-x25519-public, md5, reverse (reverses text), sha512.
+	
+
+:put [:convert 001 to=hex ]
+
+31
+
+:put [:convert [/ip dhcp-client/option/get hostname raw-value] from=hex to=raw ]
+
+MikroTik
+
+:put [convert transform=lc "AAA"]         
+
+aaa
+delay	:delay <time>	do nothing for a given period of time	
+environment	:environment print <start>	print initialized variable information	:global myVar true; :environment print;
+error	:error <output>	Generate console error and stop executing the script	
+execute	:execute <expression>	
+
+Execute the script in the background. The result can be written in the file by setting a "file" parameter or printed to the CLI by setting "as-string".
+
+When using the "as-string" parameter executed script is blocked (not executed in the background).
+
+Executed script can not be larger than 64kB
+	
+{
+:local j [:execute {/interface print follow where [:log info ~Sname~]}];
+:delay 10s;
+:onerror e {/system script job remove $j}
+}
+find	:find <arg> <arg> <start>	return position of a substring or array element	:put [:find "abc" "a" -1];
+grep	:grep script=[str] pattern=[expression] after=[num] before=[num] filename=[str]
+
+	Command ":grep" executes "script" part of a command in terminal and provides just the output which matches "pattern". Additional options "after" and "before" allow to print out specific number of lines of script output which are available also after/before matched pattern. Results can be directly saved into a file with "filename" parameter.	
+
+:grep script="/interface print" pattern="ether" after=1 before=1 filename=results.txt
+jobname
+	:jobname	return current script name	
+Limit script execution to single instance
+:if ([/system script job print count-only as-value where script=[:jobname] ] > 1) do={
+  :error "script instance already running"
+  }
+
+
+len	:len <expression>	return string length or array element count	:put [:len "length=8"];
+log	:log <topic> <message>	write a message to the system log. Available topics are "debug, error, info and warning"	:log info "Hello from script";
+onerror	:onerror <var_name> in={<command>} do={<expression>}	
+
+The command used to catch errors and get error details. The do={...} block is executed, when in={...} block has an error,  and error details are written in <var_name> variable. 
+
+Parameter order is important. The "error" parameter must be set before "do" block, otherwise do block will not see the local variable. 
+
+
+:onerror will return false (if there is no error) and true (if there is an error) unless otherwise specified (with commands such as :return or :error), so it can be used in :if condition statement scripts.
+	 :onerror errorName in={ :error "failure" } do={ :put "Critical $errorName" }
+parse	:parse <expression>	parse the string and return parsed console commands. Can be used as a function.	:global myFunc [:parse ":put hello!"];
+$myFunc;
+pick	:pick <var> <start> [<end>]	
+
+return range of elements or substring. If the count is not specified, will return only one element from an array.
+
+    var - value to pick elements from
+    start - element to start picking from (the first element index is 0)
+    end - terminating index (element at this index is not included)
+
+	
+
+
+[admin@MikroTik] > :put [:pick "abcde" 1 3]
+bc
+
+
+put	:put <expression>	put the supplied argument into the console	:put "Hello world"
+range	:range <var> <var>	creates an array from the specified range	
+
+:put [:range 2 8]
+2;3;4;5;6;7;8
+
+resolve	:resolve <arg> [<domain-name>][<server>][<server-port>][<type>]	
+
+return the IP address of the given DNS name
+
+    domain-name - DNS name that needs to be resolved;
+    server - specific server that will be used to resolve DNS name (returned results will not be cached);
+    server-port - server port;
+    type - any/any6/ipv4/ipv6:
+        any - first tries to resolve ipv4, if fails tries ipv6;
+        any6 - first tries to resolve ipv6, if fails tries ipv4;
+        ipv4 - tries to resolve only ipv4;
+        ipv6 - tries to resolve only ipv6
+
+	
+
+:put [:resolve "www.mikrotik.com"];
+
+:put [:resolve domain-name="www.mikrotik.com"];
+
+:put [:resolve domain-name="www.mikrotik.com" server=192.168.88.1 port=53];
+
+:put [:resolve domain-name="www.mikrotik.com" type=ipv6];
+retry	
+
+:onerror e {:retry command=<expr> delay=[num] max=[num]} do={<expr>}
+	Try to execute the given command "max" amount of times with a given "delay" in seconds between tries. On failure, execute the command in the do={} block.	
+:onerror e {:retry command={abc} delay=1 max=2} do={:put "got error"}
+got error
+typeof	:typeof <var>	the return data type of variable	:put [:typeof 4];
+rndnum	:rndnum from=[num] to=[num]	random number generator	:put [:rndnum from=1 to=99];
+rndstr	:rndstr from=[str] length=[num]	
+
+Random string generator.
+
+from specifies characters to construct the string from and defaults to all ASCII letters and numerals.
+length specifies the length of the string to create and defaults to 16.
+	
+
+:put [:rndstr from="abcdef%^&" length=33];
+
+
+
+set	:set <var> [<value>]	assign value to a declared variable.	:global a; :set a true;
+serialize	:serialize [<value>] to=[arg]	
+
+Serialize specified value/array to JSON or dsv (delimiter separated values) format.
+
+value specifues which values to process.
+
+to specifies the format - json, dsv
+
+delimiter sets the "separator".
+
+order specifies the order for variables.
+
+options specifies additional options:
+
+    json.pretty  - makes the JSON output more visually appealing;
+
+    json.no-string-conversion - prevents implict conversions from console string type to json number type;
+    dsv.wrap-strings - wraps string values inside quatation marks;
+    dsv.ignore-size - if array values have different sizes, e.g. a=(1,2);b=(3,4);c=(5,6,7), this option will work around array size mismatch error and set "empty" values in those slots.
+    dsv.remap - merges array of dictionaries into a single dictionary (useful when working with "print as-value")
+
+file-name enables the option to generate command's output into a file (available for download in the "/files" section).
+	
+
+
+:put [:serialize value=a,b,c to=json]                 
+["a","b","c"]
+
+:local test {a=(1,2,3);b=(4,5,6);c=(7,"text",9)}; :put [ :serialize to=dsv delimiter=";" value=$test order=("c","a","b") ]     
+c;a;b
+7;1;4
+text;2;5
+9;3;6
+
+:global var ({ "string"="1234"; "number"=1234 });:put [ :serialize to=json value=$var ]
+{"number":1234,"string":1234.000000}
+:put [ :serialize to=json value=$var options=json.no-string-conversion  ]
+{"number":1234,"string":"1234"}
+
+:put [:serialize to=dsv options=dsv.remap delimiter="#" [/ip/address/print as-value]]  
+.id#address#comment#interface#network
+*1#192.168.88.1/24#defconf#bridge#192.168.88.0
+*2#192.168.69.190/24##ether1#192.168.69.0
+
+
+deserialize	:deserialize [<value>] from=[arg]	
+
+Deserialize specified value/array from JSON or dsv (delimiter separated values) format.
+
+from specifies the format - json, dsv
+
+delimiter sets the "separator".
+
+options specifies additional options:
+
+    dsv.plain - deserializes every line as an array (input does not have a header or column names);
+    dsv.array - expects a header (column names) and will return an array of dictionaries, where values are mapped to column names provided in the header.
+    json.no-string-conversion - prevents implicit conversions from json string type to console values (number, ip, etc.).
+
+	
+:put [:deserialize from=json value="[\"a\",\"b\",\"c\"]"]
+a;b;c
+
+:put ([ :deserialize from=dsv delimiter=";" value="a;b;c\n1;findme;3" options=dsv.plain ]->1->1) 
+findme
+
+:put ([ :deserialize from=dsv delimiter=";" value="a;b;c\n1;findme;3" options=dsv.plain ]->0->1)   
+b
+
+:put ([:deserialize from=dsv "a;b;c\n1;2;3\n4;5;6" delimiter=";" options=dsv.array]->1->"b") 
+5
+
+:put ([:deserialize from=dsv "a;b;c\n1;2;3\n4;5;6" delimiter=";" options=dsv.array]->0->"c")    
+3
+
+:put [typeof ([:deserialize "{ \"str\": \"123\" }" from=json options=json.no-string-conversion]->"str")]
+str
+
+:deserialize [/file/get file.json contents] from=json
+time	:time <expression>	return interval of time needed to execute the command	:put [:time {:for i from=1 to=10 do={ :delay 100ms }}];
+timestamp	:timestamp	returns the time since epoch, where epoch is January 1, 1970 (Thursday), not counting leap seconds	
+[admin@MikroTik] > :put [:timestamp]
+2735w21:41:43.481891543
+or
+[admin@MikroTik] > :put [:timestamp]
+2735w1d21:41:43.481891543
+with the day offset
+toarray	:toarray <var>	convert a variable to the array	
+tobool	:tobool <var>	convert a variable to boolean	
+toid	:toid <var>	convert a variable to internal ID	
+toip	:toip <var>	convert a variable to IP address	
+toip6	:toip6 <var>	convert a variable to IPv6 address	
+tonum	:tonum <var>	convert a variable to an integer	
+tostr	:tostr <var>	convert a variable to a string	
+totime	:totime <var>	convert a variable to time	
+tonsec	:tonsec <var>	convert time to nanoseconds	
+
+:put [:tonsec value=10:00]               
+36000000000000
+
+tocrlf	:tocrlf <var>	converts line endings to CRLF	
+
+:put [:tocrlf  "AAA\r\nBBB\r\nCCC" ]                                                                                                             
+AAA                                              
+BBB
+CCC
+
+tolf	:tolf <var>	converts line endings to LF	
+
+:put [:tolf  "AAA\nBBB\nCCC" ]      
+AAA
+   BBB
+      CCC
+
+nothing	:nothing	return a value of nothing	
+
+:if ([:nothing] = 0) do={:put true} else={:put false}
+false
+:if ([:nothing] > 0) do={:put true} else={:put false} 
+false
+:if ([:nothing] < 0) do={:put true} else={:put false} 
+true
+
+Menu specific commands
+Common commands
+
+The following commands are available from most sub-menus:
+add	add <param>=<value>..<param>=<value>	add new item
+remove	remove <id>	remove selected item
+enable	enable <id>	enable selected item
+disable	disable <id>	disable selected item
+set	set <id> <param>=<value>..<param>=<value>	change selected items parameter, more than one parameter can be specified at the time. The parameter can be unset by specifying '!' before the parameter.
+
+Example:
+/ip firewall filter add chain=blah action=accept protocol=tcp port=123 nth=4,2
+print
+set 0 !port chain=blah2 !nth protocol=udp
+get	get <id> <param>=<value>	get the selected item's parameter value
+print	print <param><param>=[<value>]	print menu items. Output depends on the print parameters specified. The most common print parameters are described here
+export	export [file=<value>]	export configuration from the current menu and its sub-menus (if present). If the file parameter is specified output will be written to the file with the extension '.rsc', otherwise the output will be printed to the console. Exported commands can be imported by import command
+edit	edit <id> <param>	edit selected items property in the built-in text editor
+find	find <expression>	Returns list of internal numbers for items that are matched by given expression. For example:  :put [/interface find name~"ether"]
+import
+
+The import command is available from the root menu and is used to import configuration from files created by an export command or written manually by hand.
+
+Starting from 7.16.x version, its possible to catch syntax errors:
+[admin@admin] > do { import test.rsc } on-error={ :put "Failure" }  
+Failure
+
+New parameter onerror can be used:
+[admin@admin] > onerror e in={ import test.rsc } do={ :put "Failure - $e" }       
+Failure - Script Error: bad command name this (line 1 column 1)
+
+In addition, the import command has new options in verbose mode - the dry-run parameter is specially designed for debugging and can find multiple errors without changing the configuration.
+[admin@admin] > import test.rsc verbose=yes dry-run 
+#line 1
+this
+bad command name this (line 1 column 1)
+...
+Script Error: found 5 error(s) in import file
+print parameters
+
+Several parameters are available for print command:
+append	
+	
+as-value	print output as an array of parameters and its values	:put [/ip address print as-value]
+brief	print brief description	
+detail	print detailed description, the output is not as readable as brief output but may be useful to view all parameters	
+count-only	print only count of menu items	
+file	print output to a file	
+follow	print all current entries and track new entries until ctrl-c is pressed, very useful when viewing log entries	/log print follow
+follow-only	print and track only new entries until ctrl-c is pressed, very useful when viewing log entries	/log print follow-only
+from	print parameters only from specified item	/user print from=admin
+interval	continuously print output in a selected time interval, useful to track down changes where follow is not acceptable	/interface print interval=2
+terse	show details in a compact and machine-friendly format	
+value-list	show values single per line (good for parsing purposes)	
+without-paging	If the output does not fit in the console screen then do not stop, print all information in one piece	
+where	expressions followed by where parameters can be used to filter outmatched entries	
+
+/ip route print where interface="ether1"
+about	returns entries that have the "about" parameter, such as "managed by CAPsMAN "information or warnings	
+
+/interface wifi print where about
+
+More than one parameter can be specified at a time, for example, /ip route print count-only interval=1 where interface="ether1"
+Loops and conditional statements
+Loops
+do..while	:do { <commands> } while=( <conditions> ); :while ( <conditions> ) do={ <commands> };	execute commands until a given condition is met.
+for	:for <var> from=<int> to=<int> step=<int> do={ <commands> }	execute commands over a given number of iterations
+foreach	:foreach <var> in=<array> do={ <commands> };	execute commands for each element in a list
+Conditional statement
+if	:if (<condition>) do={<commands>} else={<commands>}	If a given condition is true then execute commands in the do block, otherwise execute commands in the else block if specified.
+
+Example:
+{  
+	:local myBool true;  
+	:if ($myBool = false) do={ :put "value is false" } else={ :put "value is true" } 
+}
+Functions
+
+Scripting language does not allow you to create functions directly, however, you could use :parse command as a workaround.
+
+Starting from v6.2 new syntax is added to easier define such functions and even pass parameters. It is also possible to return function value with :return command.
+
+See examples below:
+#define function and run it
+:global myFunc do={:put "hello from function"}
+$myFunc
+
+output:
+hello from function
+
+#pass arguments to the function
+:global myFunc do={:put "arg a=$a"; :put "arg '1'=$1"} 
+$myFunc a="this is arg a value" "this is arg1 value"
+
+output:
+arg a=this is arg a value
+arg '1'=this is arg1 value
+
+Notice that there are two ways how to pass arguments:
+
+    pass arg with a specific name ("a" in our example)
+    pass value without arg name, in such case arg "1", "2" .. "n" is used.
+
+Return example
+:global myFunc do={ :return ($a + $b)} 
+:put [$myFunc a=6 b=2] 
+
+output: 
+8
+
+You can even clone an existing script from the script environment and use it as a function.
+#add script
+/system script add name=myScript source=":put \"Hello $myVar !\""
+
+:global myFunc [:parse [/system script get myScript source]]
+$myFunc myVar=world
+
+output:
+Hello world !
+If the function contains a defined global variable that names match the name of the passed parameter, then the globally defined variable is ignored, for compatibility with scripts written for older versions. This feature can change in future versions. Avoid using parameters with the same name as global variables.
+
+For example:
+:global my2 "123" 
+
+:global myFunc do={ :global my2; :put $my2; :set my2 "lala"; :put $my2 } 
+$myFunc my2=1234 
+:put "global value $my2"
+
+The output will be:
+
+1234
+lala
+global value 123
+
+Nested function example
+
+Note: to call another function its name needs to be declared (the same as for variables)
+:global funcA do={ :return 5 } 
+:global funcB do={  
+	:global funcA;  
+	:return ([$funcA] + 4) 
+} 
+:put [$funcB] 
+
+Output: 
+9
+Catch run-time errors
+
+Starting from v6.2 scripting has the ability to catch run-time errors.
+
+For example, the [code]:reslove[/code] command if failed will throw an error and break the script.
+
+[admin@MikroTik] > { :put [:resolve www.example.com]; :put "lala";}
+failure: dns name does not exist
+
+Now we want to catch this error and proceed with our script:
+:onerror e {:put [:resolve www.example.com]} do={:put "resolver failed"}
+:put "lalala"
+
+output: 
+
+resolver failed 
+lala
+Operations with Arrays
+
+Warning: Key name in the array contains any character other than a lowercase character, it should be put in quotes
+
+For example:
+[admin@ce0] > {:local a { "aX"=1; ay=2 }; :put ($a->"aX")} 
+1
+
+Loop through keys and values
+
+"foreach" command can be used to loop through keys and elements:
+[admin@ce0] > :foreach k,v in={2; "aX"=1; y=2; 5} do={:put ("$k=$v")} 
+
+0=2 
+1=5 
+aX=1 
+y=2
+
+If the "foreach" command is used with one argument, then the element value will be returned:
+[admin@ce0] > :foreach v in={2; "aX"=1; y=2; 5} do={:put ("$v")} 
+
+2 
+5 
+1 
+2
+
+Note: If the array element has a key then these elements are sorted in alphabetical order, elements without keys are moved before elements with keys and their order is not changed (see example above).
+
+Change the value of a single array element
+
+[admin@MikroTik] > :global a {x=1; y=2}
+[admin@MikroTik] > :set ($a->"x") 5 
+[admin@MikroTik] > :environment print 
+a={x=5; y=2}
+
+Script repository
+
+Sub-menu level: /system script
+
+Contains all user-created scripts. Scripts can be executed in several different ways:
+
+    on event - scripts are executed automatically on some facility events ( scheduler, netwatch, VRRP)
+    by another script - running script within the script is allowed
+    manually - from console executing a run command or in winbox
+
+
+Only scripts (including schedulers, netwatch, etc) with equal or higher permission rights can execute other scripts.
+
+
+When executing script from GUI or CLI, user permissions are used. To run a script with script permissions, a script must be executed from CLI with additional "use-script-permissions" parameter.
+
+
+comment (string; Default: )	Descriptive comment for the script
+dont-require-permissions (yes | no; Default: no)	Bypass permissions check when the script is being executed, useful when scripts are being executed from services that have limited permissions, such as Netwatch
+name (string; Default: "Script[num]")	name of the script
+policy (string; Default: ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon)	list of applicable policies:
+
+    ftp - can log on remotely via FTP and send and retrieve files from the router
+    password - change passwords
+    policy - manage user policies, add and remove user
+    read - can retrieve the configuration
+    reboot - can reboot the router
+    sensitive - allows changing "hide sensitive" parameter
+    sniff - can run sniffer, torch, etc
+    test - can run ping, traceroute, bandwidth test
+    write - can change the configuration
+
+Read more detailed policy descriptions here
+source (string;)	Script source code
+
+Read-only status properties:
+last-started (date)	Date and time when the script was last invoked.
+owner (string)	The user who created the script
+run-count (integer)	Counter that counts how many times the script has been executed
+
+Menu specific commands
+run (run [id|name])	
+
+Execute the specified script by ID or name using user permissions.
+use-script-permissions	
+
+Additional parameter to execute script using script permissions.
+Environment
+
+Sub-menu level:
+
+    /system script environment
+    /environment
+
+Contains all user-defined variables and their assigned values.
+
+[admin@MikroTik] > :global example;
+[admin@MikroTik] > :set example 123
+[admin@MikroTik] > /environment print  
+"example"=123
+
+
+Read-only status properties:
+name (string)	Variable name
+user (string)	The user who defined variable
+value ()	The value assigned to a variable
+Job
+
+Sub-menu level: /system script job
+
+Contains a list of all currently running scripts.
+Read-only status properties:
+owner (string)	The user who is running the script
+policy (array)	List of all policies applied to the script
+started (date)	Local date and time when the script was started
+See also
+
+    Scripting Examples
+    Manual: Scripting Tips and Tricks
+
+
+Videos on Scripting
+
+Scripting pt1
+
+Scripting pt2
+
+Scripting: Data Types
+
+Scripting: Arrays
+
 
