@@ -1,0 +1,272 @@
+
+
+    Creado por Māris B., actualizado por última vez por Serhii T. el feb 19, 2025 12 min de lectura
+
+    Overview
+    System Requirements
+    RouterOS license key levels
+        CHR License Levels
+        Prepaid Key
+    How to Purchase a RouterOS license key
+    How to Convert prepaid key to licence key for x86
+    Replacement Key
+    Obtaining Licenses and Working With Them
+        Where can I buy a RouterOS license key?
+        If I have purchased my key elsewhere
+        If I have a license and want to put it on another account?
+        If I have lost a license on my device?
+    Using the License
+        Can I Format or Re-Flash the drive?
+        How many computers can I use the License on?
+        Can I temporary use the HDD for something else, other than RouterOS?
+        Can I move the license to another HDD?
+        Must I type the whole key into the router?
+        Can I install another OS on my drive and then install RouterOS again later?
+        I lost my RouterBOARD, can you give me the license to use on another system?
+        Licenses Purchased from Resellers
+        I am not using the software, can you terminate my license?
+        Is this possible to upgrade or transfer my x86 license to a CHR license
+
+Overview
+
+MikroTik hardware routers that run RouterOS come preinstalled with a RouterOS license, if you have purchased a RouterOS based device, nothing must be done regarding the license.
+
+For X86 systems (i.e. PC devices), you need to obtain a license key. Each x86 system has a unique identifier called Software ID, which is used for licensing.
+
+The license key is a block of symbols that needs to be copied from your mikrotik.com account, or from the email you received in, and then it can be pasted into the router. You can paste the key anywhere in the terminal, or by clicking "Paste key" in WinBox License menu. A reboot is required for the key to take effect.
+
+RouterOS licensing scheme is based on Software ID / System ID where:
+
+    RouterBOARD Software ID is bound to storage media (HDD, NAND).
+    x86 Software ID is bound to MBR
+    CHR System ID is bound to MBR and UUID
+
+Before the license purchase it is recommended to check if the Software ID does not change on reboot. (Software ID may change on defective HDD, on HDD where RAID controllers are used but not properly configured etc.)
+
+Licensing information can be read from CLI system console:
+[admin@RB1100] > /system license print 
+    software-id: "43NU-NLT9"
+         nlevel: 6
+       features: 
+[admin@RB1100] >
+
+or from equivalent WinBox,  WebFig menu.
+System Requirements
+
+    Package version: RouterOS v6.34 or newer
+    Host CPU: x86-64 Architecture (64-bit)
+    RAM: 512MB or more
+    Disk: 128MB or more
+    RouterOS version 6: The maximum supported hard drive size is 16GB
+    RouterOS version 7: The maximum amount of RAM and disk space is limited by the Linux kernel 5.6.3 and depends on the specific hardware.
+
+The minimum required RAM depends on interface count and CPU count. You can get an approximate number by using the following formula:
+
+    RouterOS v6 - RAM = 128 + [ 8 × (CPU_COUNT) × (INTERFACE_COUNT - 1) ]
+    RouterOS v7 - RAM = 512 + [ 8 × (CPU_COUNT) × (INTERFACE_COUNT - 1) ]
+
+RouterOS license key levels
+
+After installation RouterOS runs in trial mode. You have 24 hours to register for Level 1 (Free demo) or purchase a Level 4,5 or 6 license and paste a valid key.
+[admin@MikroTik] /system license> print 
+  software-id: TRPC-YYR2
+   expires-in: 23h48m24s
+
+Level 3 is a wireless station (client or CPE) only license. For x86 PCs, Level3 is not available for purchase individually.
+
+Level 2 was a transitional license from old legacy (pre 2.8) license format. These licenses are not available any more, if you have this kind of license, it will work, but to upgrade it - you will have to purchase a new license.
+
+The difference between license levels is shown in the table below: 
+Price	no key	registration required	not for sale	$45	$95	$250
+Wireless AP mode (PtMP)	24h trial	-	no	yes	yes	yes
+PPPoE tunnels	24h trial	1	200	200	500	unlimited
+PPTP tunnels	24h trial	1	200	200	500	unlimited
+L2TP tunnels	24h trial	1	200	200	500	unlimited
+OVPN tunnels	24h trial	1	200	200	unlimited	unlimited
+EoIP tunnels	24h trial	1	unlimited	unlimited	unlimited	unlimited
+VLAN interfaces	24h trial	1	unlimited	unlimited	unlimited	unlimited
+Queue rules	24h trial	1	unlimited	unlimited	unlimited	unlimited
+HotSpot active users	24h trial	1	1	200	500	unlimited
+User manager active sessions	24h trial	1	10	20	50	Unlimited
+Bonding interfaces	24h trial	1	unlimited	unlimited	unlimited	unlimited
+RADIUS	24h trial	-	unlimited	unlimited	unlimited	unlimited
+
+All Licenses:
+
+    never expire (a running and licensed router can be used indefinitely)
+    can use unlimited number of interfaces
+    are for one installation each
+    offer unlimited software upgrades (exception - demo license does not allow ROS version upgrade (started from 7.8))
+
+CHR License Levels
+
+License levels described until now do not apply to Cloud Hosted Routers (CHRs). CHR is a RouterOS version intended for running as a virtual machine. It has its own 4 license levels as well as trial where you can test any of the paid license levels for 60 days.
+
+60-day free trial license is available for all paid license levels. To get the free trial license, you have to have an account on MikroTik.com as all license management is done there.
+
+Perpetual is a lifetime license (buy once, use forever). It is possible to transfer a perpetual license to another CHR instance. A running CHR instance will indicate the time when it has to access the account server to renew it's license. If the CHR instance will not be able to renew the license it will behave as if the trial period has ran out and will not allow an upgrade of RouterOS to a newer version.
+
+After licensing a running trial system, you must manually run the /system license renew command from the CHR to make it active. Otherwise the system will not know you have licensed it in your account. If you do not do this before the system deadline time, the trial will end and you will have to do a complete fresh CHR installation, request a new trial and then license it with the license you had obtained.
+Free	1Mbit	FREE	The free license level allows CHR to run indefinitely. It is limited to 1Mbps upload per interface. All the rest of the features provided by CHR are available without restrictions. To use this, all you have to do is download disk image file from our download page and create a virtual guest.
+P1	1Gbit	$45	
+
+P1 (perpetual-1) license level allows CHR to run indefinitely. It is limited to 1Gbps upload per interface. All the rest of the features provided by CHR are available without restrictions. It is possible to upgrade from P1 to P10 or P-Unlimited. Once the upgrade is purchased at the full price, the former license will become available for later use on your account.
+P10	10Gbit	$95	
+
+P10 (perpetual-10) license level allows CHR to run indefinitely. It is limited to 10Gbps upload per interface. All the rest of the features provided by CHR are available without restrictions. It is possible to upgrade from P10 to P-Unlimited. Once the upgrade is purchased at the full price, the former license will become available for later use on your account.
+P-Unlimited	Unlimited	
+
+$250
+	The p-unlimited (perpetual-unlimited) license level allows CHR to run indefinitely. It is the highest tier license and it has no enforced limitations.
+60-day Trial	
+	FREE	
+
+In addition to the limited Free installation, you can also test the increased speed of P1/P10/PU licenses with a 60 trial.
+
+You will have to have an account registered on MikroTik.com. Then you can request the desired license level for trial from your router that will assign your router ID to your account and enable a purchase of the license from your account. All the paid license equivalents are available for trial. A trial period is 60 days from the day of acquisition, after this time passes, your license menu will start to show "Limited upgrades", which means that RouterOS can no longer be upgraded.
+
+Note that if you plan to purchase the selected license, you must do it before 60 days trial ends. If your trial has ended, and there are no purchases within 2 months, the device will no longer appear in your MikroTik account. You will have to make a new CHR installation to make a purchase within the required time frame.
+
+To request a trial license, you must run the command "/system license renew" from the CHR device command line. You will be asked for the username and password of your mikrotik.com account.
+
+Warning: If you plan to use multiple virtual systems of the same kind, it may be possible that the next machine has the same SystemID as the original one. This can happen on certain cloud providers, such as Linode. To avoid this, after your first boot, run the command "/system license generate-new-id" before you request a trial license. Note that this feature must be used only while CHR is running on free type of RouterOS license. If you have already obtained paid or trial license, do not use regenerate feature since you will not be able to update your current key any more
+
+To use multiple virtual machines, download the disk image from our webpage, and make as many copies, as you need virtual machines. Then make new virtual machine system from each virtual disk image.
+
+Make sure to make copies of the Disk Image before you run or register the downloaded file.
+Prepaid Key
+
+A Prepaid Key is a type of license key you can purchase in advance for MikroTik products, such as the CHR, or convert into a license key to apply to an x86 system's Software ID. It allows you to buy a license without immediately assigning it to a specific device. Once you have a Prepaid Key, you can use it to upgrade a CHR or later convert it into a license key by providing the device's Software ID.
+How to Purchase a RouterOS license key
+
+    Go to mikrotik.com and log in to your account.
+
+    Access the "Purchase a RouterOS License Key" Section.
+    Choose the desired license Key Level;
+    Select Key Type "License key";
+
+    Enter License Key Information: Paste the Software ID of the device;
+    Select Optional Key Features:
+        Choose any additional features you might need for your key.
+    Press the "Place key in the cart" button.
+    Click "Proceed to checkout" to complete your purchase.
+
+Review and Complete Your Purchase
+
+    Review your order details.
+    Proceed with payment using Credit Card (CC) or PayPal.
+
+Congratulations! You have successfully purchased a RouterOS license key.
+How to Convert prepaid key to licence key for x86
+
+    Purchase a RouterOS Prepaid Key
+
+        Log in to your mikrotik.com account.
+
+        Purchase a RouterOS Prepaid key if you haven't already.
+
+    Access the "Make a Key from Prepaid Key" Section
+
+        Navigate to the "Make a key from prepaid key" section in your account.
+
+    Select and Convert the Prepaid Key
+
+        Select the desired prepaid key from the list.
+
+        Input the Software ID of the x86 device you need to license, or the Software ID of the router to upgrade the licence level.
+
+        Press "Generate".
+
+    Confirmation Message
+
+        A message will appear: "Successfully converted prepaid key to a new licence!".
+
+    Apply the License Key
+
+        Copy the generated license key.
+
+        Paste it into the x86 device to apply the license.
+
+Congratulations! You have successfully converted a prepaid key to a license key for your x86 device.
+Replacement Key
+
+A Replacement Key is a special key issued by the MikroTik support team in case of an x86 HDD failure or if an x86 instance running RouterOS has lost its license. It costs $10 and can be issued once per original key.
+
+Note that before issuing such key, MikroTik Support can ask you to prove that the old drive has failed, in some cases, this means sending us the dead drive.
+
+Replacement key request
+
+1) Go to your account management in mikrotik.com and fill the "support contact form" or write a direct e-mail to support@mikrotik.com
+
+    Provide Required Information:
+        Clearly explain why a replacement key is needed.
+        Include the Old Software ID and the account under which it was registered.
+
+2) Wait for Confirmation & Apply the Key:
+
+        After the MikroTik support team confirms that the Replacement key has been added to your account, check your account.
+        Navigate to "Make a key from replacement key" and proceed with the activation.
+
+3) Select the appropriate license level on which you wish to perform the replacement
+
+4) Enter the new "Software ID"
+
+5) Proceed to checkout by pressing "Add license replacement to cart" and finish the payment
+
+6) An e-mail will be sent to your profile containing the new license.
+
+    You can also find the newly generated key in the section "Search and view all keys" under the folder "Purchased YYYY" where "YYYY" is the current Year
+
+We may issue only one replacement key per one original key, using replacement key procedure twice for one key will not be possible. In cases like this new key for this RouterOS device must be purchased.
+Obtaining Licenses and Working With Them
+Where can I buy a RouterOS license key?
+
+MikroTik devices come preinstalled with a license and no purchase is needed.
+
+To obtain a higher level license, or to obtain a license for a x86 PC installation, you must register an account on our webpage, and in there, use the option Purchase a RouterOS license key.
+If I have purchased my key elsewhere
+
+You must contact the company who sold you the license, they will provide the support.
+If I have a license and want to put it on another account?
+
+You can give access to keys with the help of Virtual Folders
+
+The only kind of licenses, that could be transferred to another Account is a prepaid key. Prepaid keys got as a gift from the Training are not transferable.
+To transfer purchased prepaid key navigate to "Transfer prepaid keys" in the section "ROUTEROS KEYS" on your MikroTik Account.
+If I have lost a license on my device?
+
+If for some reason you have lost license from your router, upgrade router to the latest RouterOS version available and use "Request license key" in your mikrotik.com account. Use soft-id and serial number available under System/License menu in RouterOS when requesting license. Apply received license or contact support@mikrotik.com if request feature do not work.
+
+If the license was lost due to repairs and they were not done via the distributor under warranty, you will have to purchase a new RouterOS license for the full price!
+Using the License
+Can I Format or Re-Flash the drive?
+
+Formatting, and Re-Imaging the drive with non-MikroTik tools (like DD and Fdisk) will destroy your license! Be very careful and contact MikroTik support before doing this. It is not recommended, as MikroTik support might deny your request for a replacement license. For this use MikroTik provided tools - Netinstall or CD-install that are freely available from our download page.
+How many computers can I use the License on?
+
+The RouterOS license can be used only in one system, at the same time. The License is bound to the HDD it is installed on, but you have the ability to move the HDD to another computer system. You cannot move the License to another HDD, neither can you format or overwrite the HDD with the RouterOS license. It will be erased from the drive, and you will have to get a new one. If you accidentally removed your license, contact the support team for help.
+Can I temporary use the HDD for something else, other than RouterOS?
+
+As stated above, no.
+Can I move the license to another HDD?
+
+If your current HDD drive is destroyed, or can no longer be used, it is possible to transfer the license to another HDD. You will have to request a replacement key (see below) which will cost 10$
+Must I type the whole key into the router?
+
+No, simply copy it and paste in the menu System → License → Paste Key and Confirm to reboot.
+
+Or paste it to the CLI and press "Y" to reboot.
+Can I install another OS on my drive and then install RouterOS again later?
+
+No, because if you use formatting, partitioning utilities or tools that do something to the MBR, you will lose the license and you will have to make a new one. This process is not free (see Replacement Key above)
+I lost my RouterBOARD, can you give me the license to use on another system?
+
+MikroTik hardware comes with an embedded license. You cannot move this license to a new system in any way, this includes any upgrades applied to the MikroTik router while it was still working.
+Licenses Purchased from Resellers
+
+The keys that you purchase from other vendors and resellers are not in your account. Your mikrotik.com account only contains licenses purchased from MikroTik directly.
+I am not using the software, can you terminate my license?
+
+The licenses are stand alone keys and MikroTik does not have any remote control over your devices. Therefore, we are unable to verify if you use your license or not. This is why MikroTik cannot terminate any issued licenses.
+Is this possible to upgrade or transfer my x86 license to a CHR license
+It is not possible to upgrade the x86 license to a CHR license. You will need to purchase a new license for the CHR.
