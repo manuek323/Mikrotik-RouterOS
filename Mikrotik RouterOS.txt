@@ -1,0 +1,4037 @@
+
+Getting started
+
+    Creado por Normunds R., actualizado por última vez por Gļebs K. el ene 09, 2025 1 min de lectura
+
+In This Section:
+
+        Software Specifications
+        First Time Configuration
+        Securing your router
+        Upgrading and installation
+        Configuration Management
+        Console
+        Reset Button
+        Backup
+        Netinstall
+        Supout.rif
+        RouterOS license keys
+        Cloud Hosted Router, CHR
+        Upgrading to v7
+        RouterBOOT
+
+ 
+
+
+RouterOS is a stand-alone operating system based on Linux kernel. It powers MikroTik hardware devices, but is also available for virtual machines.
+If you are reading this document and have no prior experience with RouterOS, please use the menu on the left hand side, to learn about first steps with RouterOS. The different methods of connecting to your device are discussed under the "management tools" section. 
+
+
+
+
+    Creado por Normunds R., actualizado por última vez por Serhii T. el jun 05, 2025 4 min de lectura
+
+    Hardware Support
+    Installation
+    Configuration
+    Backup/Restore
+    Firewall
+    Routing
+    MPLS
+    VPN
+    Wireless
+    DHCP
+    Hotspot
+    QoS
+    Proxy
+    Tools
+    Other features
+    Kernel version
+    Supported Encryptions
+
+Hardware Support
+
+MikroTik made devices: RouterOS is  compatible with MikroTik hardware it comes preinstalled on. Even MikroTik devices that are no longer manufactured, can run the latest RouterOS versions and will receive software updates. There are a few exceptions to this for the very oldest product lines. The latest RouterOS v7 is not compatible with all MIPS-LE family of devices (such as RB100, series, some RB700 series devices etc. please check the architecture of the device in question). It is also not compatible with MikroTik devices that have 32MB of RAM or less, but a minimum of 64MB is suggested. In short, there is no set limit on software compatibility or upgrades. Even devices that are no longer manufactured for 20 years, will still receive software updates, as long as they have enough RAM and are not based on a MIPS-LE CPU. 
+
+3rd party devices: RouterOS can also be run on 3rd party devices if they meet the following requirements:
+
+    x86 or AMPERE powered ARM CPU 
+    Minimum 64MB of RAM
+    IDE, SATA, USB, and flash storage medium with a minimum of 64MB of space
+    Network cards supported by Linux kernel 
+
+Note: NVMe storage is supported only for CHR, x86, Tile, and MMIPS architecture. For specific information, please look at each product brochure or block diagram.
+Note: We do not recommend running v7 on hardware that does not have at least 64 MB of RAM.
+Installation
+
+    Netinstall: Full network-based installation from PXE or EtherBoot enabled network card
+    CHR: RouterOS version intended for running as a virtual machine
+    CD-based installation
+
+Configuration
+
+    MAC-based access for initial configuration
+    WinBox – standalone Windows GUI configuration tool
+    Webfig - advanced web-based configuration interface
+    MikroTik - Android and iOS-based configuration tool
+    Powerful command-line configuration interface with integrated scripting capabilities, accessible via local terminal, serial console, telnet and ssh
+    API - the way to create your own configuration and monitoring applications
+
+Backup/Restore
+
+    Binary configuration backup saving and loading
+    Configuration export and import in human-readable text format
+
+Firewall
+
+    Stateful filtering
+    Source and destination NAT
+    NAT helpers (h323, pptp, quake3, sip, ftp, irc, tftp)
+    Internal connection, routing and packet marks
+    Filtering by IP address and address range, port and port range, IP protocol, DSCP and many more
+    Address lists
+    Custom Layer7 matcher
+    IPv6 support
+    PCC - per connection classifier, used in load balancing configurations
+    RAW filtering to bypass connection tracking.
+
+Routing
+
+    Static routing
+    Virtual Routing and Forwarding (VRF)
+    Policy based routing
+    Interface routing
+    ECMP routing
+    IPv4 dynamic routing protocols: RIP v1/v2, OSPFv2, BGP v4
+    IPv6 dynamic routing protocols: RIPng, OSPFv3, BGP
+    Bidirectional Forwarding Detection (BFD)
+
+MPLS
+
+    Static Label bindings for IPv4
+    Label Distribution protocol for IPv4
+    RSVP Traffic Engineering tunnels
+    VPLS MP-BGP based autodiscovery and signaling
+    MP-BGP based MPLS IP VPN
+
+VPN
+
+    IPSec – tunnel and transport mode, certificate or PSK, AH and ESP security protocols.
+    IKEv2 support
+    AES-NI hardware acceleration support for IPSec
+    Point to point tunneling ( OpenVPN, PPTP, PPPoE, L2TP, SSTP)
+    Advanced PPP features (MLPPP, BCP)
+    BCP supported on sstp, ppp, pptp, l2tp and pppoe
+    Simple tunnels ( IPIP, EoIP) IPv4 andIPv6 support
+    6to4 tunnel support (IPv6 over IPv4 network)
+    VLAN – IEEE802.1q Virtual LAN support, Q-in-Q support
+    MPLS based VPNs
+    WireGuard
+    ZeroTier
+
+Wireless
+
+    IEEE802.11a/b/g wireless client and access point
+    Full IEEE802.11n support
+    Nstreme and Nstreme2 proprietary protocols
+    NV2 protocol
+    Wireless Distribution System (WDS)
+    Virtual AP
+    WEP, WPA, WPA2
+    Access control list
+    Wireless client roaming
+    WMM
+    HWMP+ Wireless MESH protocol
+    MME wireless routing protocol
+
+DHCP
+
+    Per interface DHCP server
+    DHCP client and relay
+    Static and dynamic DHCP leases
+    RADIUS support
+    Custom DHCP options
+    DHCPv6 Prefix Delegation (DHCPv6-PD)
+    DHCPv6 Client
+
+Hotspot
+
+    Plug-n-Play access to the Network
+    Authentication of local Network Clients
+    Users Accounting
+    RADIUS support for Authentication and Accounting
+
+QoS
+
+    Hierarchical Token Bucket ( HTB) QoS system with CIR, MIR, burst and priority support
+    Simple and fast solution for basic QoS implementation - Simple queues
+    Dynamic client rate equalization ( PCQ)
+
+Proxy
+
+    HTTP caching proxy server
+    Transparent HTTP proxy
+    SOCKS protocol support
+    DNS static entries
+    Support for caching on a separate drive
+    Parent proxy support
+    Access control list
+    Caching list
+
+Tools
+
+    Ping, traceroute
+    Bandwidth test, ping flood
+    Packet sniffer, torch
+    Telnet, ssh
+    E-mail and SMS send tools
+    Automated script execution tools
+    CALEA
+    File Fetch tool
+    Advanced traffic generator
+    WoL (Wake on LAN) sending
+
+Other features
+
+    Samba support
+    OpenFlow support
+    Bridging – spanning tree protocol (STP, RSTP), bridge firewall and MAC natting.
+    Dynamic DNS update tool
+    NTP client/server and synchronization with GPS system
+    VRRP v2 and v3 support
+    SNMP
+    M3P - MikroTik Packet packer protocol for wireless links and ethernet
+    MNDP - MikroTik neighbor discovery protocol, supports CDP (Cisco discovery protocol)
+    RADIUS authentication and accounting
+    TFTP server
+    Synchronous interface support (Farsync cards only) (Removed in v5.x)
+    Asynchronous – serial PPP dial-in/dial-out, dial on demand
+    ISDN – dial-in/dial-out, 128K bundle support, Cisco HDLC, x75i, x75ui, x75bui line protocols, dial on demand
+
+Kernel version
+
+    RouterOS version 6.x uses 3.3.5
+    RouterOS version 7.x uses 5.6.3
+
+Supported Encryptions
+
+RouterOS 7 is used for the management of network (telecommunication) devices.
+
+    RouterOS 7 includes encryption features (components), intended for data (information) security, passed through telecommunication channels and device control channels.
+
+    All encryption features (components) are an integral part of RouterOS 7 and can not be changed by the end-users.
+
+    RouterOS 7 is intended for installation by end-users without significant support from the vendor.
+
+    RouterOS 7 uses the following security protocols:
+
+
+
+
+IPSec
+
+
+	DES	56 bit
+
+	3DES	168 bit
+
+	AES	128, 192, 256 bit
+
+	Blowfish	448 bit
+
+	Twofish	256 bit
+
+	Camelia	128, 192, 256 bit
+PPTP (with MPPE)	RC4	128 bit
+L2TP (with MPPE)	RC4	128 bit
+SNMP	DES	56 bit
+
+	AES	128 bit
+
+SSH
+
+	Blowfish	128 bit
+
+	3DES	192 bit
+
+	AES	128, 192, 256 bit
+
+SSTP
+	AES	256 bit
+
+	RC4	128 bit
+Used in WinBox connection (nameless)	AES	128 bit
+WEP	RC4	104 bit
+WPA-TKIP	RC4	128 bit
+WPA2-TKIP	RC4	128 bit
+WPA-AES	AES	128 bit
+WPA2-AES	AES	128, 256 bit
+WPA3	AES	128, 256 bit
+HTTPS	NULL, RC4, DES, DES40, 3DES, AES	128, 192, 256 bit
+
+
+
+
+
+Feature support based on architecture
+
+    Creado por Normunds R., actualizado por última vez el may 06, 2025 1 min de lectura
+
+All devices support the same features, with a few exceptions, clarified in the below table:
+Architecture	Not supported	Exclusively supported
+ARM (ARM32)
+	
+	Zerotier, Container (only ARM32 / ARMv5 containers), BTH
+ARM64	
+	Zerotier, Container, BTH
+MIPSBE	Zerotier, Dude server	
+MMIPS	Zerotier	
+SMIPS	Zerotier, DOT1X, BGP, MPLS, PIMSM, Dude server, User manager	
+TILE	Zerotier	BTH
+PPC	Zerotier, Dude server	
+X86 PC
+	Zerotier, Cloud	Container
+CHR VM
+	
+	
+
+Apart from features, there are also a few differences in hardware capabilities, based on the specific model of device. For these differences, please see the below articles:
+
+    Wifi - new driver implementation for 802.11ax devices and supported older devices https://help.mikrotik.com/docs/display/ROS/Wifi
+    L3 Hardware offloading https://help.mikrotik.com/docs/display/ROS/L3+Hardware+Offloading#L3HardwareOffloading-L3HWDeviceSupport
+    PTP https://help.mikrotik.com/docs/display/ROS/Precision+Time+Protocol
+
+    Switch chip features https://help.mikrotik.com/docs/display/ROS/Switch+Chip+Features
+
+
+
+
+
+
+    Creado por Māris B., actualizado por última vez por GG el ene 10, 2025 14 min de lectura
+
+    Connecting to the Router
+    Router without Default Configuration
+    Configuring IP Access
+    Configuring Internet Connection
+        Dynamic Public IP
+        Static Public IP
+        PPPoE Connection
+        Verify Connectivity
+    Protecting the Router
+        User Password Access
+        MAC Connectivity Access
+        Neighbor Discovery
+        IP Connectivity Access
+        Administrative Services
+        Other Services
+    NAT Configuration
+        Port Forwarding
+    Setting up Wireless
+    Protecting the Clients
+    Blocking Unwanted Websites
+    Troubleshooting
+        Troubleshoot if ping fails
+
+Connecting to the Router
+
+There are two types of routers:
+
+    Routers with default configuration.
+    Routers without default configuration. In cases where no specific configuration is present, the IP address 192.168.88.1/24 is assigned to ether1, combo1, sfp1, or MGMT/BOOT.
+
+For additional details regarding the current default configuration, please refer to the Quick Guide document provided with your device. This document outlines which ports to initially utilize for connection and instructions on device setup.
+
+This document describes the step-by-step process for configuring the device from scratch. Therefore, we recommend clearing all defaults when initiating the setup.
+
+When connecting the first time to the router with the default username admin and no password (or, for some models, check user and wireless passwords on the sticker). Upon the initial boot, a notification will appear, offering you the choice to either remove the default configuration (even if the default config has only an IP address), leading to a reboot with no configuration applied, or to "Show Script" and retain the current default configuration, applying it accordingly. Since this article assumes that there is no configuration on the router, you should remove it by pressing "r" on the keyboard when prompted or click on the "Remove Configuration" button in WinBox.
+Router without Default Configuration
+
+If the router doesn't have a default configuration, there are multiple options to consider. However, in this case, we'll opt for a method that best fits our requirements.
+
+Connect the ISP cable to the router's ether1 port and connect your PC to any port except ether1. Then, launch WinBox and search for your router using the neighbor discovery feature. See detailed example in Winbox article.
+
+If the router appears in the list, select its MAC address and click Connect.
+
+The easiest method to ensure a completely clean router is to run the CLI command
+/system reset-configuration no-defaults=yes skip-backup=yes
+
+Or from WinBox:
+
+Configuring IP Access
+
+As MAC connection can sometimes be unreliable, our first step is to configure the router to enable IP connectivity:
+
+    Create a bridge interface and assign bridge ports;
+    Assign an IP address to the bridge interface;
+    Configure a DHCP server.
+
+Setting up the bridge and assigning an IP address are straightforward processes:
+/interface bridge add name=bridge1
+/interface bridge port add interface=ether2 bridge=bridge1
+/ip address add address=192.168.88.1/24 interface=bridge1
+
+If you prefer WinBox/WebFig as configuration tools:
+
+    Open Bridge window, Bridge tab should be selected;
+    Click on the + button to open a new dialog box. You can either enter a custom bridge name or retain the default bridge1, then click OK to proceed;
+    Switch to the Ports tab and click on the + button to open another dialog box;
+    Select interface ether2 and bridge bridge1 form drop-down lists and click on the OK button to apply settings;
+    You may close the bridge dialog.
+
+    Access the IP menu and navigate to the Addresses dialog;
+    Select the + button to open a new dialog box;
+    Enter IP address 192.168.88.1/24 select interface bridge1 from the drop-down list;
+    Click OK to confirm the settings.
+
+Next, proceed with setting up a DHCP server. To simplify and expedite this process, we'll execute the setup command.
+[admin@MikroTik] > ip dhcp-server/ setup [enter]
+Select interface to run DHCP server on 
+
+dhcp server interface: bridge1 [enter]
+Select network for DHCP addresses 
+
+dhcp address space: 192.168.88.0/24 [enter]
+Select gateway for given network 
+
+gateway for dhcp network: 192.168.88.1 [enter]
+Select pool of ip addresses given out by DHCP server 
+
+addresses to give out: 192.168.88.2-192.168.88.254 [enter]
+Select DNS servers 
+
+dns servers: 192.168.88.1 [enter]               
+Select lease time 
+
+lease time: 1800 [enter]
+
+Notice that most of the configuration options are automatically determined and you just simply need to hit the enter key.
+
+The setup tool is also accessible in WinBox/WebFig:
+
+    Navigate to IP -> DHCP Server window, ensuring the DHCP tab is selected;
+    Click on the DHCP Setup button to open a new dialog;
+    Select the bridge1 as the DHCP Server Interface and click Next;
+    Follow the wizard to complete the setup.
+
+Following these steps, the connected PC should now obtain a dynamic IP address. You can then close Winbox and reconnect to the router using the IP address (192.168.88.1).
+Configuring Internet Connection
+
+To enable internet access for the router, you'll need to configure one of the following common types of internet connections:
+
+    Dynamic public IP address.
+    Static public IP address.
+    PPPoE connection.
+
+Dynamic Public IP
+
+Dynamic address configuration is the easiest option. Simply set up a DHCP client on the public interface. The DHCP client will obtain information from your Internet Service Provider (ISP), such as an IP address, DNS servers, NTP servers, and default route, making the setup process straightforward for you.
+/ip dhcp-client add disabled=no interface=ether1
+
+After adding the client you should see the assigned address and status should be bound
+[admin@MikroTik] > ip dhcp-client print
+Columns: INTERFACE, USE-PEER-DNS, ADD-DEFAULT-ROUTE, STATUS, ADDRESS
+# INTERFACE  USE-PEER-DNS  ADD-DEFAULT-ROUTE  STATUS  ADDRESS        
+0 ether1     yes           yes                bound   1.2.3.100/24
+Static Public IP
+
+When configuring a static address, your ISP provides specific parameters, such as:
+
+    IP: 1.2.3.100/24
+    Gateway: 1.2.3.1
+    DNS: 8.8.8.8
+
+These are three basic parameters that you need to get the internet connection working.
+
+To configure this in RouterOS, we'll manually add an IP address, add a default route with a provided gateway, and set up a DNS server
+/ip address add address=1.2.3.100/24 interface=ether1
+/ip route add gateway=1.2.3.1
+/ip dns set servers=8.8.8.8
+PPPoE Connection
+
+PPPoE connection also gives you a dynamic IP address and can configure dynamically DNS and default gateway. Typically service provider (ISP) gives you a username and password for the connection
+/interface pppoe-client
+  add disabled=no interface=ether1 user=me password=123 \
+    add-default-route=yes use-peer-dns=yes
+
+Winbox/WebFig actions:
+
+    In the PPP window, select the Interfaces tab and click the "+" button;
+    Choose PPPoE Client from the dropdown list;
+    Set the name and select ether1 as the interface;
+    Go to the Dial Out tab, configure the username, password, and other parameters;
+    Click OK to save the settings.
+
+Further in configuration, the WAN interface is now the pppoe-out1 interface, not ether1.
+Verify Connectivity
+
+Once the configuration is complete, you should be able to access the internet from the router. To verify IP connectivity, try pinging a known IP address, such as a Google DNS server.
+[admin@MikroTik] > /ping 8.8.8.8
+  SEQ HOST                                     SIZE TTL TIME       STATUS             
+    0 8.8.8.8                                    56  55 14ms399us 
+    1 8.8.8.8                                    56  55 18ms534us 
+    2 8.8.8.8                                    56  55 14ms384us 
+
+Verify DNS request
+[admin@MikroTik] > /ping google.com
+  SEQ HOST                                     SIZE TTL TIME       STATUS             
+    0 142.250.74.14                              56  55 14ms475us 
+    1 142.250.74.14                              56  55 14ms308us 
+    2 142.250.74.14                              56  55 14ms238us
+
+If all settings are configured correctly, both pings should succeed.
+If there's a failure, please refer to the  Troubleshooting section for assistance.
+Protecting the Router
+
+As the router is now accessible worldwide, it's important to protect it from potential intruders and basic attacks.
+User Password Access
+
+For MikroTik routers, it's essential to set up passwords. We recommend using a password generator tool to create robust passwords that meet the following criteria:
+
+    At least 12 characters long;
+    Consist of numbers, symbols, uppercase, and lowercase letters;
+    Avoid using dictionary words or combinations thereof.
+
+/user set 0 password="!={Ba3N!40TуX+GvKBzjTLIUcx/,"
+
+Another method to set a password for the current user:
+/password
+
+We highly recommend using a secondary method or the Winbox interface to update your router's password, as an added measure to safeguard against unauthorized access.
+[admin@MikroTik] > /password 
+old-password: ********
+new-password: ****************************
+confirm-new-password: ****************************
+
+Ensure you remember the password! If it's forgotten, there's no way to recover it. You'll have to reset the configuration or reinstall the router system!
+
+You can also add additional users with full or limited router access in the /user menu
+
+The best practice is to create a new user with a strong password and disable or remove the default admin user.
+/user add name=myname password=mypassword group=full
+/user remove admin
+Note: Log in to the router using the new credentials to verify that the username and password are functioning correctly.
+MAC Connectivity Access
+
+By default, the MAC server runs on all interfaces. To restrict MAC connectivity from the WAN port, we'll disable the default all entry and add a LAN interface.
+
+First, create an interface list:
+[admin@MikroTik] > /interface list add name=LAN
+
+Then, add your previously created bridge named "bridge1" to the interface list:
+[admin@MikroTik] > /interface list member add list=LAN interface=bridge1
+
+Apply newly created interface list to the MAC server:
+[admin@MikroTik] > /tool mac-server set allowed-interface-list=LAN
+
+Do the same for Winbox MAC access
+[admin@MikroTik] > /tool mac-server mac-winbox set allowed-interface-list=LAN  
+
+Winbox/Webfig actions:
+
+    Navigate to Interfaces → Interface List → Lists window;
+    Click on the "+" button to add a new list;
+    Enter "LAN" into the Name field and click OK;
+    Return to the Interfaces → Interface List section;
+    Click on the "+" button;
+    Select "LAN" from the dropdown List options;
+    Choose "bridge1" from the dropdown Interface options;
+    Click OK to confirm;
+    Open Tools -> Mac Server window;
+    Click on the MAC Telnet Server button;
+    In the new dialog, select the newly created list "LAN" from the dropdown list;
+    Click OK to apply settings.
+
+Do the same in the MAC Winbox Server tab to block Mac Winbox connections from the internet.
+Neighbor Discovery
+
+MikroTik Neighbor discovery protocol is used to show and recognize other MikroTik routers in the network. Disable neighbor discovery on public interfaces:
+/ip neighbor discovery-settings set discover-interface-list=LAN
+IP Connectivity Access
+
+While the firewall protects your router from unauthorized access by external networks, it's also possible to restrict username access based on specific IP addresses
+/user set 0 address=x.x.x.x/yy
+
+x.x.x.x/yy - your IP or network subnet that is allowed to access your router.
+
+IP connectivity on the public interface must be limited in the firewall. We will accept only ICMP(ping/traceroute), IP Winbox, and ssh access.
+/ip firewall filter
+  add chain=input action=accept connection-state=established,related,untracked comment="accept established,related,untracked"
+  add chain=input action=drop connection-state=invalid comment="drop invalid"
+  add chain=input in-interface=ether1 action=accept protocol=icmp comment="accept ICMP"
+  add chain=input in-interface=ether1 action=accept protocol=tcp port=8291 comment="allow Winbox";
+  add chain=input in-interface=ether1 action=accept protocol=tcp port=22 comment="allow SSH";
+  add chain=input in-interface=ether1 action=drop comment="block everything else";
+
+If the public interface is PPPoE, LTE, or any other type, the 'in-interface' should be set to that interface.
+
+The first rule accepts packets from already established connections, assuming they are safe to not overload the CPU. The second rule drops any packet that connection tracking identifies as invalid. After that, we set up typical accept rules for specific protocols.
+
+If you are using Winbox/WebFig for configuration, here is an example of how to add an established/related/untracked rule:
+
+    Open the IP -> Firewall window and navigate to the Filter Rules tab;
+    Click on the "+" button to open a new dialog;
+    Select "input" for the chain.
+    Click on "Connection state" and check the boxes for "established," "related," and "untracked."
+    Go to the Action tab and ensure that "accept" is selected.
+    Click on OK to apply the settings.
+
+To add additional rules, click on the "+" button for each new rule and fill in the same parameters as provided in the console example.
+Administrative Services
+
+Although the firewall protects the router from the public interface, you may still want to disable RouterOS services.
+
+Most of RouterOS administrative tools are configured at  the /ip service menu
+
+Keep only secure ones,
+/ip service disable telnet,ftp,www,api
+
+
+Change default service ports, this will immediately stop most of the random SSH brute force login attempts:
+/ip service set ssh port=2200
+
+
+Additionally, each service can be secured by allowed IP address or address range(the address service will reply to), although more preferred method is to block unwanted access in firewall because the firewall will not even allow to open socket
+/ip service set winbox address=192.168.88.0/24
+Other Services
+
+A bandwidth server is used to test throughput between two MikroTik routers. Disable it in the production environment.
+/tool bandwidth-server set enabled=no 
+
+A router might have DNS cache enabled, which decreases resolving time for DNS requests from clients to remote servers. In case DNS cache is not required on your router or another router is used for such purposes, disable it.
+/ip dns set allow-remote-requests=no
+
+
+Some RouterBOARDs have an LCD module for informational purposes, set pin or disable it.
+/lcd set enabled=no
+
+
+It is good practice to disable all unused interfaces on your router, in order to decrease unauthorized access to your router.
+/interface print 
+/interface set x disabled=yes
+
+Where "X" is a number of the unused interfaces.
+
+RouterOS utilizes stronger crypto for SSH, most newer programs use it, to turn on SSH strong crypto:
+/ip ssh set strong-crypto=yes
+
+
+Following services are disabled by default,  nevertheless, it is better to make sure that none of then were enabled accidentally:
+
+    MikroTik caching proxy,
+
+/ip proxy set enabled=no
+
+    MikroTik socks proxy,
+
+/ip socks set enabled=no
+
+    MikroTik UPNP service,
+
+/ip upnp set enabled=no
+
+    MikroTik dynamic name service or IP cloud,
+
+/ip cloud set ddns-enabled=no update-time=no
+
+
+NAT Configuration
+
+At this point, PC is not yet able to access the Internet, because locally used addresses are not routable over the Internet. Remote hosts simply do not know how to correctly reply to your local address.
+
+The solution for this problem is to change the source address for outgoing packets to routers public IP. This can be done with the NAT rule:
+/ip firewall nat
+  add chain=srcnat out-interface=ether1 action=masquerade
+
+If the public interface is PPPoE, LTE, or any other type, the 'out-interface' should be set to that interface.
+
+Another benefit of such a setup is that NATed clients behind the router are not directly connected to the Internet, that way additional protection against attacks from outside mostly is not required.
+Port Forwarding
+
+Some client devices may need direct access to the internet over specific ports. For example, a client with an IP address 192.168.88.254 must be accessible by Remote desktop protocol (RDP).
+
+After a quick search on Google, we find out that RDP runs on TCP port 3389. Now we can add a destination NAT rule to redirect RDP to the client's PC.
+/ip firewall nat
+  add chain=dstnat protocol=tcp port=3389 in-interface=ether1 \
+    action=dst-nat to-address=192.168.88.254
+
+If you have set up strict firewall rules then RDP protocol must be allowed in the firewall filter forward chain.
+Setting up Wireless
+
+For ease of use bridged wireless setup will be made so that your wired hosts are in the same Ethernet broadcast domain as wireless clients.
+
+The important part is to make sure that our wireless is protected, so the first step is the security profile.
+
+Security profiles are configured from /interface wireless security-profiles menu in a terminal.
+/interface wireless security-profiles
+  add name=myProfile authentication-types=wpa2-psk mode=dynamic-keys \
+    wpa2-pre-shared-key=1234567890
+
+in Winbox/Webfig click on Wireless to open wireless windows and choose the Security Profile tab.
+
+If there are legacy devices that do not support WPA2 (like Windows XP), you may also want to allow WPA protocol.
+
+WPA and WPA2 pre-shared keys should not be the same.
+
+Now when the security profile is ready we can enable the wireless interface and set the desired parameters
+/interface wireless
+  enable wlan1;
+  set wlan1 band=2ghz-b/g/n channel-width=20/40mhz-Ce distance=indoors \
+    mode=ap-bridge ssid=MikroTik-006360 wireless-protocol=802.11 \
+    security-profile=myProfile frequency-mode=regulatory-domain \
+    set country=latvia antenna-gain=3
+
+To do the same from Winbox/Webfig:
+
+    Open Wireless window, select wlan1 interface, and click on the enable button;
+    Double click on the wireless interface to open the configuration dialog;
+    In the configuration dialog click on the Wireless tab and click the Advanced mode button on the right side. When you click on the button additional configuration parameters will appear and the description of the button will change to Simple mode;
+    Choose parameters as shown in the screenshot, except for the country settings and SSID. You may want to also choose a different frequency and antenna gain;
+    Next, click on the HT tab and make sure both chains are selected;
+    Click on the OK button to apply settings.
+
+The last step is to add a wireless interface to a local bridge, otherwise connected clients will not get an IP address:
+/interface bridge port
+  add interface=wlan1 bridge=bridge1
+
+Now wireless should be able to connect to your access point, get an IP address, and access the internet.
+Protecting the Clients
+
+Now it is time to add some protection for clients on our LAN. We will start with a basic set of rules.
+/ip firewall filter
+  add chain=forward action=fasttrack-connection connection-state=established,related \
+    comment="fast-track for established,related";
+  add chain=forward action=accept connection-state=established,related \
+    comment="accept established,related";
+  add chain=forward action=drop connection-state=invalid
+  add chain=forward action=drop connection-state=new connection-nat-state=!dstnat \
+    in-interface=ether1 comment="drop access to clients behind NAT from WAN"
+
+A ruleset is similar to input chain rules (accept established/related and drop invalid), except the first rule with action=fasttrack-connection. This rule allows established and related connections to bypass the firewall and significantly reduce CPU usage.
+
+Another difference is the last rule which drops all new connection attempts from the WAN port to our LAN network (unless DstNat is used). Without this rule, if an attacker knows or guesses your local subnet, he/she can establish connections directly to local hosts and cause a security threat.
+
+For more detailed examples on how to build firewalls will be discussed in the firewall section.
+Blocking Unwanted Websites
+
+Sometimes you may want to block certain websites, for example, deny access to entertainment sites for employees, deny access to porn, and so on. This can be achieved by redirecting HTTP traffic to a proxy server and use an access-list to allow or deny certain websites.
+
+First, we need to add a NAT rule to redirect HTTP to our proxy. We will use RouterOS built-in proxy server running on port 8080.
+/ip firewall nat
+  add chain=dst-nat protocol=tcp dst-port=80 src-address=192.168.88.0/24 \
+    action=redirect to-ports=8080
+
+Enable web proxy and drop some websites:
+/ip proxy set enabled=yes
+/ip proxy access add dst-host=www.facebook.com action=deny
+/ip proxy access add dst-host=*.youtube.* action=deny
+/ip proxy access add dst-host=:vimeo action=deny
+
+Using Winbox:
+
+    On the left menu navigate to IP -> Web Proxy
+    Web proxy settings dialog will appear.
+    Check the "Enable" checkbox and click on the "Apply" button
+    Then click on the "Access" button to open the "Web Proxy Access" dialog
+
+    In the "Web Proxy Access" dialog click on "+" to add a new Web-proxy rule
+    Enter Dst hostname that you want to block, in this case, "www.facebook.com", choose the action "deny"
+    Then click on the "Ok" button to apply changes.
+    Repeat the same to add other rules.
+
+Troubleshooting
+
+RouterOS has built-in various troubleshooting tools, like ping, traceroute, torch, packet sniffer, bandwidth test, etc.
+
+We already used the ping tool in this article to verify internet connectivity.
+Troubleshoot if ping fails
+
+The problem with the ping tool is that it says only that destination is unreachable, but no more detailed information is available. Let's overview the basic mistakes.
+
+You cannot reach www.google.com from your computer which is connected to a MikroTik device:
+
+If you are not sure how exactly configure your gateway device, please reach MikroTik's official consultants for configuration support.
+
+
+
+
+    Creado por Normunds R., actualizado por última vez el ene 06, 2025 2 min de lectura
+
+Overview
+
+The following steps are a recommendation on how to additionally protect your device with already configured strong firewall rules.
+RouterOS version
+
+Start by upgrading your RouterOS version. Some older releases have had certain weaknesses or vulnerabilities, that have been fixed. Keep your device up to date, to be sure it is secure. Click "check for updates" in WinBox or WebFig, to upgrade. We suggest you follow announcements on our security announcement blog to be informed about any new security issues.
+Access to a router
+Access username
+
+Change the default username admin to a different name. A custom name helps to protect access to your router if anybody has direct access to your router: 
+/user add name=myname password=mypassword group=full
+/user disable admin
+Access password
+
+MikroTik routers require password configuration, we suggest using a password generator tool to create secure and non-repeating passwords. With a secure password, we mean:
+
+    Minimum 12 characters;
+    Include numbers, Symbols, Capital and lowercase letters;
+    Is not a Dictionary Word or a Combination of Dictionary Words;
+    Note that quotes in the password require escaping;
+
+/user set myname password="!={Ba3N!40TуX+GvKBz?jTLIUcx/,"
+Securing access to the device
+
+To prevent remote access to your device, there is a pre-configured firewall that blocks WAN (internet side) connections. This is intentional, please do not remove these rules unless you're absolutely certain that the connection is secure.
+
+If you intend to open remote access to your device, we recommend securing the connection using a Virtual Private Network (VPN) such as WireGuard.
+
+A configuration guide for WireGuard VPN is available here.
+RouterOS MAC-access
+
+RouterOS has built-in options for easy management access to network devices. The particular services should be shut down on production networks: MAC-Telnet, MAC-WinBox, and MAC-Ping:
+/tool mac-server set allowed-interface-list=none 
+/tool mac-server mac-winbox set allowed-interface-list=none 
+/tool mac-server ping set enabled=no
+Neighbor Discovery
+
+MikroTik Neighbor discovery protocol is used to show and recognize other MikroTik routers in the network, and disable neighbor discovery on all interfaces:
+/ip neighbor discovery-settings set discover-interface-list=none 
+Bandwidth server
+
+A bandwidth server is used to test throughput between two MikroTik routers. Disable it in the production environment:
+/tool bandwidth-server set enabled=no 
+DNS cache
+
+A router might have DNS cache enabled, which decreases the resolving time for DNS requests from clients to remote servers. In case DNS cache is not required on your router or another router is used for such purposes, disable it:
+/ip dns set allow-remote-requests=no
+Other clients services
+
+RouterOS might have other services enabled (they are disabled by default RouterOS configuration). MikroTik caching proxy, socks, UPnP, and cloud services:
+/ip proxy set enabled=no
+/ip socks set enabled=no
+/ip upnp set enabled=no
+/ip cloud set ddns-enabled=no update-time=no
+
+More Secure SSH access
+
+It is possible to enable more strict SSH settings (add aes-128-ctr and disallow hmac sha1 and groups with sha1) with this command:
+/ip ssh set strong-crypto=yes
+Router interface
+Ethernet/SFP interfaces
+
+It is good practice to disable all unused interfaces on your router, to decrease unauthorized access to your router:
+/interface print 
+/interface set X disabled=yes
+
+Where X numbers of unused interfaces.
+LCD
+
+Some RouterBOARDs have an LCD module for informational purposes, set a pin:
+/lcd/pin/set pin-number=3659 hide-pin-number=yes
+
+or disable it:
+/lcd/set enabled=no
+
+
+
+
+    Creado por Māris B., actualizado por última vez por Normunds R. el nov 12, 2024 9 min de lectura
+
+    Overview
+    Upgrading
+        Version numbering
+        Standard upgrade
+        Manual upgrade 
+            Manual upgrade process
+                Using WinBox
+                Using FTP
+        RouterOS local upgrade
+        RouterOS upgrade using Dude
+            The Dude auto-upgrade
+            The Dude hierarchical upgrade
+        License issues
+    Netinstall
+    CD Install
+    RouterOS Package Types
+
+Overview
+
+MikroTik devices are preinstalled with RouterOS, so installation is usually not needed, except in the case where installing RouterOS on an x86 PC or virtual instance CHR. The upgrade procedure on already installed devices is straightforward.
+Upgrading
+Version numbering
+
+RouterOS versions are numbered sequentially when a period is used to separate sequences, it does not represent a decimal point, and the sequences do not have positional significance. An identifier of 2.5, for instance, is not "two and a half" or "halfway to version three", it is the fifth second-level revision of the second first-level revision. Therefore v5.2 is older than v5.18, which is newer.
+
+RouterOS versions are released in several "release chains": Long term, Stable, Testing, and Development. When upgrading RouterOS, you can choose a release chain from which to install the new packages. 
+
+    Long term: Released rarely, and includes only the most critical fixes, upgrades within one number branch do not contain new features. When a Stable release has been out for a while and seems to be stable enough, it gets promoted into the long-term branch, replacing an older release, which is then moved to the archive. This consecutively adds new features.
+    Stable: Released every few months, including all tested new features and fixes.
+    Testing: Released every few weeks, only undergoes basic internal testing, and should not be used in production.
+    Development: Released when necessary. Includes raw changes and is available for software enthusiasts for testing new features.
+
+Standard upgrade
+
+The package upgrade feature connects to the MikroTik download servers and checks if there is another RouterOS version for your device under the selected release channel. Can also be used for downgrading, if you, for example, are using stable release at the moment, but changed the release channel to the long-term.
+
+After clicking the Check For Updates button in QuickSet (or in the System → Packages menu) the Check For Updates window will open with the current or the latest changelog (if a newer version exists). If newer version exists, buttons Download and Download&Install will appear. By cicking the Download button a newest version will be downloaded (manual device reboot is required), by clicking Download&Install, download will start, and after a successful download will reboot a device to install the downloaded packages.
+
+The versions offered will depend on the selected release channel. Not all versions migh be available. It will not be possible to upgrade from an older version to the latest version in one go, when using check-for-updates approach. For example, if running RouterOS v6.x, even selecting the major release upgrade channel, called "Upgrade", you will only see v7.12.1 as the available version. You must first upgrade to that intermediate version and only then newer releases will be available in the channels. This intermediate step can be done using check for updates too, but you will simply have to repeat check for updates after the first update to the intermediate version. 
+
+If custom packages are installed, the downloader will take that into account and download all necessary packages.
+
+It is strongly recommended to upgrade the bootloader after RouterOS update. To upgrade the bootloader, execute command "/system routerboard upgrade" in CLI, followed by a reboot. Alternatively, navigate to the GUI System → RouterBOARD menu and click the "Upgrade" button, then reboot the device.
+
+
+You can automate the upgrade process by running a script in the system scheduler. This script queries the MikroTik upgrade servers for new versions, if the response received says "New version is available", the script then issues the upgrade command below. Important note, this will not work, if you are running it for the first time on a release that is older. It might not see latest versions as available, if you are running v6.x, you would first have to manually select the "Upgrade" channel to do a major release upgrade to v7.12.1 intermediate version, and only afterwards newer v7 releases will be visible in the upgrade channels. 
+[admin@MikroTik] >/system package update
+check-for-updates once
+:delay 3s;
+:if ( [get status] = "New version is available") do={ install }
+Manual upgrade 
+
+You can upgrade RouterOS in the following ways:
+
+    WinBox – drag and drop files to the Files menu
+    WebFig - upload files from the Files menu
+    FTP - upload files to the root directory
+
+It is strongly recommended to upgrade the bootloader after upgrading RouterOS. To upgrade the bootloader, execute command "/system routerboard upgrade" in CLI, followed by a reboot. Alternatively, navigate to the GUI System → RouterBOARD menu and click the "Upgrade" button, then reboot the device.
+
+RouterOS cannot be upgraded through a serial cable. Only RouterBOOT is upgradeable using this method.
+Manual upgrade process
+
+    First step - visit www.mikrotik.com and head to the Software page, then choose the architecture of the system you have the RouterOS installed on (system architecture can be found in System → Resource section);
+    Download the routeros (main) and extra packages that are installed on a device;
+    Upload packages to a device using one of the previously mentioned methods:
+
+Menu: /system/package/update install ignore-missing command allows upgrading only the RouterOS main package, while omitting packages that are either missing or not uploaded during a manual upgrade process.
+Using WinBox
+
+Choose your system type, and download the upgrade package. Connect to your router with WinBox, Select the downloaded file with your mouse, and drag it to the Files menu. If some files are already present, make sure to put the package in the root menu, not inside the hotspot folder! The upload will start.
+
+After it finishes - reboot the device. The New version number will be seen in the Winbox Title and in the Packages menu
+Using FTP
+
+    Open your favorite SFTP program (in this case it is Filezilla), select the package, and upload it to your router (demo2.mt.lv is the address of my router in this example). note that in the image I'm uploading many packages, but in your case - you will have one file that contains them all
+    if you wish, you can check if the file is successfully transferred onto the router (optional):
+
+[admin@MikroTik] >/file print
+Columns: NAME, TYPE, SIZE, CREATION-TIME
+#  NAME                  TYPE       SIZE     CREATION-TIME       
+0  routeros-7.9-arm.npk  package    13.0MiB  may/18/2023 16:16:18
+1  pub                   directory           nov/04/2022 11:22:19
+2  ramdisk               directory           jan/01/1970 03:00:24
+
+    reboot your router for the upgrade process to begin:
+
+[admin@MikroTik] >/system reboot
+Reboot, yes? [y/N]: y
+
+    after the reboot, your router will be up to date, you can check it in this menu:
+
+[admin@MikroTik] >/system package print
+
+    if your router did not upgrade correctly, make sure you check the log
+
+[admin@MikroTik] >/log print without-paging
+
+RouterOS local upgrade
+
+Sub-menu: system/package/local-update/
+
+You can upgrade one or multiple MikroTik routers within your local network by using one device which have all needed packages. Feature is available from 7.17beta3 version in (system > packages local update) and will replace (system > auto update) feature. Here is a simple example with 3 routers (the same method works on networks with infinite numbers of routers):
+
+Place needed packages under Files menu, on your main router:
+
+Optional, you can set mirror device between main one, if not needed, skip this step:
+
+    Choose Local Package Sources and enable Mirror device. Set Primary Server where the packages are located, 10.155.136.50. Check Interval minimum setting can be set to 00:07:12, at which device will connect using Winbox to a main device and check for packages.
+    If new packages are available, it will begin to download, please note download process is slow and may require some time when large amount of files are used. In case some failures, download will resume on next Check.
+
+    New "packs" folder is created, where mirror device will store packages:
+
+    Add new package source on device which will be updated, in this example we use mirror device 10.155.136.71:
+
+    Once you click Refresh in Local Update packages tab,  device using Winbox will try to connect to source and check if there are new packages. 
+
+    Choose packages and click download, after download completes device will be needed to reboot for update. 
+
+    Use system/package/local-update/refresh to automate this in your scripts and tools fetch url= can be used to download packages from our web page, for example: tool/fetch url=https://download.mikrotik.com/routeros/7.16.1/routeros-7.16.1-arm.npk
+
+RouterOS upgrade using Dude
+The Dude auto-upgrade
+
+The dude application can help you to upgrade the entire RouterOS network with one click per router.
+
+    Set type RouterOS and correct password for any device on your Dude map, that you want to upgrade automatically,
+    Upload required RouterOS packages to Dude files
+    Upgrade the RouterOS version on devices from the RouterOS list. The upgrade process is automatic, after a click on upgrade (or force upgrade), the package will be uploaded and the router will be rebooted by the Dude automatically.
+
+The Dude hierarchical upgrade
+
+For complicated networks, when routers are connected sequentially, the simplest example is "1router-2router-3router| connection. You might get an issue, 2router will go to reboot before packages are uploaded to the 3router. The solution is Dude Groups, the feature allows you to group routers and upgrade all of them with one click!
+
+    Select the group and click Upgrade (or Force Upgrade),
+
+License issues
+
+When upgrading from older versions, there could be issues with your license key. Possible scenarios:
+
+    When upgrading from RouterOS v2.8 or older, the system might complain about an expired upgrade time. To override this, use Netinstall to upgrade. Netinstall will ignore old license restrictions and will upgrade
+    When upgrading to RouterOS v4 or newer, the system will ask you to update the license to a new format. To do this, ensure your Winbox PC (not the router) has a working internet connection without any restrictions to reach www.mikrotik.com and click "update license" in the license menu.
+
+Netinstall
+
+NetInstall is a widely-used installation tool for RouterOS. It runs on Windows systems or via a command-line tool, netinstall-cli, on Linux, or through Wine (with superuser permissions required).
+
+The NetInstall utilities can be downloaded from the MikroTik download section.
+
+NetInstall is also used to re-install RouterOS in cases where a previous installation has failed, been damaged, or where access passwords have been lost.
+
+To use NetInstall, your device must support booting from Ethernet, with a direct Ethernet connection between the NetInstall computer and the target device. All RouterBOARDs support PXE network booting, which can be enabled in the RouterOS "routerboard" menu (if RouterOS is accessible) or in the bootloader settings using a serial console cable.
+
+Note: For RouterBOARD devices without a serial port or RouterOS access, you can activate PXE booting using the Reset button.
+
+NetInstall can also directly install RouterOS onto a disk (USB/CF/IDE/SATA) connected to the NetInstall Windows machine. Once installed, simply transfer the disk to the Router machine and boot from it.
+
+
+Attention! Do not try to install RouterOS on your system drive. Action will format your hard drive and wipe out your existing OS.
+CD Install
+RouterOS Package Types
+
+Information about RouterOS packages can be found here
+
+
+
+
+
+
+    Creado por Usuario desconocido (olga), actualizado por última vez por Normunds R. el abr 02, 2025 6 min de lectura
+
+    Summary
+    Minimum requirements
+    Installing packages
+            Manual download
+            Download directly from the router
+        Verification of install
+        System packages
+        Extra packages
+    Working with packages
+    Auto install
+    Examples
+        Listing packages
+
+Summary
+
+RouterOS features are separated in "packages", which are files with .npk extension. Most of the features are combined in one routeros package, but some features are separate. Installing the corresponding NPK package can enable specific features (like container, dude). Packages are provided only by MikroTik, and no 3rd parties are allowed to make them. You can download extra packages separately from our download page, or, since v7.18, it is possible to add extra packages directly from your router.
+Minimum requirements
+
+RouterOS requires only the system package to operate at bare minimum, but for most devices normal operation and features are available when you install the "routeros" bundle package. 
+
+In case of wireless devices, several wireless packages are available, depending on the hardware you are using:
+
+    Starting from RouterOS 7.13, the routeros (system) package and one of the following wireless packages are needed for the basic operation of a simple home router.
+        802.11ax WiFi APs require radio drivers, which are provided by the wifi-qcom package (for RouterOS version before 7.13 it was called the wifiwave2 package).
+        Previous generation WiFi APs require a wireless package.
+
+More information about which wireless package to use is available in the Wireless manual.
+
+Other packages are optional and not required for a home router. Install them only if you are sure of their purpose. 
+Installing packages
+Manual download
+
+To manually download and install extra packages, download the necessary package from the MikroTik download page, selecting the RouterOS section based on your device's architecture found in the System/Resources menu. Extract the archive and upload the required package to your router using any convenient method, and proceed to reboot the router.
+Download directly from the router
+
+Since 7.18 it is possible to download/install extra packages directly from the router, using the System Packages section.
+
+    After executing the Check For Updates command, available packages will be listed in the Packages list, but they will show up as disabled. The available package list comes from the MikroTik download server. Those packages are available, but not yet in your router (as indicated by the flags X (Disabled) and A (available). 
+    To download an extra package, first, select package and click Enable
+    To make the router download the package, click Apply Changes and the device will ask for a reboot
+
+This feature is also shown in our v7.18 announcement video.
+
+	
+
+	
+
+	
+
+Verification of install
+
+To make sure package is installed successfully, check the "Log" section after the device is rebooted. If the package is installed successfully, you will see a message about it. If there have been conflicts or some requirement is not met, this will be explained, so you can take further steps to rectify that.
+
+Success in the log entriesFailure in the log entries
+System packages
+routeros-arm (arm)	system package for arm devices
+routeros-arm (arm64)	system package for arm64 devices
+routeros-mipsbe (mipsbe)	system package for mipsbe devices
+routeros-mmips (mmips)	system package for mmips devices
+routeros-smips (smips)	system package for smips devices
+routeros-tile (tile)	system package for tile devices
+routeros-ppc (ppc)	system package for ppc devices
+routeros (x86, CHR)	system package for x86 installations and CHR environment
+Extra packages
+calea (arm, arm64, mipsbe, mmips, tile, ppc, x86, CHR)	Data gathering tool for specific use due to "Communications Assistance for Law Enforcement Act" in the USA
+container (arm, arm64, x86, CHR)	Container implementation of Linux containers, allows users to run containerized environments within RouterOS
+dude (arm, arm64, mmips, tile, x86, CHR)	Dude tool that allows monitoring of network environment
+extra-nic (arm64)	arm64 CPU architecture, Network Interface Card(NIC) support, recommended for UEFI installation on non MikroTik boards 
+gps (arm, arm64, mipsbe, mmips, tile, ppc, x86, CHR)	Global Positioning System devices support
+iot (arm, arm64, mipsbe, mmips, tile, ppc, x86, CHR)	
+
+Enables:
+
+    MQTT
+    LoRa (for devices with LR8/9/2 miniPCie cards)
+    Bluetooth (for devices with Bluetooth chip)
+    GPIO (for devices with GPIO pins)
+    Modbus (for devices with RS485 port)
+
+iot-bt-extra (arm, arm64)
+	
+
+A package for ARM, ARM64 devices which enables the use of USB Bluetooth adapters (must support LE 4.0+).
+
+note: Not all adapters were tested. We can not guarantee beforehand that a specific adapter will work.
+lora (arm, arm64, mipsbe, mmips, tile, ppc, x86, CHR)	Dummy package for Lora support. LoRa package is not obligatory anymore and is left only for compatibility reasons. LoRa functionality is moved into iot package.
+lte (mipsbe)	Required package only for SXT LTE (RBSXTLTE3-7), which contains drivers for the built-in LTE interface.
+rose-storage (arm, arm64, tile, x86, CHR)	Additional enterprise data center functionality in RouterOS, support disk monitoring, improved formatting, RAIDs, rsync, iSCSI , NVMe over TCP, NFS, and improved SMB
+tr069-client (arm, arm64, mipsbe, mmips, smips, tile, ppc, x86, CHR)	TR069 Client package
+ups (arm, arm64, mipsbe, mmips, tile, ppc, x86, CHR)	APC ups management interface
+user-manager (arm, arm64, mipsbe, mmips, tile, ppc, x86, CHR)	MikroTik User Manager server for controlling Hotspot and other service users.
+wifi-qcom (arm, arm64)	Mandatory driver package for 802.11ax interfaces. Introduced in 7.13.  Wifi CAPsMAN support comes with the system package.
+wifi-qcom-ac (arm) 	Optional Wifi driver package for compatible 802.11ac interfaces. Introduced in 7.13.
+wireless (arm, arm64, mipsbe, mmips, tile, ppc, x86, CHR)
+	
+
+Utilities and drivers for managing WiFi (up to 802.11ac) and 60GHz wireless interfaces.
+This package is bundled into RouterOS for versions up to 7.12. Starting with 7.13, it is a separate package.
+
+The wireless package conflicts with wifi-qcom and wifi-qcom-ac packages - they cannot be active at the same time.
+zerotier (arm, arm64)	Enables ZeroTier functionality
+Working with packages
+
+Menu: /system package
+
+Commands executed in this menu will take place only on restart of the router. Until then, the user can freely schedule or revert set actions.
+disable	schedule the package to be disabled after the next reboot. No features provided by the package will be accessible
+downgrade	will prompt for the reboot. During the reboot process will try to downgrade the RouterOS to the oldest version possible by checking the packages that are uploaded to the router.
+enable	schedule package to be enabled after the next reboot
+uninstall	schedule package to be removed from the router. That will take place during the reboot.
+unschedule	remove scheduled task for the package.
+print	outputs information about the packages, like: version, package state, planned state changes, etc.
+update	manages the "check-for-updates" channel and performs RouterOS upgrades
+apply-changes	apply scheduled changes and reboot device
+
+Menu: /system/check-installation
+
+The "Check installation" function ensures the integrity of the RouterOS system by verifying the readability and correct placement of files. Its primary purpose is to confirm the health and status of your NAND/Flash storage.
+
+Menu: /system/package/update install ignore-missing command allows upgrading only the RouterOS main package, while omitting packages that are either missing or not uploaded during a manual upgrade process.
+Auto install
+
+It is also possible to automatically install packages after uploading them to the router with FTP or SFTP. The package file must be named with the extension *.auto.npk. Once the file will be uploaded, router will automatically go into reboot in order to install the package.
+
+".auto.npk" in the filename is mandatory for a package to be automatically installed.
+Examples
+Listing packages
+
+zerotier package is disabled, but installed; iot package is available on the server, but has not been downloaded to the router and enabled; dude package is scheduled for uninstall.
+/system package print 
+Flags: X - DISABLED
+Columns: NAME, VERSION, SCHEDULED
+#    NAME      VERSION  SCHEDULED              
+0    dude      7.9      scheduled for uninstall
+1 X  zerotier  7.9                             
+2    routeros  7.9 
+3 XA iot       7.9
+
+Uninstall package
+/system package uninstall dude; /system reboot; 
+Reboot, yes? [y/N]:
+
+Disable package
+/system package disable zerotier; /system reboot;
+Reboot, yes? [y/N]:
+
+Downgrade
+/system package downgrade; /system reboot;
+Reboot, yes? [y/N]: 
+
+Cancel uninstall or disable action
+/system package unschedule zerotier;
+/system package unschedule dude;
+
+
+
+    Creado por Māris B., actualizado por última vez por Serhii T. el feb 28, 2025 10 min de lectura
+
+    Overview
+    Configuration Undo and Redo
+    Safe Mode
+    System Backup and Restore
+    Configuration Export and Import
+        Configuration Export
+        Configuration Import
+        Auto Import
+        Import troubleshooting
+            Configuration parts to watch out for in exported .rsc files
+            Startup delay
+    Configuration Reset
+
+Overview
+
+This article describes a set of commands used for configuration management.
+Configuration Undo and Redo
+
+Any action done in the GUI or any command executed from the CLI is recorded in /system history.  You can undo or redo any action by running undo or redo commands from the CLI or by clicking on Undo, and Redo buttons from the GUI. 
+
+A simple example to demonstrate the addition of the firewall rule and how to undo and redo the action:
+[admin@v7_ccr_bgp] /ip/firewall/filter> add chain=forward action=drop 
+
+[admin@v7_ccr_bgp] /ip/firewall/filter> print 
+Flags: X - disabled, I - invalid; D - dynamic 
+0 X chain=input action=drop protocol=icmp src-address=10.155.101.1 log=no 
+log-prefix=""
+
+1 chain=forward action=drop
+
+[admin@v7_ccr_bgp] /ip/firewall/filter> /system/history/print 
+Flags: U - undoable, R - redoable, F - floating-undo
+Columns: ACTION, BY, POLICy
+ACTION BY POLIC
+F filter rule added admin write
+U --- write
+[admin@v7_ccr_bgp] /ip/firewall/filter>
+
+We have added a firewall rule and in /system history we can see all that was done.
+
+Let's undo everything:
+[admin@v7_ccr_bgp] /ip/firewall/filter> /undo 
+[admin@v7_ccr_bgp] /ip/firewall/filter> print 
+Flags: X - disabled, I - invalid; D - dynamic 
+0 X chain=input action=drop protocol=icmp src-address=10.155.101.1 log=no 
+log-prefix=""
+
+[admin@v7_ccr_bgp] /ip/firewall/filter>
+
+As you can see firewall rule disappeared.
+Now redo the last change:
+[admin@v7_ccr_bgp] /ip/firewall/filter> /redo 
+[admin@v7_ccr_bgp] /ip/firewall/filter> print 
+Flags: X - disabled, I - invalid; D - dynamic 
+0 X chain=input action=drop protocol=icmp src-address=10.155.101.1 log=no 
+log-prefix=""
+
+1 chain=forward action=drop 
+
+[admin@v7_ccr_bgp] /ip/firewall/filter>
+
+System history is capable of showing exact CLI commands that will be executed during "Undo" or "Redo" actions even if we perform the action from GUI, for example, detailed history output after adding TCP accept rule from WinBox:
+[admin@v7_ccr_bgp] /system/history> print detail 
+Flags: U - undoable, R - redoable, F - floating-undo 
+ F redo=
+      /ip firewall filter add action=accept chain=forward disabled=no log=no \
+          log-prefix="" protocol=tcp
+    undo=/ip firewall filter remove *4 action="filter rule added" by="admin" 
+    policy=write time=oct/10/2019 18:51:05 
+
+ F redo=/ip firewall filter add action=accept chain=forward 
+    undo=/ip firewall filter remove *3 action="filter rule added" by="admin" 
+    policy=write time=oct/10/2019 18:49:03 
+
+
+U redo="" undo="" action="---" by="" policy=write time=sep/27/2019 13:07:35 
+[admin@v7_ccr_bgp] /system/history> 
+Safe Mode
+
+It is sometimes possible to change router configuration in a way that will make the router inaccessible (except from the local console). Usually, this is done by accident, but there is no way to undo the last change when the connection to the router is already cut. Safe mode can be used to minimize such risk.
+
+The "Safe Mode" button in the Winbox GUI allows you to enter Safe Mode, while in the CLI, you can access it by either using the keyboard shortcut F4 or pressing [CTRL]+[X]. To exit without saving the made changes in CLI, hit [CTRL]+[D].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[admin@MikroTik] ip route>[CTRL]+[X] 
+[Safe Mode taken] 
+[admin@MikroTik] ip route<SAFE>
+
+Message Safe Mode taken is displayed and prompt changes to reflect that session is now in safe mode. All configuration changes that are made (also from other login sessions), while the router is in safe mode, are automatically undone if the safe mode session terminates abnormally. You can see all such changes that will be automatically undone and tagged with an F flag in the system history:
+[admin@MikroTik] /ip/route> 
+[Safe Mode taken] 
+[admin@MikroTik] /ip/route<SAFE> add 
+[admin@MikroTik] /ip/route<SAFE> /system/history/print 
+Flags: U, F - FLOATING-UNDO 
+Columns:
+ ACTION, BY, POLICY ACTION BY POLICY 
+F route 0.0.0.0/0 added admin write 
+
+Now, if the telnet connection (or WinBox terminal) is cut, then after a while (TCP timeout is 9 minutes) all changes that were made while in safe mode will be undone. Exiting session by [Ctrl]+[D] also undoes all safe mode changes, while /quit does not.
+
+If another user tries to enter safe mode, he's given the following message:
+[admin@MikroTik] >
+Hijacking Safe Mode from someone - unroll/release/don't take it [u/r/d]:
+
+    [u] - undoes all safe mode changes, and puts the current session in safe mode.
+    [r] - keeps all current safe mode changes, and puts the current session in a safe mode. The previous owner of safe mode is notified about this:
+
+[admin@MikroTik] ip firewall rule input
+[Safe mode released by another user]
+
+    [d] - leaves everything as-is.
+
+If too many changes are made while in safe mode, and there's no room in history to hold them all (currently history keeps up to 100 most recent actions), then the session is automatically put out of the safe mode, and no changes are automatically undone. Thus, it is best to change the configuration in small steps, while in safe mode. Pressing [Ctrl]+[X] twice is an easy way to empty the safe mode action list.
+System Backup and Restore
+
+System backup is the way to completely clone router configuration in binary format.
+
+More information about Backup and Restore is found here.
+Configuration Export and Import
+
+RouterOS allows exporting and importing parts of the configuration in plain text format. This method can be used to copy bits of configuration between different devices, for example, clone the whole firewall from one router to another.
+
+An export command can be executed from each menu (resulting in configuration export only from this specific menu and all its sub-menus) or from the root menu for complete config export and is available for CLI only.
+
+The Export command does not export system user passwords, installed certificates, SSH keys, Dude, or a User-manager database.
+
+Installed certificates, Dude, and User-manager databases must be manually exported and imported into a new device.
+
+System user passwords and user SSH keys can not be exported.
+
+During config import, we suggest using the same RouterOS version used during config export to prevent cases when some of the commands do not exist in one or another RouterOS version. 
+Configuration Export
+
+The following command parameters are accepted:
+compact	Output only modified configuration, the default behavior
+file	Export configuration to a specified file. When the file is not specified export output will be printed to the terminal
+
+show-sensitive (yes|no; Default: no). RouterOS version 7 only
+
+hide-sensitive (yes|no; Default: no). RouterOS version 6 only
+	
+
+Show sensitive information, like passwords, keys, etc.
+
+Hide sensitive information, like passwords, keys, etc.
+terse	With this parameter, the export command will output only configuration parameters, without defaults.
+verbose	
+
+With this parameter, the export command will output whole configuration parameters and items including defaults.
+
+For example, export configuration from /ip address the menu and save it to a file:
+    [admin@MikroTik] > /ip address print
+    Flags: X - disabled, I - invalid, D - dynamic
+    #   ADDRESS            NETWORK         BROADCAST       INTERFACE
+    0   10.1.0.172/24      10.1.0.0        10.1.0.255      bridge1
+    1   10.5.1.1/24        10.5.1.0        10.5.1.255      ether1
+    [admin@MikroTik] > /ip address export file=address
+    [admin@MikroTik] > /file print
+    # NAME                            TYPE         SIZE       CREATION-TIME
+    0  address.rsc                     script       315        dec/23/2003 13:21:48
+    [admin@MikroTik] >
+
+By default, the export command writes only user-edited configuration, RouterOS defaults are omitted.
+
+For example, the IPSec default policy will not be exported, and if we change one property then only our change will be exported:
+    [admin@rack1_b4] /ip ipsec policy> print
+    Flags: T - template, X - disabled, D - dynamic, I - inactive, * - default
+    0 T * group=default src-address=::/0 dst-address=::/0 protocol=all
+          proposal=default template=yes
+    [admin@rack1_b4] /ip ipsec policy> export
+    # apr/02/1970 17:59:14 by RouterOS 6.22
+    # software id = DB0D-LK67
+    #
+    [admin@rack1_b4] /ip ipsec policy> set 0 protocol=gre
+    [admin@rack1_b4] /ip ipsec policy> export
+    # apr/02/1970 17:59:30 by RouterOS 6.22
+    # software id = DB0D-LK67
+    #
+    /ip ipsec policy
+    set 0 protocol=gre
+
+Note:
+
+The * flag, indicates that the entry is system default and cannot be removed manually.
+
+Here is the list of all menus containing default system entries
+/interface wireless security-profiles	default
+/ppp profile	"default", "default-encryption"
+/ip hotspot profile 	default
+/ip hotspot user profile 	default
+/ip ipsec policy 	default
+/ip ipsec policy group 	default
+/ip ipsec proposal	default
+/ip ipsec mode-conf	read-only
+/ip smb shares 	pub
+/ip smb users 	guest
+/ipv6 nd 	any
+/mpls interface	all
+/routing bfd interface	all
+/routing bgp instance	default
+/routing ospf instance	default
+/routing ospf area	backbone
+/routing ospf-v3 instance	defailt
+/routing ospf-v3 area	backbone
+/snmp community	public
+/tool mac-server mac-winbox	all
+/tool mac-server	all
+/system logging	"info", "error", "warning", "critical"
+/system logging action	"memory", "disk", "echo", "remote"
+/queue type	"default", "ethernet-default", "wireless-default", "synchronous-default", "hotspot-default", "only-hardware-queue", "multi-queue-ethernet-default", "default-small"
+
+If some specific menu will not be able to respond to the export command, starting from the RouterOS v7.11, an error message will be printed out in the export command output after a timeout ("#error exporting "/xxx" (timeout)") and the process will move on to the next menu.
+
+Starting from RouterOS 7.13, you can export parts of a specific menu. For instance, it is possible to export a specific address-list among multiple address-lists on your router.
+
+[admin@MikroTik] > ip firewall address-list export where list=mylist
+
+Configuration Import
+
+Root menu command import allows running configuration script from the specified file. Script file (with extension ".rsc") can contain any console command including complex scripts.
+
+For example, load saved configuration file
+[admin@MikroTik] > import address.rsc
+Opening script file address.rsc
+
+Script file loaded and executed successfully
+[admin@MikroTik] >
+
+Import command allows to specify the following parameters:
+from-line	Start executing the script from the specified line number. This option is only available in verbose mode.
+file-name	Name of the script (.rsc) file to be executed.
+verbose	Reads each line from the file and executes individually, allowing to debug syntax or other errors more easily.
+dry-run	Simulates the import without making any configuration changes. This helps in catching syntax errors. This option is only available in verbose mode.
+
+If the device has a default or existing configuration that requires replacement, it is necessary to initiate a configuration reset.
+
+This involves applying a clean, empty configuration using the command /system/reset-configuration no-defaults=yes, followed by a device reboot.
+Auto Import
+
+It is also possible to automatically execute scripts after uploading to the router with FTP or SFTP. The script file must be named with the extension *.auto.rsc. Once the commands in the file are executed, a new *.auto.log file is created which contains import success or failure information.
+
+".auto.rsc" in the filename is mandatory for a file to be automatically executed.
+Import troubleshooting
+Configuration parts to watch out for in exported .rsc files
+
+Things that should be removed from export files that were created with "/export", before attempting import on a new device.
+
+    Interface renaming conflicts with the default ethernet naming scheme.
+
+/interface ethernet
+set [ find default-name=ether5 ] auto-negotiation=no name=ether1-gateway
+set [ find default-name=ether6 ] name=ether2
+set [ find default-name=ether7 ] name=ether3
+set [ find default-name=ether8 ] name=ether4
+set [ find default-name=ether1 ] name=ether5
+set [ find default-name=ether2 ] name=ether6
+set [ find default-name=ether3 ] name=ether7
+set [ find default-name=ether4 ] name=ether8
+
+
+    In older versions "export" default entries might show with "add" instead of the "set" command. That should be edited before import to avoid errors.
+    Check if the total number of physical interfaces count matches the new and old devices. If there are some missing that will end up in error during .rsc import.
+
+In case of problematic import, attempt the following:
+
+    Use the dry-run parameter to simulate the import without making any configuration changes. This helps in catching syntax errors. This option is only available in verbose mode.
+    Reset the configuration on that device.
+    Run the import command again with the "verbose=yes" argument. It will also stop the import process on a problem that you already encountered, but will also show the place where the export failed. This way shows you the place where things need to be edited in the .rsc import file.
+
+Startup delay
+
+If your configuration relies on interfaces that might not yet have started up upon command execution, it is suggested to introduce delays or to monitor until all needed interfaces are available. This example script allows you to set how many interfaces you are expecting, and how long to wait until they become available:
+{
+:local i 0
+#Number of interfaces. It is necessary to reconfigure this number for each device (/interface print count-only)
+:local x 10
+#Max time to wait
+:local t 30
+while ($i < $t && [:len [/interface find]] < $x) do={
+:put $i
+:set $i ($i + 1)
+:delay 1
+}
+if ($i = $t) do={
+:log warning message="Could not load all physical interfaces"
+} else={
+#Rest of your script
+}
+}
+
+The above script will wait until there are 10 interfaces visible, or 30 seconds. If there are no 10 interfaces at this time, it will put a message in the log. Modify the variables according to your needs.
+Configuration Reset
+
+RouterOS allows resetting configuration with /system reset-configuration command
+
+This command clears all configuration of the router and sets it to the factory defaults including the login name and password ('admin' with an empty password or, for some models, check user and wireless passwords on the sticker). For more details on the default configuration see the list.
+
+After executing the configuration reset command, the router will reboot and load the default configuration. Starting from version 7.13, following the reset, a license prompt will be displayed with the option to view the end-user license agreement.
+
+
+The backup file of the existing configuration is stored before reset. That way you can easily restore any previous configuration if the reset is done by mistake.
+
+If the router was installed using Netinstall and had a script specified as the initial configuration, the reset command executes this script after purging the configuration. To stop it from doing so, you will have to reinstall the router.
+
+It is possible to override the default reset behavior with the parameters below:
+keep-users	Do not remove existing users from the configuration
+no-defaults	Do not load the default configuration, just clear the configuration
+skip-backup	Skip automatic backup file generation before reset
+run-after-reset	
+
+Run specified .rsc file after reset. That way you can load your custom configuration.
+
+If a specific .rsc file execution takes more than 2 minutes, a script will fail, and LOG will contain "runtime limit exceeded" or in rare cases "std failure: timeout" error.
+
+
+For example hard reset configuration without loading default config and skipping backup file:
+[admin@MikroTik] > /system reset-configuration no-defaults=yes skip-backup=yes
+Dangerous! Reset anyway? [y/N]: y
+
+And the same using Winbox:
+
+
+
+
+
+    Creado por Oskars K., actualizado por última vez por Edgars P. el mar 20, 2024 4 min de lectura
+
+    CPE Router
+    LTE CPE AP router
+    AP Router
+    PTP Bridge, W60G Bridge:
+    WISP Bridge
+    Switch
+    IP Only
+    CAP
+
+All MikroTik devices come with some kind of default configuration. There are several different configurations depending on board type:
+
+    CPE Router;
+    LTE CPE AP router;
+    AP Router (single or dual-band);
+    PTP Bridge, W60G Bridge (AP or CPE);
+    WISP Bridge (AP in ap_bridge mode);
+    Switch;
+    IP Only;
+    CAP.
+
+You can run the command /system default-configuration print to see the exact applied default configuration commands.
+CPE Router
+
+In this type of configuration, the router is configured as a wireless client device. WAN interface is a Wireless interface. WAN port has configured DHCP client, is protected by IP firewall and MAC discovery/connection is disabled. 
+
+List of routers using this type of configuration:
+
+    RB 711,911,912,921,922 - with level3 license
+    SXT
+    QRT
+    SEXTANT
+    LHG
+    LDF
+    DISC
+    Groove
+    Metal
+
+CPE RouterMode:
+
+    * wireless interface connected to providers network (WAN port);
+    * WAN port is protected by firewall and enabled DHCP client
+
+wlan1 Configuration:
+
+     mode: station;
+     band: 2ghz-b/g/n;
+     tx-chains: 0;1;
+     rx-chains: 0;1;
+     installation: outdoor;
+     wpa2: no;
+     ht-extension: 20/40mhz-XX;
+
+LAN Configuration:
+
+     IP address 192.168.88.1/24 is set on ether1 (LAN port)
+     DHCP Server: enabled;
+     DNS: enabled;
+
+WAN (gateway) Configuration:
+
+     gateway:wlan1 ;
+     ip4 firewall: enabled;
+     ip6 firewall: enabled;
+     NAT: enabled;
+     DHCP Client: enabled;
+
+Login
+
+     admin user protected by a password
+
+Configuration preview :
+text file.
+LTE CPE AP router
+
+This configuration type is applied to routers that have both LTE and wireless interfaces. LTE interface is considered a WAN port protected by a firewall and MAC discovery/connection disabled. The IP address on the WAN port is acquired automatically. Wireless is configured as an access point and bridged with all available Ethernet ports.
+
+List of routers using this type of configuration:
+
+    wAP LTE Kit
+    SXT LTE
+    LtAP 4G kit
+    LtAP LTE kit
+    Chateau
+
+CPE RouterMode:
+
+* wireless interface connected to providers network (WAN>
+
+* WAN port is protected by firewall and enabled DHCP cli>
+
+LAN Configuration:
+
+    The IP address 192.168.188.1/24 is set on the bridge (LAN por>
+    DHCP Server: enabled;
+    DNS: enabled;
+
+WAN (gateway) Configuration:
+
+    gateway:lte1 ;
+    ip4 firewall: enabled;
+    ip6 firewall: enabled;
+    NAT: enabled;
+
+Login
+
+    admin user protected by a password
+
+Configuration preview :
+text file.
+AP Router
+
+This type of configuration is applied to home access point routers to be used straight out of the box without additional configuration (except router passwords and wireless keys)
+
+First Ethernet is always configured as a WAN port (protected by a firewall, enabled DHCP client, and disabled MAC connection/discovery). Other Ethernet ports and wireless interfaces are added to the local LAN bridge with 192.168.88.1/24 address set and configured DHCP server. In the case of dual-band routers, one wireless is configured as a 5 GHz access point and the other as a 2.4 GHz access point.
+
+List of routers using this type of configuration:
+
+    RB 450,751,850,951,953,2011,3011,4011
+    hEX, PowerBox
+    mAP
+    wAP, wAP R (without LTE card)
+    hAP
+    cAP
+    OmniTIK
+    CRS series with wireless interface
+    L009 series
+    Audience
+    Knot
+    PWR
+
+RouterMode:
+
+* WAN port is protected by firewall and enabled DHCP cli>
+
+* Wireless and Ethernet interfaces (except WAN port/s) are part of the LAN bridge
+
+LAN Configuration:
+
+    The IP address 192.168.88.1/24 is set on the bridge (LAN port)
+    DHCP Server: enabled;
+    DNS: enabled;
+
+wlan1 Configuration:
+
+    mode: ap-bridge;
+    band: 2ghz-b/g/n;
+    tx-chains: 0;1;
+    rx-chains: 0;1;
+    installation: indoor;
+    wpa2: no;
+    ht-extension: 20/40mhz-XX;
+
+WAN (gateway) Configuration:
+
+    ip4 firewall: enabled;
+    ip6 firewall: enabled;
+    NAT: enabled;
+    DHCP Client: enabled;
+
+Login
+
+    admin user protected by a password
+
+Configuration preview :
+
+text file
+PTP Bridge, W60G Bridge:
+
+Bridged Ethernet with a wireless interface. The default IP address 192.168.88.1/24 is set on the bridge interface. There are two possible options - CPE and AP. For CPE wireless interface is set in "station-bridge" mode, and for AP "bridge" mode is used. W60G Bridge - This configuration type is applied to routers that have a 60 GHz point-to-point link.
+
+PTP Bridge:
+
+* Wireless and LAN interfaces are bridged;
+
+LAN Configuration:
+
+Login
+
+    admin user protected by a password
+
+Configuration preview :
+text file
+
+List of routers using this type of configuration:
+
+    DynaDish - as CPE
+
+
+W60G Bridge:
+
+ * W60G and LAN interfaces are bridged;
+
+wlan60-1 Configuration:
+
+    SSID: MikroTik;
+    mode:station-bridge;
+    password: no;
+    The IP address 192.168.88.1/24 is set on the bridge 
+
+Login
+
+    admin user protected by a password
+
+Configuration preview :
+text file
+
+List of routers using this type of configuration:
+
+    Cube, Cube Pro
+    nRAY, Dish
+    Wireless Wire Dish, nRAY, Cube, Cube Pro
+    Wireless Wire kit
+    wAP 60G - with level3 license
+
+WISP Bridge
+
+The configuration is the same as PTP Bridge in AP mode, except that wireless mode is set to ap_bridge for PTMP setups. The router can be accessed directly using a MAC address. If the device is connected to the network with an enabled DHCP server, configured DHCP client configured on the bridge interface will get the IP address, that can be used to access the router.
+
+List of routers using this type of configuration:
+
+    RB 911,912,921,922 - with Level4 license
+    Groove A, RB 711 A
+    BaseBox, NetBox
+    mANTBox, NetMetal
+    wAP 60G AP - with level4 license
+    LtAP
+    CME
+
+WISP Bridge:
+
+ * wireless and LAN interfaces are bridged;
+
+wlan1 Configuration:
+
+    mode: ap-bridge;
+    band: 2ghz-b/g/n;
+    tx-chains: 0;1;
+    rx-chains: 0;1;
+    installation:   outdoor;
+    wpa2: no;
+    ht-extension:   20/40mhz-XX;
+
+wlan2 Configuration:
+
+    mode: ap-bridge;
+    band: 5ghz-a/n/ac;
+    tx-chains: 0;1;
+    rx-chains: 0;1;
+    installation:   outdoor;
+    wpa2: no;
+    ht-extension:   20/40/80mhz-XXXX;
+
+LAN Configuration:
+
+    DHCP Client: enabled on bridge (LAN port);
+
+Login
+
+    admin user protected by a password
+
+Configuration preview :
+text file
+Switch
+
+This configuration utilizes switch chip features to configure a basic switch. All Ethernet ports are added to switch group and default IP address 192.168.88.1/24 is set on bridge interface.
+
+List of routers using this type of configuration:
+
+    FiberBox
+    CRS without wireless interface
+
+Switch mode:
+
+    All interfaces switched;
+
+Login
+
+    admin user protected by a password
+
+Configuration preview :
+text file
+IP Only
+
+When no specific configuration is found, IP address 192.168.88.1/24 is set on ether1, or combo1, or sfp1.
+
+List of routers using this type of configuration:
+
+    RB 411,433,435,493,800,M11,M33,1100
+    CCR
+
+LAN:
+
+    IP on etherx: 192.168.88.1/24;
+
+Login
+
+    admin no password.
+
+Configuration preview :
+text file
+CAP
+
+This type of configuration is used when a device needs to be used as a wireless client device controlled by CAPsMAN.
+
+When CAP default configuration is loaded, ether1 is considered a management port with DHCP client configured. All other Ethernet interfaces are bridged and wlan1 is set to be managed by CAPsMAN.
+
+To load CAP configuration refer to Reset Button manual.
+
+
+
+
+
+    Creado por Māris B., actualizado por última vez por Serhii T. el oct 15, 2024 12 min de lectura
+
+    Overview
+    Hierarchy
+        Example
+    Item Names and Numbers
+        Item Names
+        Item Numbers
+    Quick Typing
+    General Commands
+    Modes
+    Settings
+    List of keys
+        Built-in Help
+        Safe Mode
+        HotLock Mode
+        Lock Mode
+
+Overview
+
+The console is used for accessing the MikroTik Router's configuration and management features using text terminals, either remotely using a serial port, telnet, SSH, or console screen within Winbox, or directly using a monitor and keyboard. The console is also used for writing scripts. This manual describes the general console operation principles. Please consult the Scripting Manual on some advanced console commands and on how to write scripts.
+Hierarchy
+
+The console allows the configuration of the router's settings using text commands. Since there are a lot of available commands, they are split into groups organized in a way of hierarchical menu levels. The name of a menu level reflects the configuration information accessible in the relevant section, eg. /ip hotspot.
+Example
+
+For example, you can issue the /ip route print command:
+[admin@MikroTik] > ip route print 
+Flags: X - disabled, A - active, D - dynamic, 
+C - connect, S - static, r - rip, b - bgp, o - ospf, m - mme,
+B - blackhole, U - unreachable, P - prohibit
+ # DST-ADDRESS PREF-SRC G GATEWAY DIS INTE... 
+0 A S 0.0.0.0/0 r 10.0.3.1 1 bridge1 
+1 ADC 1.0.1.0/24 1.0.1.1 0 bridge1 
+2 ADC 1.0.2.0/24 1.0.2.1 0 ether3 
+3 ADC 10.0.3.0/24 10.0.3.144 0 bridge1 
+4 ADC 10.10.10.0/24 10.10.10.1 0 wlan1 
+[admin@MikroTik] >
+
+Instead of typing /ip route path before each command, the path can be typed only once to move into this particular branch of the menu hierarchy. Thus, the example above could also be executed like this:
+[admin@MikroTik] > ip route 
+[admin@MikroTik] ip route> print 
+Flags: X - disabled, A - active, D - dynamic, 
+C - connect, S - static, r - rip, b - bgp, o - ospf, m - mme,
+ B - blackhole, U - unreachable, P - prohibit # 
+DST-ADDRESS PREF-SRC G GATEWAY DIS INTE... 
+0 A S 0.0.0.0/0 r 10.0.3.1 1 bridge1 
+1 ADC 1.0.1.0/24 1.0.1.1 0 bridge1 
+2 ADC 1.0.2.0/24 1.0.2.1 0 ether3 
+3 ADC 10.0.3.0/24 10.0.3.144 0 bridge1 
+4 ADC 10.10.10.0/24 10.10.10.1 0 wlan1 [
+admin@MikroTik] ip route>
+
+Notice that the prompt changes to reflect where you are located in the menu hierarchy at the moment. To move to the top level again, type " / "
+[admin@MikroTik] > ip route 
+[admin@MikroTik] ip route> /
+[admin@MikroTik] >
+
+To move up one command level, type " .. "
+[admin@MikroTik] ip route> .. 
+[admin@MikroTik] ip>
+
+You can also use / and .. to execute commands from other menu levels without changing the current level:
+[admin@MikroTik] ip route> /ping 10.0.0.1 
+10.0.0.1 ping timeout 
+2 packets transmitted, 0 packets received, 100% packet loss 
+[admin@MikroTik] ip firewall nat> .. service-port print
+Flags: X - disabled, I - invalid 
+# NAME PORTS 
+0 ftp 21 
+1 tftp 69 
+2 irc 6667 
+3 h323 
+4 sip 
+5 pptp 
+[admin@MikroTik] ip firewall nat>
+Item Names and Numbers
+
+Many of the command levels operate with arrays of items: interfaces, routes, users, etc. Such arrays are displayed in similarly looking lists. All items in the list have an item number followed by flags and parameter values.
+
+To change the properties of an item, you have to use the set command and specify the name or number of the item.
+Item Names
+
+Some lists have items with specific names assigned to each of them. Examples are interface or user levels. There you can use item names instead of item numbers.
+
+You do not have to use the print command before accessing items by their names, which, as opposed to numbers, are not assigned by the console internally, but are properties of the items. Thus, they would not change on their own. However, there are all kinds of obscure situations possible when several users are changing the router's configuration at the same time. Generally, item names are more "stable" than the numbers, and also more informative, so you should prefer them to numbers when writing console scripts.
+Item Numbers
+
+Item numbers are assigned by the print command and are not constant - two successive print commands may order items differently. But the results of the last print commands are memorized and, thus, once assigned, item numbers can be used even after add, remove, and move operations. Item numbers are assigned on a per-session basis, they will remain the same until you quit the console or until the next print command is executed. Also, numbers are assigned separately for every item list, so for example, the ip address print will not change the numbering of the interface list.
+
+It is possible to use item numbers without running the print command. Numbers will be assigned just as if the print command was executed.
+
+You can specify multiple items as targets for some commands. Almost everywhere, where you can write the number of item, you can also write a list of numbers.
+[admin@MikroTik] > interface print 
+Flags: X - disabled, D - dynamic, R - running 
+# NAME TYPE MTU 
+0 R ether1 ether 1500 
+1 R ether2 ether 1500 
+2 R ether3 ether 1500 
+3 R ether4 ether 1500 
+[admin@MikroTik] > interface set 0,1,2 mtu=1460 
+[admin@MikroTik] > interface print
+ Flags: X - disabled, D - dynamic, R - running 
+# NAME TYPE MTU 
+0 R ether1 ether 1460 
+1 R ether2 ether 1460 
+2 R ether3 ether 1460 
+3 R ether4 ether 1500 
+[admin@MikroTik] >
+
+Warning: Do not use Item numbers in scripts, it is not a reliable way to edit items in the scheduler. scripts, etc. Instead, use the "find" command. More info here also look at scripting examples.
+Quick Typing
+
+Two features in the console help entering commands much quicker and easier - the [Tab] key completions, and abbreviations of command names. Completions work similarly to the bash shell in UNIX. If you press the [Tab] key after a part of a word, the console tries to find the command within the current context that begins with this word. If there is only one match, it is automatically appended, followed by a space:
+
+/inte[Tab]_ becomes /interface _
+
+If there is more than one match, but they all have a common beginning, which is longer than that of what you have typed, then the word is completed to this common part, and no space is appended:
+
+/interface set e[Tab]_ becomes /interface set ether_
+
+If you've typed just the common part, pressing the tab key once has no effect. However, pressing it for the second time shows all possible completions in compact form:
+[admin@MikroTik] > interface set e[Tab]_ 
+[admin@MikroTik] > interface set ether[Tab]_ 
+[admin@MikroTik] > interface set ether[Tab]_ 
+ether1 ether5 
+[admin@MikroTik] > interface set ether_
+
+The [Tab] key can be used almost in any context where the console might have a clue about possible values - command names, argument names, arguments that have only several possible values (like names of items in some lists or name of protocol in firewall and NAT rules). You cannot complete numbers, IP addresses, and similar values.
+
+Another way to press fewer keys while typing is to abbreviate command and argument names. You can type only the beginning of the command name, and, if it is not ambiguous, the console will accept it as a full name. So typing:
+[admin@MikroTik] > pin 10.1 c 3 si 100
+
+equals to:
+[admin@MikroTik] > ping 10.0.0.1 count 3 size 100
+
+It is possible to complete not only the beginning, but also any distinctive substring of a name: if there is no exact match, the console starts looking for words that have string being completed as first letters of a multiple-word name, or that simply contain letters of this string in the same order. If a single such word is found, it is completed at the cursor position. For example:
+[admin@MikroTik] > interface x[TAB][TAB]_ 
+dot1x  vxlan  export
+[admin@MikroTik] > interface mt[TAB]_
+[admin@MikroTik] > interface monitor-traffic _
+General Commands
+
+Some commands are common to nearly all menu levels, namely: print, set, remove, add, find, get, export, enable, disable, comment, and move. These commands have similar behavior throughout different menu levels.
+
+    add - this command usually has all the same arguments as set, except the item number argument. It adds a new item with the values you have specified, usually at the end of the item list, in places where the order of items is relevant. There are some required properties that you have to supply, such as the interface for a new address, while other properties are set to defaults unless you explicitly specify them.
+        Common Parameters
+            copy-from - Copies an existing item. It takes the default values of a new item's properties from another item. If you do not want to make an exact copy, you can specify new values for some properties. When copying items that have names, you will usually have to give a new name to a copy
+            place-before - places a new item before an existing item with a specified position. Thus, you do not need to use the move command after adding an item to the list. 
+            disabled - controls disabled/enabled state of the newly added item(-s)
+            comment - holds the description of a newly created item
+        Return Values
+            add command returns the internal number of item it has added
+    edit - this command is associated with the set command. It can be used to edit values of properties that contain a large amount of text, such as scripts, but it works with all editable properties. Depending on the capabilities of the terminal, either a fullscreen editor or a single-line editor is launched to edit the value of the specified property. The edit field for console scripts is limited to 30 thousand characters.
+    find - The find command has the same arguments as set, plus the flag arguments like disabled or active that take values yes or no depending on the value of the respective flag. To see all flags and their names, look at the top of the print command's output. The find command returns internal numbers of all items that have the same values of arguments as specified.
+    move - changes the order of items in the list.
+        Parameters
+            first argument specifies the item(-s) being moved.
+            the second argument specifies the item before which to place all items being moved (they are placed at the end of the list if the second argument is omitted).
+    print - shows all information that's accessible from a particular command level. Thus, /system clock print shows the system date and time, /ip route print shows all routes, etc. If there's a list of items in the current level and they are not read-only, i.e. you can change/remove them (an example of a read-only item list is /system history, which shows a history of executed actions), then print command also assigns numbers that are used by all commands that operate with items in this list.
+        Common Parameters
+            from - show only specified items, in the same order in which they are given.
+            where - show only items that match specified criteria. The syntax of where the property is similar to the find command.
+            brief - forces the print command to use tabular output form
+            detail - forces the print command to use property=value output form
+            count-only - shows the number of items
+            file - prints the contents of the specific submenu into a file on the router.
+            interval - updates the output from the print command for every interval of seconds.
+            oid - prints the OID value for properties that are accessible from SNMP
+            without-paging - prints the output without stopping after each screenful.
+    remove - removes specified item(-s) from a list.
+    set - allows you to change values of general parameters or item parameters. The set command has arguments with names corresponding to values you can change. Use "F1" or double [Tab] to see a list of all arguments. If there is a list of items in this command level, then "set" has one action argument that accepts the number of item (or list of numbers) you wish to set up. This command does not return anything.
+    reset - reset parameters to default values
+
+You can combine commands, here are two variants of the same command that will place a new firewall filter entry, by looking up the comment:
+
+/ip firewall/filter/add chain=forward place-before=[find where comment=CommentX]
+/ip/firewall/filter/add chain=forward place-before="CommentX"
+Modes
+
+The console line editor works either in multiline mode or in single-line mode. In multiline mode line editor displays the complete input line, even if it is longer than a single terminal line. It also uses a full-screen editor for editing large text values, such as scripts. In single-line mode, only one terminal line is used for line editing, and long lines are shown truncated around the cursor. A full-screen editor is not used in this mode.
+
+The choice of modes depends on detected terminal capabilities.
+Settings
+
+In "/console/settings" menu, it is possible to enable option for replacing reserved characters with underscores for file name.
+sanitize-names  (yes | no Default: no)	 Replace reserved characters (\ / : * ?  |)  with underscores
+List of keys
+F1              Give the list of available commands
+command F1      Give help on the command and list of arguments
+
+[Tab]           Complete the command/word. If the input is ambiguous,
+                a second [Tab] gives possible options
+
+F3 or Ctrl-R    Search command history
+F4 or Ctrl-X    Toggle safe mode
+F5 or Ctrl-L    Repaint the screen
+F7              Toggle hotlock mode
+F8              Print entire multiline input
+Ctrl-\          Split line
+Home or Ctrl-A  Go to the beginning of the line
+End or Ctrl-E   Go to the end of the line
+Ctrl-C          Interrupt current action
+Ctrl-D          Terminate session (on empty prompt)
+Ctrl-K          Delete to the end of the line
+Ctrl-U          Delete to the beginning of the line
+Ctrl-T          Switch to a background task
+
+/               Move up to base level
+..              Move up one level
+/command        Use command at the base level
+
+
+up, down and split keys leave the cursor at the end of the line.
+Built-in Help
+
+The console has built-in help. Press F1 for general console usage Help. The general rule is that Help shows what you can type in a position where the F1 was pressed (similarly to pressing [Tab] key twice, but in verbose form and with explanations).
+Safe Mode
+
+It is sometimes possible to change router configuration in a way that will make the router inaccessible (except from the local console). Usually, this is done by accident, but there is no way to undo the last change when the connection to the router is already cut. Safe mode can be used to minimize such risk.
+
+The "Safe Mode" button in the Winbox GUI allows you to enter Safe Mode, while in the CLI, you can access it by either using the keyboard shortcut F4 or pressing [CTRL]+[X]. To exit without saving the made changes in CLI, hit [CTRL]+[D].
+[admin@MikroTik] ip route>[CTRL]+[X] 
+[Safe Mode taken] 
+[admin@MikroTik] ip route<SAFE>
+
+
+Message Safe Mode taken is displayed and prompt changes to reflect that session is now in safe mode. All configuration changes that are made (also from other login sessions), while the router is in safe mode, are automatically undone if the safe mode session terminates abnormally. You can see all such changes that will be automatically undone and tagged with an F flag in the system history:
+[admin@MikroTik] /ip/route> 
+[Safe Mode taken]
+[admin@MikroTik] /ip/route<SAFE> add
+[admin@MikroTik] /ip/route<SAFE> /system/history/print
+Flags: U, F - FLOATING-UNDO
+Columns: ACTION, BY, POLICY
+  ACTION                 BY     POLICY
+F route 0.0.0.0/0 added  admin  write
+
+Now, if the telnet connection (or WinBox terminal) is cut, then after a while (TCP timeout is 9 minutes) all changes that were made while in safe mode will be undone. Exiting session by [Ctrl]+[D] also undoes all safe mode changes, while /quit does not.
+
+If another user tries to enter safe mode, he's given the following message:
+[admin@MikroTik] > 
+Hijacking Safe Mode from someone - unroll/release/don't take it [u/r/d]:
+
+    [u] - undoes all safe mode changes, and puts the current session in safe mode.
+    [r] - keeps all current safe mode changes, and puts the current session in a safe mode. The previous owner of safe mode is notified about this:
+
+[admin@MikroTik] ip firewall rule input 
+[Safe mode released by another user]
+
+    [d] - leaves everything as-is.
+
+If too many changes are made while in safe mode, and there's no room in history to hold them all (currently history keeps up to 100 most recent actions), then the session is automatically put out of the safe mode, and no changes are automatically undone. Thus, it is best to change the configuration in small steps, while in safe mode. Pressing [Ctrl]+[X] twice is an easy way to empty the safe mode action list.
+
+As "Safe Mode" operates within the user's session and stores configuration changes, it will be ignored for commands requiring a reboot, such as resetting configuration or restoring from a backup.
+HotLock Mode
+
+When HotLock mode is enabled commands will be auto-completed.
+
+To enter/exit HotLock mode press F7.
+[admin@MikroTik] /ip/address> [F7]
+[admin@MikroTik] /ip/address>>
+
+Double>>is an indication that HotLock mode is enabled. For example, if you type "/in et", it will be auto-completed to
+[admin@MikroTik] /ip/address>> /interface/ethernet/
+Lock Mode
+
+The ":lock" command locks the screen.
+[admin@MikroTik] > :lock
+...
+  MMM      MMM       KKK                          TTTTTTTTTTT      KKK
+  MMMM    MMMM       KKK                          TTTTTTTTTTT      KKK
+  MMM MMMM MMM  III  KKK  KKK  RRRRRR     OOOOOO      TTT     III  KKK  KKK
+  MMM  MM  MMM  III  KKKKK     RRR  RRR  OOO  OOO     TTT     III  KKKKK
+  MMM      MMM  III  KKK KKK   RRRRRR    OOO  OOO     TTT     III  KKK KKK
+  MMM      MMM  III  KKK  KKK  RRR  RRR   OOOOOO      TTT     III  KKK  KKK
+
+  MikroTik RouterOS 7.16rc1 (c) 1999-2024       https://www.mikrotik.com/
+
+
+Session is locked       (Ctrl-D to Quit)
+
+ password for admin: 
+
+
+
+
+    Creado por Artūrs C., actualizado por última vez por Oskars K. el nov 08, 2024 3 min de lectura
+
+Introduction
+
+The RouterOS password can only be reset by reinstalling the RouterOS or using the reset button (or jumper hole) in case the hardware is RouterBOARD. For X86(CHR) devices, only a complete reinstall will clear the password, along with any other configuration. For RouterBOARD devices, several methods exist, depending on the device model.
+Reset From RouterOS
+
+If you still have access to your router and want to recover its default configuration, then you can:
+
+    Run the command "/system reset-configuration" from a command-line interface;
+
+    Do it from the System -> Reset Configuration menu in the graphical user interface;
+
+Using Reset Button
+
+RouterBOARD devices are fitted with a reset button which has several functions:
+
+    Loading the backup RouterBOOT loader
+    Hold this button before applying power, and release it after three seconds since powering, to load the backup boot loader. This might be necessary if the device is not operating because of a failed RouterBOOT upgrade. When you have started the device with the backup loader, you can either set RouterOS to force backup loader in the RouterBOARD settings or have a chance to reinstall the failed RouterBOOT from a ".fwf" file (total of 3 seconds)
+
+    Resetting the RouterOS configuration
+    Hold this button until the LED light starts flashing, and release the button to reset RouterOS configuration to default.
+
+    Enabling CAPs mode
+    To connect this device to a wireless network managed by CAPsMAN, keep holding the button for 5 more seconds, LED turns solid, release now to turn on CAPs mode. It is also possible to enable CAPs mode via the command line, to do so run the command "/system reset-configuration caps-mode=yes";
+
+    Starting the RouterBOARD in Netinstall mode
+    Or keep holding the button for 5 more seconds until the LED turns off, then release it to make the RouterBOARD look for Netinstall servers. You can also simply keep the button pressed until the device shows up in the Netinstall program on Windows.
+
+
+You can also do the previous three functions without loading the backup loader, simply push the button immediately after you apply power. You might need the assistance of another person to push the button and also plug in the power supply at the same time!
+How to reset configuration
+
+1) Unplug the device from power;
+
+2) Press and hold the button right after applying power;
+
+Note: hold the button until the LED will start flashing;
+
+3) Release the button to clear the configuration;
+
+If you wait until the LED stops flashing, and only then release the button - this will instead launch Netinstall mode, to reinstall RouterOS.
+
+Jumper hole reset
+
+Older RouterBOARD models are also fitted with a reset jumper hole. Some devices might need an opening of the enclosure, RB750/RB951/RB751 have the jumper hole under one of the rubber feet of the enclosure.
+
+Close the jumper with a metal screwdriver, and boot the board until the configuration is cleared:
+
+Jumper reset for older models
+
+The below image shows the location of the Reset Jumper on older RouterBOARDs like RB133C:
+
+
+Don't forget to remove the jumper after the configuration has been reset, or it will be reset every time you reboot!
+WPS 
+
+Some devices have WPS button, or reset button with WPS functionality to reach and control access for Wireless networks without logging into the device, so that client can connect without password. Specific models use WPS sync function to connect with each other. Detailed information on WPS and reset button functionality for each model are described in User Manuals
+
+    Sin etiquetas 
+
+
+
+
+
+    Creado por Usuario desconocido (olga), actualizado por última vez por Serhii T. el mar 12, 2024 2 min de lectura
+
+Summary
+
+The RouterOS backup feature allows cloning a router configuration in binary format, which can then be re-applied on the same device. The system's backup file also contains the device's MAC addresses, which are restored when the backup file is loaded.
+
+We recommend restoring the backup on the same version of RouterOS.
+
+If The Dude or User-manager or installed on the router, then the system backup will not contain configuration from these services, therefore, additional care should be taken to save configuration from these services. Use the provided tool mechanisms to save/export configuration if you want to save it.
+
+System backups contain sensitive information about your device and its configuration, always consider encrypting the backup file and keeping the backup file in a safe place.
+Saving a backup
+
+Sub-menu: /system backup save
+dont-encrypt (yes | no; Default: no)	Disable backup file encryption. Note that since RouterOS v6.43 without a provided password, the backup file is unencrypted.
+encryption (aes-sha256 | rc4; Default: aes-sha256)	The encryption algorithm to use for encrypting the backup file. Note that is not considered a secure encryption method and is only available for compatibility reasons with older RouterOS versions.
+name (string; Default: [identity]-[date]-[time].backup)	The filename for the backup file.
+password (string; Default: )	Password for the encrypted backup file. Note that since RouterOS v6.43 without a provided password, the backup file is unencrypted.
+
+
+If a password is not provided in RouterOS versions older than v6.43, then the backup file will be encrypted with the current user's password, except if the dont-encrypted property is used or the current user's password is empty.
+
+The backup file will be available under /file menu, which can be downloaded using FTP or using Winbox.
+Loading a backup
+
+Load units backup without password:
+[admin@MikroTik] > system/backup/load name=auto-before-reset.backup password=""
+
+
+name (string; Default: )	File name for the backup file.
+password (string; Default: )	Password for the encrypted backup file.
+Example
+
+To save the router's configuration to file test and a password:
+[admin@MikroTik] > /system backup save name=test password=<YOUR_PASSWORD> 
+Configuration backup saved 
+[admin@MikroTik] > /system backup
+
+To see the files stored on the router:
+[admin@MikroTik] > /file print 
+# NAME TYPE SIZE CREATION-TIME 
+0 test.backup backup 12567 sep/08/2018 21:07:50 
+[admin@MikroTik] >
+
+To load the saved backup file test:
+[admin@MikroTik] > /system backup load name=test 
+password: <YOUR_PASSWORD> 
+Restore and reboot? [y/N]: y 
+Restoring system configuration 
+System configuration restored, rebooting now
+Cloud backup
+
+Since RouterOS v6.44 it is possible to securely store your device's backup file on MikroTik's Cloud servers, read more about this feature on the IP/Cloud page.
+
+    Sin etiquetas 
+
+
+
+    Creado por Artūrs C., actualizado por última vez por Serhii T. el abr 25, 2025 11 min de lectura
+
+    Introduction
+    Instructions for Windows
+    Instructions for Linux
+    Etherboot
+        Reset button
+        RouterOS
+        Serial console
+
+Introduction
+
+Netinstall is a tool for installing and reinstalling MikroTik devices running RouterOS. Always try using Netinstall if you suspect that your device is not working properly. The tool is available for Windows (with a graphical interface) and for Linux (as a command line tool). 
+
+In short, the Netinstall procedure goes like this: Connect your PC directly to the boot port (Usually Ether1, the port labeled BOOT or as otherwise indicated in the product manual) of the device you will be reinstalling. Turn on the device while holding the reset button until it shows up in the Netinstall tool.
+
+Careful. Netinstall re-formats the system's drive, all configuration and saved files will be lost. Netinstall does not erase the RouterOS license key, nor does it reset RouterBOOT related settings, for example, CPU frequency is not changed after reinstalling the device.
+Instructions for Windows
+
+    Download the Stable or Testing version of the Netinstall utility from the downloads page;
+
+    Download the RouterOS Main package from the downloads page;
+
+    You need to select a RouterOS version, preferably one marked as Stable. Additionally, choose the appropriate architecture (ARM, MIPS, SMIPS, TILE, etc.). If unsure, you can download the RouterOS package for all architectures, and Netinstall will determine the correct one for your device.
+
+    Disable all computer network interfaces (WiFi, Ethernet, LTE, or any other type of connection) except for the one to be used for installation. Netinstall will only function with one active interface on your computer. It's strongly recommended to deactivate any other network interfaces to ensure Netinstall selects the correct one.
+
+    Configure a static IP address for your Ethernet interface, open Start, and select Settings:
+
+Netinstall can run also on a local network, in such case you could skip setting a static IP address, but it is highly recommended that you set a static IP address if you are not familiar with Netinstall.
+
+    Open Network & Internet and select Change adapter options
+
+     Right-click on your Ethernet interface and select Properties
+
+    Select Internet Protocol Version 4 (TCP/IPv4) and click Properties
+
+    Check Use the following IP address and fill out the fields as shown in the image below
+
+    Open your Downloads folder (or wherever you saved the downloaded files) and extract the Netinstall *.zip file to a convenient place
+
+    Make sure that the Ethernet interface is running and launch Netinstall.exe. If you followed the guide precisely, then you should not have any Internet connection on your computer, Windows 10 wants to verify all apps that it runs, but will not be able to do it since lack of an Internet connection, for this reason, a warning might pop up, you should click Run.
+
+Netinstall requires administrator rights, there should be a window asking for permissions to run Netinstall, you must accept these permissions in order for Netinstall to work properly.
+
+    Allow access for Netinstall in Public networks and configure Net booting settings and fill out the required fields as shown in the image below
+
+The Client IP address must be unique! Don't use an existing IP address in your network, this also means that you should not use the computer's IP address as well. Use a completely different IP address from the same subnet.
+
+    Connect your device to your computer using an ethernet cable directly (without any other devices in-between), plug the Ethernet cable into your device's Etherboot port (see the next "Warning" in this article before connecting your Netinstll network). 
+    MikroTik devices are able to use Netinstall from their first port (Ether1), or from the port marked with "BOOT".
+
+Some computers have a network interface (especially USB Ethernet adapters) that tend to create an extra link flap, which is enough for Netinstall to fail to detect a device that is in Etherboot mode. In such a case you can use a switch between your device and your computer or a router in bridge mode to prevent this issue. If you use RouterOS powered router in bridge mode, then make sure that you disable any DHCP clients on the router bridge interface and disable Detect Internet feature.
+
+Netinstall uses bootp packets, which are using the same port numbers as DHCP packets. If you're using a switch between your PC and the device to be Netinstalled, ensure that the ports in the bridge are not blocked by other network devices.
+
+If you have dhcp-snooping enabled, make sure to enable "trusted" on the bridge ports facing the Netinstall PC.
+
+    Power up your device and put it into etherboot mode
+
+There are multiple ways how to put your device into Etherboot mode. Make sure you read the Etherboot manual before trying to put the device into this mode. Methods vary between different MikroTik devices.
+
+    Wait for the device to show up in Netinstall, then select it and click Browse. Navigate to your Downloads folder (or wherever you saved your RouterOS packages) and press OK.
+
+    Select your desired RouterOS packages and press Install. Wait for the installation to finish and press "Reboot" (Devices without serial console have to be rebooted manually).
+
+If you have downloaded RouterOS packages for multiple architectures, Netinstall will only display the appropriate architecture packages for your device after you have selected it. Unsupported packages will not appear in this window once a device is selected.
+
+If the installation does not start (progress bar is not moving or no status is shown), then you can try closing the Netinstall application and opening it up again or try to put the device into Etherboot mode again. If you are still unable to get Netinstall working, then you should try using it on a different computer since there might be an operating system's issue that is preventing Netinstall from working properly.
+
+The "Keep old configuration" process involves downloading the configuration database from the router, reinstalling the router (including disk formatting), and uploading the configuration files back to it. However, it's important to note that this process solely applies to the configuration itself and does not impact the files, including databases like the User Manager database, Dude database, and others.
+
+After using Netinstall the device will be reset to defaults (unless you specified not to apply default configuration). Some devices are not accessible through ether1 port with the default configuration for security reasons. Read more about Default configuration.
+
+Option "Keep branding" allows you to retain the device's already installed branding package without reinstalling it using Netinstall.
+
+When using the Configure script option, it is suggested to introduce a delay before configuration execution.
+
+    You're all set! Configure your device and reconnect it to your network. Your device should now be functioning correctly!
+
+Instructions for Linux
+
+The Linux version is a command line tool, which offers nearly the same parameters as the Windows counterpart. 
+
+Download the tool from our download page (links not literal): 
+
+wget https://download.mikrotik.com/routeros/[VERSION]/netinstall-[VERSION].tar.gz
+
+Extract it:
+
+tar -xzf netinstall-[VERSION].tar.gz
+
+Run the tool:
+
+sudo ./netinstall-cli [-parameters] [address/interface] routeros-arm64-[package VERSION].npk
+
+The tool requires privileged access and must be run as root, use sudo.
+
+The available parameters are as follows: 
+-r	
+
+When the reinstallation process is performed, the current configuration will be reset, and for devices that have it, the default configuration will be applied (optional).
+-e	
+
+Performing the reinstallation process will reset the device to an empty configuration.
+-b	
+
+Option to discard the currently installed branding package from the device, otherwise it will be reinstalled together with RouterOS.
+-m	
+
+Enables multiple device reinstallation.
+
+Available options:
+
+No "-m", no "-o" chosen – Only one successful installation will proceed, and Netinstall will close afterward.
+
+"-m" only – Enables multiple device reinstallation. The same device will be reinstalled as many times as BOOTP requests are sent.
+
+"-o" only – Functions the same as when neither "-m" nor "-o" is chosen: only one successful installation will proceed, and Netinstall will close afterward.
+
+Both "-m" and "-o" – Enables multiple device reinstallation. The same device will be reinstalled only once per Netinstall run.
+-o	
+
+When using the netinstall tool with the "-o" option, devices can only be installed once per netinstall run. This means that during the netinstall process, the tool will keep track of the MAC addresses of devices that were successfully installed. If a device with the same MAC address tries to reinstall during the same run, the tool will ignore it and not
+
+ respond to its BOOTP requests.
+-f	
+
+Ignore size constraints. Netinstall-cli checks the storage size on the router. If the total size of the selected packages exceeds the device's available storage, an error will be displayed: "Ignoring XX:XX:XX:XX:XX:XX, not enough space (override with -f)"
+-c	
+
+Allow to run multiple Netinstall instances on the same computer.
+-v	
+
+Verbose mode
+-k <keyfile>	
+
+Provides the device with a license key in .KEY format (optional).
+-s <userscript>	Pre-configures the device with the provided configuration (text file in .RSC format), removing the existing configuration before applying the new one. This configuration also replaces the default configuration. The script can access factory passwords with read-only variables $defconfPassword and $defconfWifiPassword (starting from RouterOS 7.10beta8) (optional).
+--mac <mac address>	
+
+Specifies MAC address which will be allowed to be installed. When a MAC address is provided, all other BOOTP requests are disregarded.
+-i <interface>	
+
+Allows you to specify an interface (optional).
+
+-a <IP address>
+	
+
+Uses a specific IP address that the Netinstall server will assign to the device. Mandatory, but can be auto-assigned if interface parameter used.
+PACKAGE	Specify a list of RouterOS.NPK format packages that Netinstall will try to install on the device (mandatory). The system package must be listed first.
+
+
+If the "-r" or "e-" parameter is not specified, netinstall-cli will reinstall RouterOS  and will keep the current configuration by downloading current configuration database from the router, reinstalling the router (including disk formatting), and uploading the configuration back to it, the same as  Netinstall "Keep old configuration" option. However, it's important to note that this process solely applies to the configuration itself and does not impact the files, including databases like the User Manager database, Dude database, and others.
+
+First make sure you have set the IP on your computer's interface:
+admin@ubuntu:~$ sudo ifconfig <interface> 192.168.88.2/24
+
+Then run the Netinstall version 6 (an example that resets the configuration upon reinstallation procedure):
+admin@ubuntu:~$ sudo ./netinstall -r -a 192.168.88.3 routeros-mipsbe-6.48.1.npk
+Using server IP: 192.168.88.2
+Starting PXE server
+Waiting for RouterBOARD...
+PXE client: 01:23:45:67:89:10
+Sending image: mips
+Discovered RouterBOARD...
+Formatting...
+Sending package routeros-mipsbe-6.48.1.npk ...
+Ready for reboot...
+Sent reboot command
+
+Or run the Netinstall version 7 (an example that applies an empty configuration and discards the branding during the reinstallation procedure):
+admin@ubuntu:~$ sudo ./netinstall-cli -e -b -i enx1234567ee890 -a 192.168.88.3 routeros-7.14.2-arm.npk wireless-7.14.2-arm.npk 
+Version: 7.15beta9(2024-03-27 20:41:15)
+Will apply empty config
+Will remove branding
+Using Interface: enx1234567ee890
+Wait for Link-UP on 'enx1234567ee890'. OK
+Using Client IP: 192.168.88.3
+Using Server IP: 192.168.88.10
+Starting PXE server
+Waiting for RouterBOARD...
+client: 74:4D:28:8E:86:74
+Detected client architecture: arm
+Sending and starting Netinstall boot image ... 
+Installed branding package detected
+Discovered RouterBOARD... 74:4D:28:8E:86:74
+Formatting...
+Sending package routeros-7.14.2-arm.npk ...
+Sending package wireless-7.14.2-arm.npk ...
+Sending empty config ...
+Ready for reboot...
+Sent reboot command
+Etherboot
+
+Etherboot mode is a special state for a MikroTik device that allows you to reinstall your device using Netinstall. There are two types of booters available for use: the regular booter and the backup booter. It's essential to verify both options.
+
+    To use the Regular booter press Ctrl+E to enter etherboot mode using the serial console or press the Reset button after a 1-2 second delay from when you power it on.
+    To employ the backup booter, power OFF the device. Press the Reset button and power on your device (wait until the "USR" led is blinking then stable "On", and when the "USR" led is "Off" - release the Reset button) - the device is booting in bootp mode to reinstall RouterOS using Netinstall.
+
+Reset button
+
+The Reset can be found on all MikroTik devices, this button can be used to put the device into Etherboot mode. An easy way to put a device into Etherboot mode using the Reset button is by powering off the device, hold the Reset button, power on the device while holding the Reset button and keep holding it until the device shows up in your Netinstalll window.
+
+If you have set up a Protected bootloader, then the reset button's behavior is changed. Make sure you remember the settings you used to set up the Protected bootloader, otherwise you will not be able to use Eterboot mode and will not be able to reset your device.
+RouterOS
+
+If your device is able to boot up and you are able to log in, then you can easily put the device into Etherboot mode. To do so, just connect to your device and execute the following command:
+/system routerboard settings set boot-device=try-ethernet-once-then-nand
+
+After that either reboot the device or do a power cycle on the device. Next time the device will boot up, then it will first try going into Etherboot mode. Note that after the first boot up, the device will not try going into Etherboot mode and will boot directly from NAND or from the storage type the device is using.
+Serial console
+
+Some devices come with a serial console that can be used to put the device into Etherboot mode. To do so, make sure you configure your computer's serial console. The required parameters for all MikroTik devices (except for RouterBOARD 230 series) are as following:
+115200bit/s, 8 data bits, 1 stop bit, no parity, flow control=none by default.
+
+For RouterBOARD 230 series devices the parameters are as following:
+9600bit/s, 8 data bits, 1 stop bit, no parity, hardware (RTS/CTS) flow control by default.
+
+Make sure you are using a proper null modem cable, you can find the proper pinout here. When the device is booting up, keep pressing CTRL+E on your keyboard until the device shows that it is trying bootp protocol:
+RouterBOOT booter 7.14.2
+
+CRS328-4C-20S-4S+
+
+CPU frequency: 800 MHz
+  Memory size: 512 MiB
+ Storage size:  16 MiB
+
+Press Ctrl+E to enter etherboot mode
+Press any key within 2 seconds to enter setup
+trying bootp protocol.... OK
+Got IP address: 192.168.88.3
+resolved mac address 84:69:93:9E:E6:49
+transfer started ............................... transfer ok, time=2.00s
+
+At this point your device is in Etherboot mode, now the device should show up in your Netinstall window.
+
+
+
+    Creado por Normunds R., actualizado por última vez por Mārtiņš S. el oct 16, 2024 2 min de lectura
+
+What is supout.rif file?
+
+The support file is used for debugging MikroTik RouterOS and to solve the support questions faster. All MikroTik Router information is saved in a binary file, which is stored in the router and can be downloaded from the router using FTP or WinBox. If required, then you can generate the file on the "/flash" folder on devices with FLASH type memory or external storage drive, by specifying the full path to the file "name=flash/supout.rif". You can view the contents of this file in your Mikrotik account, simply click on "Supout.rif viewer" located in the left column and upload the file.
+
+This file contains all your router's configuration, logs, and some other details that will help MikroTik Support to solve your issue. The file does not contain sensitive information or router passwords.
+Creating a Support Output file
+Winbox
+
+To generate this file in Winbox, click on "Make Supout.rif".
+
+To save the file to your computer, right mouse click on the file and select "Download" to get support output file or simply drag the file to your desktop.
+Webfig
+
+To generate this file in Webfig, click on "Make Supout.rif" and then "Download" to get it on your computer.
+
+Console
+
+To generate this file, please type in the command line:
+/system sup-output name=supout.rif
+
+If you open the file on supout viewer and output is too narrow, then you can re-generate supout file and specify output width manually with output-width option:
+/system sup-output name=supout.rif output-width=300
+
+
+
+
+    Creado por Māris B., actualizado por última vez por Serhii T. el feb 19, 2025 12 min de lectura
+
+    Overview
+    System Requirements
+    RouterOS license key levels
+        CHR License Levels
+        Prepaid Key
+    How to Purchase a RouterOS license key
+    How to Convert prepaid key to licence key for x86
+    Replacement Key
+    Obtaining Licenses and Working With Them
+        Where can I buy a RouterOS license key?
+        If I have purchased my key elsewhere
+        If I have a license and want to put it on another account?
+        If I have lost a license on my device?
+    Using the License
+        Can I Format or Re-Flash the drive?
+        How many computers can I use the License on?
+        Can I temporary use the HDD for something else, other than RouterOS?
+        Can I move the license to another HDD?
+        Must I type the whole key into the router?
+        Can I install another OS on my drive and then install RouterOS again later?
+        I lost my RouterBOARD, can you give me the license to use on another system?
+        Licenses Purchased from Resellers
+        I am not using the software, can you terminate my license?
+        Is this possible to upgrade or transfer my x86 license to a CHR license
+
+Overview
+
+MikroTik hardware routers that run RouterOS come preinstalled with a RouterOS license, if you have purchased a RouterOS based device, nothing must be done regarding the license.
+
+For X86 systems (i.e. PC devices), you need to obtain a license key. Each x86 system has a unique identifier called Software ID, which is used for licensing.
+
+The license key is a block of symbols that needs to be copied from your mikrotik.com account, or from the email you received in, and then it can be pasted into the router. You can paste the key anywhere in the terminal, or by clicking "Paste key" in WinBox License menu. A reboot is required for the key to take effect.
+
+RouterOS licensing scheme is based on Software ID / System ID where:
+
+    RouterBOARD Software ID is bound to storage media (HDD, NAND).
+    x86 Software ID is bound to MBR
+    CHR System ID is bound to MBR and UUID
+
+Before the license purchase it is recommended to check if the Software ID does not change on reboot. (Software ID may change on defective HDD, on HDD where RAID controllers are used but not properly configured etc.)
+
+Licensing information can be read from CLI system console:
+[admin@RB1100] > /system license print 
+    software-id: "43NU-NLT9"
+         nlevel: 6
+       features: 
+[admin@RB1100] >
+
+or from equivalent WinBox,  WebFig menu.
+System Requirements
+
+    Package version: RouterOS v6.34 or newer
+    Host CPU: x86-64 Architecture (64-bit)
+    RAM: 512MB or more
+    Disk: 128MB or more
+    RouterOS version 6: The maximum supported hard drive size is 16GB
+    RouterOS version 7: The maximum amount of RAM and disk space is limited by the Linux kernel 5.6.3 and depends on the specific hardware.
+
+The minimum required RAM depends on interface count and CPU count. You can get an approximate number by using the following formula:
+
+    RouterOS v6 - RAM = 128 + [ 8 × (CPU_COUNT) × (INTERFACE_COUNT - 1) ]
+    RouterOS v7 - RAM = 512 + [ 8 × (CPU_COUNT) × (INTERFACE_COUNT - 1) ]
+
+RouterOS license key levels
+
+After installation RouterOS runs in trial mode. You have 24 hours to register for Level 1 (Free demo) or purchase a Level 4,5 or 6 license and paste a valid key.
+[admin@MikroTik] /system license> print 
+  software-id: TRPC-YYR2
+   expires-in: 23h48m24s
+
+Level 3 is a wireless station (client or CPE) only license. For x86 PCs, Level3 is not available for purchase individually.
+
+Level 2 was a transitional license from old legacy (pre 2.8) license format. These licenses are not available any more, if you have this kind of license, it will work, but to upgrade it - you will have to purchase a new license.
+
+The difference between license levels is shown in the table below: 
+Price	no key	registration required	not for sale	$45	$95	$250
+Wireless AP mode (PtMP)	24h trial	-	no	yes	yes	yes
+PPPoE tunnels	24h trial	1	200	200	500	unlimited
+PPTP tunnels	24h trial	1	200	200	500	unlimited
+L2TP tunnels	24h trial	1	200	200	500	unlimited
+OVPN tunnels	24h trial	1	200	200	unlimited	unlimited
+EoIP tunnels	24h trial	1	unlimited	unlimited	unlimited	unlimited
+VLAN interfaces	24h trial	1	unlimited	unlimited	unlimited	unlimited
+Queue rules	24h trial	1	unlimited	unlimited	unlimited	unlimited
+HotSpot active users	24h trial	1	1	200	500	unlimited
+User manager active sessions	24h trial	1	10	20	50	Unlimited
+Bonding interfaces	24h trial	1	unlimited	unlimited	unlimited	unlimited
+RADIUS	24h trial	-	unlimited	unlimited	unlimited	unlimited
+
+All Licenses:
+
+    never expire (a running and licensed router can be used indefinitely)
+    can use unlimited number of interfaces
+    are for one installation each
+    offer unlimited software upgrades (exception - demo license does not allow ROS version upgrade (started from 7.8))
+
+CHR License Levels
+
+License levels described until now do not apply to Cloud Hosted Routers (CHRs). CHR is a RouterOS version intended for running as a virtual machine. It has its own 4 license levels as well as trial where you can test any of the paid license levels for 60 days.
+
+60-day free trial license is available for all paid license levels. To get the free trial license, you have to have an account on MikroTik.com as all license management is done there.
+
+Perpetual is a lifetime license (buy once, use forever). It is possible to transfer a perpetual license to another CHR instance. A running CHR instance will indicate the time when it has to access the account server to renew it's license. If the CHR instance will not be able to renew the license it will behave as if the trial period has ran out and will not allow an upgrade of RouterOS to a newer version.
+
+After licensing a running trial system, you must manually run the /system license renew command from the CHR to make it active. Otherwise the system will not know you have licensed it in your account. If you do not do this before the system deadline time, the trial will end and you will have to do a complete fresh CHR installation, request a new trial and then license it with the license you had obtained.
+Free	1Mbit	FREE	The free license level allows CHR to run indefinitely. It is limited to 1Mbps upload per interface. All the rest of the features provided by CHR are available without restrictions. To use this, all you have to do is download disk image file from our download page and create a virtual guest.
+P1	1Gbit	$45	
+
+P1 (perpetual-1) license level allows CHR to run indefinitely. It is limited to 1Gbps upload per interface. All the rest of the features provided by CHR are available without restrictions. It is possible to upgrade from P1 to P10 or P-Unlimited. Once the upgrade is purchased at the full price, the former license will become available for later use on your account.
+P10	10Gbit	$95	
+
+P10 (perpetual-10) license level allows CHR to run indefinitely. It is limited to 10Gbps upload per interface. All the rest of the features provided by CHR are available without restrictions. It is possible to upgrade from P10 to P-Unlimited. Once the upgrade is purchased at the full price, the former license will become available for later use on your account.
+P-Unlimited	Unlimited	
+
+$250
+	The p-unlimited (perpetual-unlimited) license level allows CHR to run indefinitely. It is the highest tier license and it has no enforced limitations.
+60-day Trial	
+	FREE	
+
+In addition to the limited Free installation, you can also test the increased speed of P1/P10/PU licenses with a 60 trial.
+
+You will have to have an account registered on MikroTik.com. Then you can request the desired license level for trial from your router that will assign your router ID to your account and enable a purchase of the license from your account. All the paid license equivalents are available for trial. A trial period is 60 days from the day of acquisition, after this time passes, your license menu will start to show "Limited upgrades", which means that RouterOS can no longer be upgraded.
+
+Note that if you plan to purchase the selected license, you must do it before 60 days trial ends. If your trial has ended, and there are no purchases within 2 months, the device will no longer appear in your MikroTik account. You will have to make a new CHR installation to make a purchase within the required time frame.
+
+To request a trial license, you must run the command "/system license renew" from the CHR device command line. You will be asked for the username and password of your mikrotik.com account.
+
+Warning: If you plan to use multiple virtual systems of the same kind, it may be possible that the next machine has the same SystemID as the original one. This can happen on certain cloud providers, such as Linode. To avoid this, after your first boot, run the command "/system license generate-new-id" before you request a trial license. Note that this feature must be used only while CHR is running on free type of RouterOS license. If you have already obtained paid or trial license, do not use regenerate feature since you will not be able to update your current key any more
+
+To use multiple virtual machines, download the disk image from our webpage, and make as many copies, as you need virtual machines. Then make new virtual machine system from each virtual disk image.
+
+Make sure to make copies of the Disk Image before you run or register the downloaded file.
+Prepaid Key
+
+A Prepaid Key is a type of license key you can purchase in advance for MikroTik products, such as the CHR, or convert into a license key to apply to an x86 system's Software ID. It allows you to buy a license without immediately assigning it to a specific device. Once you have a Prepaid Key, you can use it to upgrade a CHR or later convert it into a license key by providing the device's Software ID.
+How to Purchase a RouterOS license key
+
+    Go to mikrotik.com and log in to your account.
+
+    Access the "Purchase a RouterOS License Key" Section.
+    Choose the desired license Key Level;
+    Select Key Type "License key";
+
+    Enter License Key Information: Paste the Software ID of the device;
+    Select Optional Key Features:
+        Choose any additional features you might need for your key.
+    Press the "Place key in the cart" button.
+    Click "Proceed to checkout" to complete your purchase.
+
+Review and Complete Your Purchase
+
+    Review your order details.
+    Proceed with payment using Credit Card (CC) or PayPal.
+
+Congratulations! You have successfully purchased a RouterOS license key.
+How to Convert prepaid key to licence key for x86
+
+    Purchase a RouterOS Prepaid Key
+
+        Log in to your mikrotik.com account.
+
+        Purchase a RouterOS Prepaid key if you haven't already.
+
+    Access the "Make a Key from Prepaid Key" Section
+
+        Navigate to the "Make a key from prepaid key" section in your account.
+
+    Select and Convert the Prepaid Key
+
+        Select the desired prepaid key from the list.
+
+        Input the Software ID of the x86 device you need to license, or the Software ID of the router to upgrade the licence level.
+
+        Press "Generate".
+
+    Confirmation Message
+
+        A message will appear: "Successfully converted prepaid key to a new licence!".
+
+    Apply the License Key
+
+        Copy the generated license key.
+
+        Paste it into the x86 device to apply the license.
+
+Congratulations! You have successfully converted a prepaid key to a license key for your x86 device.
+Replacement Key
+
+A Replacement Key is a special key issued by the MikroTik support team in case of an x86 HDD failure or if an x86 instance running RouterOS has lost its license. It costs $10 and can be issued once per original key.
+
+Note that before issuing such key, MikroTik Support can ask you to prove that the old drive has failed, in some cases, this means sending us the dead drive.
+
+Replacement key request
+
+1) Go to your account management in mikrotik.com and fill the "support contact form" or write a direct e-mail to support@mikrotik.com
+
+    Provide Required Information:
+        Clearly explain why a replacement key is needed.
+        Include the Old Software ID and the account under which it was registered.
+
+2) Wait for Confirmation & Apply the Key:
+
+        After the MikroTik support team confirms that the Replacement key has been added to your account, check your account.
+        Navigate to "Make a key from replacement key" and proceed with the activation.
+
+3) Select the appropriate license level on which you wish to perform the replacement
+
+4) Enter the new "Software ID"
+
+5) Proceed to checkout by pressing "Add license replacement to cart" and finish the payment
+
+6) An e-mail will be sent to your profile containing the new license.
+
+    You can also find the newly generated key in the section "Search and view all keys" under the folder "Purchased YYYY" where "YYYY" is the current Year
+
+We may issue only one replacement key per one original key, using replacement key procedure twice for one key will not be possible. In cases like this new key for this RouterOS device must be purchased.
+Obtaining Licenses and Working With Them
+Where can I buy a RouterOS license key?
+
+MikroTik devices come preinstalled with a license and no purchase is needed.
+
+To obtain a higher level license, or to obtain a license for a x86 PC installation, you must register an account on our webpage, and in there, use the option Purchase a RouterOS license key.
+If I have purchased my key elsewhere
+
+You must contact the company who sold you the license, they will provide the support.
+If I have a license and want to put it on another account?
+
+You can give access to keys with the help of Virtual Folders
+
+The only kind of licenses, that could be transferred to another Account is a prepaid key. Prepaid keys got as a gift from the Training are not transferable.
+To transfer purchased prepaid key navigate to "Transfer prepaid keys" in the section "ROUTEROS KEYS" on your MikroTik Account.
+If I have lost a license on my device?
+
+If for some reason you have lost license from your router, upgrade router to the latest RouterOS version available and use "Request license key" in your mikrotik.com account. Use soft-id and serial number available under System/License menu in RouterOS when requesting license. Apply received license or contact support@mikrotik.com if request feature do not work.
+
+If the license was lost due to repairs and they were not done via the distributor under warranty, you will have to purchase a new RouterOS license for the full price!
+Using the License
+Can I Format or Re-Flash the drive?
+
+Formatting, and Re-Imaging the drive with non-MikroTik tools (like DD and Fdisk) will destroy your license! Be very careful and contact MikroTik support before doing this. It is not recommended, as MikroTik support might deny your request for a replacement license. For this use MikroTik provided tools - Netinstall or CD-install that are freely available from our download page.
+How many computers can I use the License on?
+
+The RouterOS license can be used only in one system, at the same time. The License is bound to the HDD it is installed on, but you have the ability to move the HDD to another computer system. You cannot move the License to another HDD, neither can you format or overwrite the HDD with the RouterOS license. It will be erased from the drive, and you will have to get a new one. If you accidentally removed your license, contact the support team for help.
+Can I temporary use the HDD for something else, other than RouterOS?
+
+As stated above, no.
+Can I move the license to another HDD?
+
+If your current HDD drive is destroyed, or can no longer be used, it is possible to transfer the license to another HDD. You will have to request a replacement key (see below) which will cost 10$
+Must I type the whole key into the router?
+
+No, simply copy it and paste in the menu System → License → Paste Key and Confirm to reboot.
+
+Or paste it to the CLI and press "Y" to reboot.
+Can I install another OS on my drive and then install RouterOS again later?
+
+No, because if you use formatting, partitioning utilities or tools that do something to the MBR, you will lose the license and you will have to make a new one. This process is not free (see Replacement Key above)
+I lost my RouterBOARD, can you give me the license to use on another system?
+
+MikroTik hardware comes with an embedded license. You cannot move this license to a new system in any way, this includes any upgrades applied to the MikroTik router while it was still working.
+Licenses Purchased from Resellers
+
+The keys that you purchase from other vendors and resellers are not in your account. Your mikrotik.com account only contains licenses purchased from MikroTik directly.
+I am not using the software, can you terminate my license?
+
+The licenses are stand alone keys and MikroTik does not have any remote control over your devices. Therefore, we are unable to verify if you use your license or not. This is why MikroTik cannot terminate any issued licenses.
+Is this possible to upgrade or transfer my x86 license to a CHR license
+It is not possible to upgrade the x86 license to a CHR license. You will need to purchase a new license for the CHR.
+
+
+
+    Creado por Normunds R., actualizado por última vez por Serhii T. el jun 10, 2025 17 min de lectura
+
+    System Requirements
+        CHR has been tested on the following platforms:
+        Usable Network and Disk interfaces on various hypervisors:
+        How to Install a virtual RouterOS system with CHR images
+    CHR Licensing
+        Paid licenses
+        Free licenses
+        Prepaid Key
+        How to Purchase a Prepaid Key to License a CHR
+        Getting and Upgrading the License
+        Initial Upgrade from Free to P1 License Level or Higher
+            Upgrade license level using WinBox
+            Upgrade license level using the command-line interface
+        Payment
+        License Update
+        Upgrading the Level of Perpetual License
+        License Transfer
+    Virtual Network Adapters
+    Troubleshooting
+        Running on VMware ESXi
+            Changing MTU
+            Using bridge on Linux
+            Packets not passing from guests
+            Using VLANs on CHR in various Hypervisors
+                ESXI
+                Hyper-V
+                bhyve hypervisor
+                Linode
+    Guest tools
+        VMWare
+            Time synchronization
+            Power operations
+            Quiescing/backup
+            Guest info
+            Provisioning
+                Python example
+        KVM
+
+Cloud Hosted Router (CHR) is a RouterOS version intended for running as a virtual machine. It supports the x86 64-bit architecture and can be used on most of the popular hypervisors such as VMWare, Hyper-V, VirtualBox, KVM, and others. CHR has full RouterOS features enabled by default but has a different licensing model than other RouterOS versions.
+System Requirements
+
+    Package version: RouterOS v6.34 or newer
+    Host CPU: 64-bit with virtualization support
+    RAM: 256MB or more
+    Disk: 128MB or more
+    RouterOS version 6: The maximum supported CHR virtual hard drive size is 16GB
+    RouterOS version 7: The maximum amount of RAM and disk space is limited by the Linux kernel 5.6.3 and depends on the specific hardware.
+
+The minimum required RAM depends on interface count and CPU count. You can get an approximate number by using the following formula:
+
+    RouterOS v6 - RAM = 128 + [ 8 × (CPU_COUNT) × (INTERFACE_COUNT - 1) ]
+    RouterOS v7 - RAM = 256 + [ 8 × (CPU_COUNT) × (INTERFACE_COUNT - 1) ]
+
+Note: We recommend allocating at least 1024MiB of RAM for CHR instances.
+CHR has been tested on the following platforms:
+
+    VirtualBox 6 on Linux and OS X
+    VMWare Fusion 7 and 8 on OS X
+    VMWare ESXi 6.5 and higher
+    Qemu 2.4.0.1 on Linux and OS X
+    Hyper-V on Windows Server 2008r2, 2012 and Windows 10 (Only Generation 1 Hyper-V virtual machine is supported at the moment)
+    Xen Server 7.1
+
+Warning: Hypervisors that provide paravirtualization are not supported.
+Usable Network and Disk interfaces on various hypervisors:
+
+    ESX:
+        Network: vmxnet3, E1000
+        Disk: IDE, VMware paravirtual SCSI, LSI Logic SAS, LSI Logic Parallel
+
+    Hyper-V:
+        Network: Network adapter, Legacy Network adapter
+        Disk: IDE, SCSI
+
+    Qemu/KVM:
+        Network: Virtio, E1000, vmxnet3 (optional)
+        Disk: IDE, Sata, Virtio
+
+    VirtualBox
+        Network: E1000, rtl8193
+        Disk: IDE, Sata, SCSI, SAS
+
+Note: SCSI controller Hyper-V and ESX are usable just for secondary disks, system image must be used with IDE controller!
+
+Warning: We do not recommend using the E1000 network interface if better synthetic interface options are available on a specific Hypervisor!
+How to Install a virtual RouterOS system with CHR images
+
+We provide 4 different virtual disk images to choose from. Note that they are only disk images, and you can't simply run them.
+
+    RAW disk image (.img file)
+    VMWare disk image (.vmdk file)
+    Hyper-V disk image (.vhdx file)
+    VirtualBox disk image (.vdi file)
+
+Steps to install CHR
+
+    Download the virtual disk image for your hypervisor from the Cloud Hosted Router section.
+    Create a guest virtual machine
+    Use the previously downloaded image file as a virtual disk drive
+    Start the guest CHR virtual machine
+    Log in to your new CHR. The default user is 'admin', without a password
+
+Please note that running CHR systems can be cloned and copied, but the copy will be aware of the previous trial period, so you cannot extend your trial time by making a copy of your CHR. However, you are allowed to license both systems individually. To make a new trial system, you need to make a fresh installation and reconfigure RouterOS.
+
+Installing CHR guides
+
+    VMWare Fusion/Workstation, ESXi 6.5 and higher
+    VirtualBox
+    Hyper-V
+    Amazon Web Services (AWS)
+    Hetzner Cloud Installation
+    Linode
+    Google Compute Engine
+    ProxMox
+    Vultr
+
+CHR Licensing
+
+The CHR (Cloud Hosted Router) has 4 license levels:
+
+    free
+    p1 perpetual-1 ($45)
+    p10 perpetual-10 ($95)
+    p-unlimited perpetual-unlimited ($250)
+
+The 60-day free trial license is available for all paid license levels. To get the free trial license, you have to have an account on MikroTik.com as all license management is done there.
+
+Perpetual is a lifetime license (buy once, use forever). It is possible to transfer a perpetual license to another CHR instance. A running CHR instance will indicate the time when it has to access the account server to renew its license. If the CHR instance will not be able to renew the license it will behave as if the trial period has run out and will not allow an upgrade of RouterOS to a newer version.
+
+After licensing a running trial system, you must manually run the /system license renew function from the CHR to make it active. Otherwise, the system will not know you have licensed it in your account. If you do not do this before the system deadline time, the trial will end and you will have to do a complete fresh CHR installation, request a new trial, and then license it with the license you had obtained.
+Free	1Mbit	FREE
+P1	1Gbit	$45
+P10	10Gbit	$95
+P-Unlimited	Unlimited	$250
+Paid licenses
+
+p1
+
+p1 (perpetual-1) license level allows CHR to run indefinitely. It is limited to 1Gbps upload per interface. All the rest of the features provided by CHR are available without restrictions. It is possible to upgrade from P1 to P10 or P-Unlimited. Once the upgrade is purchased at the full price, the former license will become available for later use on your account.
+
+p10
+
+p10 (perpetual-10) license level allows CHR to run indefinitely. It is limited to 10Gbps upload per interface. All the rest of the features provided by CHR are available without restrictions. It is possible to upgrade from P10 to P-Unlimited. Once the upgrade is purchased at the full price, the former license will become available for later use on your account.
+
+p-unlimited
+
+The p-unlimited (perpetual-unlimited) license level allows CHR to run indefinitely. It is the highest-tier license and it has no enforced limitations.
+Free licenses
+
+There are several options to use and try CHR free of charge.
+
+free
+
+The free license level allows CHR to run indefinitely. It is limited to 1Mbps upload per interface. All the rest of the features provided by CHR are available without restrictions. To use this, all you have to do is download the disk image file from our download page and create a virtual guest.
+
+60-day trial
+
+In addition to the limited Free installation, you can also test the increased speed of P1/P10/PU licenses with a 60 trial.
+
+You will have to have an account registered on MikroTik.com. Then you can request the desired license level for trial from your router that will assign your router ID to your account and enable the purchase of the license from your account. All the paid license equivalents are available for trial. A trial period is 60 days from the day of acquisition after this time passes, your license menu will start to show "Limited upgrades", which means that RouterOS can no longer be upgraded.
+
+If you plan to purchase the selected license, you should do it within 60 days of the trial end date. If your trial ends, and there are no purchases within 2 months after it ended, the device will no longer appear in your MikroTik account. You will have to make a new CHR installation to make a purchase within the required time frame.
+
+To request a trial license, you must run the command "/system license renew" from the CHR device command line. You will be asked for the username and password of your mikrotik.com account.
+If you plan to use multiple virtual systems of the same kind, it may be possible that the next machine has the same system ID as the original one. This can happen on certain cloud providers, such as Linode. To avoid this, after your first boot, run the command "/system license generate-new-id" before you request a trial license. Note that this feature must be used only while CHR is running on a free type of RouterOS license. If you have already obtained a paid or trial license, do not use the regenerate feature since you will not be able to update your current key anymore
+IP/Cloud requires a paid perpetual license for Cloud Hosted Router (CHR). 
+
+An expired CHR license means the CHR instance failed to renew its license before the "deadline-at" date by contacting the MikroTik server or that the 60-day trial period has ended. While the router continues operating at the same tier, software updates are disabled.
+
+It is only possible to license an expired CHR instance using a Prepaid key.
+Prepaid Key
+
+A Prepaid Key is a type of license key you can purchase in advance for MikroTik products, such as the CHR, or convert into a license key to apply to an x86 system's Software ID. It allows you to buy a license without immediately assigning it to a specific device. Once you have a Prepaid Key, you can use it to upgrade a CHR or later convert it into a license key by providing the device's Software ID.
+How to Purchase a Prepaid Key to License a CHR
+
+    Go to mikrotik.com and log in to your account.
+
+    Access the "Purchase a RouterOS License Key" Section.
+    Choose the desired license Key Level;
+    Select Key Type.
+    Select the key type: "Prepaid key";
+
+    Input the quantity of prepaid keys you wish to purchase;
+    Select Optional Key Features:
+        Choose any additional features you might need for your key.
+    Press the "Place key in the cart" button.
+    Click "Proceed to checkout" to complete your purchase.
+
+Review and Complete Your Purchase
+
+    Review your order details.
+    Proceed with payment using Credit Card (CC) or PayPal.
+
+Congratulations! You have successfully purchased a Prepaid Key.
+Getting and Upgrading the License
+
+After the initial setup, a CHR instance will be assigned a free trial license. You can upgrade this license to a higher tier through your MikroTik account. All license management, including upgrades, is handled on the account server.
+
+Note that you can upgrade to any tier except for p-unlimited, which is already the highest tier.
+Initial Upgrade from Free to P1 License Level or Higher
+
+Initial upgrade from the free tier to anything higher than that incurs CHR instance registration on the account server.
+
+To do that you have to enter your MikroTik.com username and password and the desired license level you want to acquire.
+
+To upgrade from the free tier to a higher license level, you need to register the CHR instance on the account server. Enter your MikroTik username and password, then select the desired license level to complete the upgrade.
+
+As a result, a CHR System ID will be assigned to your account on the account server, and a 60-day trial will be created for that System ID. There are two ways to obtain a license: using WinBox or the RouterOS command-line interface.
+Upgrade license level using WinBox
+
+(System -> License menu):
+
+Upgrade license level using the command-line interface
+
+[admin@MikroTik] > /system license print 
+  system-id: 6lR1ZP/utuJ
+      level: free
+
+[admin@MikroTik] > /system/license/renew
+account: mymikrotikcomaccount
+password: *********************
+level: p1
+  status: done
+
+[admin@MikroTik] > /system/license/print 
+         system-id: 6lR1ZP/utuJ
+             level: p1
+  limited-upgrades: no
+   next-renewal-at: 2024-08-25 13:18:06
+       deadline-at: 2024-09-24 13:18:06
+
+Payment
+
+To acquire a higher-level trial, set up a new CHR instance, renew the license, and select the desired level.
+
+To upgrade from a Trial license to a Paid one, go to the MikroTik account server and choose "All CHR keys" in the "CHR LICENCES" section.
+
+The list of your CHR instances and their corresponding licenses will be displayed.
+
+To upgrade from a Trial to a Paid license, click "Upgrade", select the desired license level (which can differ from the trial license level), and click "Upgrade" button.
+
+If there are Prepaid keys available, it is possible to use it for CHR - press "Pay using Prepaid key". If there are no Prepaid keys or you do not want to use them, press "Proceed to checkout".
+
+Choose the payment method: It is possible to pay using a credit card (CC) or PayPal.
+
+License Update
+
+In the System-License menu, the router will indicate "next-renewal-at" - the time when it will reattempt to contact the server located on licence.mikrotik.com.
+
+Communication attempts will be performed once an hour after the date on "next-renewal-at" and will not cease until the server responds with an error.
+
+If the "deadline-at" date is reached without successfully contacting the account server, the router will consider that the license has expired and will disallow further software updates. However, the router will continue to work with the same license tier as before.
+
+After successful communication with the license server, the dates will be updated.
+Upgrading the Level of Perpetual License
+
+It is possible to upgrade the Level of Perpetual License from P1 to P10 or P-Unlimited. Once the upgrade is purchased at the full price, the former license will become available for later use on your account.
+
+It is also possible to upgrade the Level of Perpetual License from P10 to P-Unlimited. Once the upgrade is purchased at the full price, the former license will become available for later use on your account.
+
+The P-Unlimited (perpetual-unlimited) license level allows CHR to run indefinitely. It is the highest-tier license and it has no enforced limitations.
+
+To upgrade the license level, follow these steps:
+
+    Go to the "All CHR keys" section on your mikrotik.com account.
+    Choose the CHR instance you want to upgrade and press "Upgrade".
+
+If you want to upgrade a perpetual license to a higher level, please transfer the previous perpetual license to another CHR first. This will prevent the previous perpetual license from being lost during the upgrade process.
+
+    Select the desired license level to upgrade to (P10 or P-Unlimited) and press "Upgrade".
+
+    Payment Options:
+        If you have prepaid keys available, you can use them for the upgrade by pressing "Pay using Prepaid key".
+        If you do not have prepaid keys or prefer not to use them, press "Proceed to checkout".
+
+    Choose Payment Method:
+        Choose your preferred payment method. You can pay using a credit card (CC) or PayPal.
+
+After completing these steps, your CHR license will be upgraded to the selected level, and the previous license will be available for later use on your account.
+License Transfer
+
+CHR installations are tied directly to the account on our website. It is possible to transfer a perpetual license to another CHR instance registered under the same account. 
+
+Licenses cannot be transferred to another account. The license transfer process requires that both the old and new CHR instances are registered under the same MikroTik account. If you need to use the CHR on a different account, a new license must be purchased for that account.
+
+The only kind of licenses, that could be transferred to another Account is a Prepaid key. Prepaid keys got as a gift from the Training are not transferable.
+To transfer purchased prepaid key navigate to "Transfer prepaid keys" in the section "ROUTEROS KEYS" on your MikroTik Account.
+
+It is not possible to transfer the Perpetual license to an expired instance.
+If you see the error: "This key is not eligible for transfer as there is no other valid CHR key that could be upgraded to the license level of this key.", it means you don't have any CHR instances in Trial mode to which the current license can be transferred. 
+You need to create a new CHR instance and add it to your account. Once added, you will be able to transfer the existing license to the new CHR instance.
+
+First, register the new machine under the same MikroTik account where the old CHR is registered using the CLI command "/system license renew".
+
+Once both the old and new CHR machines are visible in the "All CHR keys" section of your account, use the "Transfer" button to transfer the license.
+
+    Press the "Transfer" button for the System ID you need to transfer.
+
+    Select the System ID you are transferring to from the list.
+
+    Press "Transfer subscription".
+
+Virtual Network Adapters
+
+Fast Path is supported in RouterOS v7 for "vmxnet3" and "virtio-net" adapters.
+
+RouterOS v6 does not support Fast Path.
+Troubleshooting
+Running on VMware ESXi
+Changing MTU
+
+VMware ESXi supports MTU of up to 9000 bytes. To get the benefit of that, you have to adjust your ESXi installation to allow a higher MTU. Virtual Ethernet interface added after the MTU change will be properly allowed by the ESXi server to pass jumbo frames. Interfaces added prior to MTU change on the ESXi server will be barred by the ESXi server (it will still report the old MTU as the maximum possible size). If you have this, you have to re-add interfaces to the virtual guests.
+
+Example. There are 2 interfaces added to the ESXi guest, auto-detected MTU on the interfaces show MTU size as it was at the time when the interface was added:
+
+[admin@chr-vm] > interface ethernet print 
+Flags: X - disabled, R - running, S - slave 
+ #    NAME           MTU MAC-ADDRESS       ARP       
+ 0 R  ether1        9000 00:0C:29:35:37:5C enabled   
+ 1 R  ether2        1500 00:0C:29:35:37:66 enabled
+
+Using bridge on Linux
+
+If Linux bridge supports IGMP snooping, and there are problems with IPv6 traffic it is required to disable that feature as it interacts with MLD packets (multicast) and is not passing them through.
+
+echo -n 0 > /sys/class/net/vmbr0/bridge/multicast_snooping
+
+Packets not passing from guests
+
+The problem: after configuring a software interface (VLAN, EoIP, bridge, etc.) on the guest CHR it stops passing data to the outside world beyond the router.
+
+The solution: check your VMS (Virtualization Management System) security settings, if other MAC addresses are allowed to pass and if packets with VLAN tags are allowed to pass through. Adjust the security settings according to your needs like allowing MAC spoofing or a certain MAC address range. For VLAN interfaces, it is usually possible to define allowed VLAN tags or VLAN tag range.
+Using VLANs on CHR in various Hypervisors
+
+In some hypervisors, before VLAN can be used on VMs, they need to first be configured on the hypervisor itself.
+ESXI
+
+Enable Promiscuous mode in a port group or virtual switch that you will use for a specific VM.
+
+ESX documentation:
+
+    https://kb.vmware.com/kb/1004099
+
+Hyper-V
+
+Hyper-V documentation:
+
+    https://technet.microsoft.com/en-us/library/cc816585(v=ws.10).aspx#Anchor_2
+
+bhyve hypervisor
+
+It won't be possible to run CHR on this hypervisor. CHR cannot be run as a para-virtualized platform.
+Linode
+
+When creating multiple Linodes with the same disk size, new Linodes will have the same systemID. This will cause issues to get a Trial/Paid license. To avoid this, run the command /system license generate-new-id after the first boot and before you request a trial or paid license. This will make sure the ID is unique.
+
+
+Some useful articles:
+
+Specific VLAN is untagged by NIC interface:
+
+    https://blogs.msdn.microsoft.com/adamfazio/2008/11/14/understanding-hyper-v-vlans/
+    https://www.aidanfinn.com/?p=10164
+
+Allow passing other VLANs:
+
+    https://social.technet.microsoft.com/Forums/windows/en-US/79d36d5b-c794-4502-8ed4-b7a4183b1891/vlan-tags-and-hyperv-switches?forum=winserverhyperv
+
+Guest tools
+VMWare
+Time synchronization
+
+Must be enabled from GUI ('Synchronize guest time with host'). Backward synchronization is disabled by default - if the guest is ahead of the host by more than ~5 seconds, synchronization is not performed
+Power operations
+
+    poweron and resume scripts are executed (if present and enabled) after power on and resume operations respectively.
+    poweroff and suspend scripts are executed before power off and suspend operations respectively.
+    If scripts take longer than 30 seconds or contain errors, the operation fails
+    In case of failure, retrying the same operation will ignore any errors and complete it successfully
+    Failed script output is saved to a file (e. g. 'poweroff-script.log', 'resume-script.log' etc)
+    Scripts can be enabled/disabled from hypervisor GUI ('run VMware Tools Scripts') or by enabling/disabling scripts from the console
+
+Quiescing/backup
+
+Guest filesystem quiescing is performed only if requested.
+
+    freeze script is executed before freezing the filesystem
+    freeze-fail script is executed if the hypervisor failed to prepare for a snapshot or if freeze script failed
+    thaw script is executed after the snapshot has been taken
+    Script run time is limited to 60 seconds
+    freeze script timeouts and errors result in the backup operation being aborted
+    FAT32 disks are not quiesced
+    Failed script output is saved to a file (e. g. 'freeze-script.log', 'freeze-fail-script.log', 'thaw-script.log')
+
+Guest info
+
+Networking, disk, and OS info are reported to the hypervisor every 30 seconds (GuestStats (memory) are disabled by default, and can be enabled by setting 'guestinfo.disable-perfmon = "FALSE"' in VM config).
+
+    The order, in which network interfaces are reported, can be controlled by setting 'guestinfo.exclude-nics', 'guestinfo.primary-nics' and 'guestinfo.low-priority-nics' options. Standard wildcard patterns can be used.
+
+Provisioning
+
+ You can use the ProcessManager from Vim API to execute scripts. Python bindings are available
+
+    Main data structure: GuestProgramSpec
+        The workingDirectory and envVariables members are ignored
+        programPath must be set to either 'inline' or 'import'
+        If programPath is 'inline', arguments are interpreted as script text
+        If programPath is 'import', arguments are interpreted as file path
+
+After using GuestProgramSpec together with an instance of GuestAuthentication as arguments to StartProgramInGuest unique JobID is obtained.
+
+Script progress can be tracked by using the ListProcessesInGuest command. ListProcessesInGuest accepts an array of job id's; passing an empty array will report on all jobs started from the API
+
+    ListProcessesInGuest returns an array of GuestProcessInfo instances:
+        pid field is set to JobID
+        endTime is only set after completion
+        exitCode is set to 0 on success and -1 on error
+        name is set to 'inline' or 'import' (same as programPath in GuestProgramSpec)
+
+Information about completed jobs is kept around for ~1 minute, or until ListProcessesInGuest (with the corresponding JobID) is called. If the script fails, a file named 'vix_job_$JobID$ .txt' containing the script output is created. Script run time is limited to 120 seconds and script output is not saved on timeout,
+
+    The vmrun command runScriptInGuest can also be used
+    The PowerCLI cmdlet Invoke-VMScript is not supported
+    Host/guest file transfer is not supported
+
+Python example
+
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import sys,time
+from pyVim import connect
+from pyVmomi import vmodl,vim
+
+
+def runInline(content,vm,creds,source):
+    ''' Execute script source on vm '''
+    if isinstance(source, list):
+        source = '\n'.join(source)
+    ps = vim.vm.guest.ProcessManager.ProgramSpec(
+                programPath = 'console',
+                arguments = source
+        )
+    return content.guestOperationsManager.processManager.StartProgramInGuest(vm,creds,ps)
+
+def runFromFile(content,vm,creds,fileName):
+    ''' Execute script file located on CHR '''
+    ps = vim.vm.guest.ProcessManager.ProgramSpec(
+                programPath = 'import',
+                arguments = fileName
+    )
+    return content.guestOperationsManager.processManager.StartProgramInGuest(vm,creds,ps)
+
+
+def findDatastore(content,name):
+    sessionManager = content.sessionManager
+
+    dcenterObjView = content.viewManager.CreateContainerView(content.rootFolder, [vim.Datacenter], True)
+
+    datacenter = None
+    datastore = None
+    for dc in dcenterObjView.view:
+        dstoreObjView = content.viewManager.CreateContainerView(dc, [vim.Datastore], True)
+        for ds in dstoreObjView:
+            if ds.info.name == name:
+                datacenter = dc
+                datastore = ds
+                break
+        dstoreObjView.Destroy()
+
+    dcenterObjView.Destroy()
+
+    return datacenter,datastore
+
+def _FAILURE(s,*a):
+    print(s.format(*a))
+    sys.exit(-1)
+
+#------------------------------------------------------------------------------#
+
+if __name__ == '__main__':
+    host = sys.argv[1] # ip or something
+    user = 'root'
+    pwd = 'MikroTik'
+    vmName = 'chr-test'
+    dataStoreName = 'datastore1'
+
+
+
+    service = connect.SmartConnectNoSSL(host=host,user=user,pwd=pwd)
+    if not service:
+        _FAILURE("Could not connect to the specified host using specified username and password")
+
+    content = service.RetrieveContent()
+
+
+    #---------------------------------------------------------------------------
+    # Find datacenter and datastore
+
+
+    datacenter,datastore = findDatastore(content,dataStoreName)
+
+    if not datacenter or not datastore:
+        connect.Disconnect(service)
+        _FAILURE('Could not find datastore \'{}\'',dataStorename)
+
+
+    #---------------------------------------------------------------------------
+    # Locate vm
+
+
+    vmxPath = '[{0}] {1}/{1}.vmx'.format(dataStoreName, vmName)
+    vm = content.searchIndex.FindByDatastorePath(datacenter, vmxPath)
+
+    if not vm:
+        connect.Disconnect(service)
+        _FAILURE("Could not locate vm")
+
+
+    #---------------------------------------------------------------------------
+    # Setup credentials from user name and pasword
+
+    creds = vim.vm.guest.NamePasswordAuthentication(username = 'admin', password = '')
+
+
+    #---------------------------------------------------------------------------
+    # Run script
+
+    pm = content.guestOperationsManager.processManager
+
+    try:
+        # Run script
+        src = [':ip address add address=192.168.0.1/24 interface=ether1;']
+        jobID = runInline(content, vm, creds, src)
+
+        # Or run file (from FTP root)
+        # jobID = runFromFile(content,vm,creds, 'scripts/provision.rsc')
+
+
+        #---------------------------------------------------------------------------
+        # Wait for job to finish
+
+        pm = content.guestOperationsManager.processManager
+        jobInfo = pm.ListProcessesInGuest(vm, creds, [jobID])[0]
+        while jobInfo.endTime is None:
+            time.sleep(1.0)
+            jobInfo = pm.ListProcessesInGuest(vm, creds, [jobID])[0]
+
+        if jobInfo.exitCode != 0:
+            _FAILURE('Script failed!')
+    except:
+        raise
+    else:
+        connect.Disconnect(service)
+
+KVM
+
+QEMU guest agent is available. Supported agent commands can be retrieved by using the guest-info command. Host-guest file transfer can be performed by using guest-file-* commands. Guest networking information can be retrieved by using the guest-network-get-interfaces command.
+
+    Scripts can be executed by using the guest-exec command together with the GuestExec data structure:
+        If the path member is provided, the corresponding file is executed
+        If the path member is not set and input-data member is provided, input-data value is used as script input
+        If capture-output is set, script output is reported back
+        args and env members are not used
+
+    Script job progress can be monitored with guest-exec-status command. The GuestExecStatus data structure is populated as follows:
+        On success, exitcode member is set to 0
+        If the script timed out exitcode is set to 1
+        If the script contained errors exitcode is set to -1
+        signal member is not set
+        The err-data member is not used
+        If capture-output was true, Base64 encoded script output is stored in out-data
+    An additional agent channel ('chr.provision_channel') is also available
+
+
+
+
+
+    Creado por Serhii T., actualizado por última vez el jul 31, 2024 3 min de lectura
+
+CHR VirtualBox installation. Video instruction
+
+    Download VirtualBox: Install the latest version of VirtualBox from the official website.
+
+    Download CHR Image: Download and unpack the latest Stable or Testing version of the CHR (Cloud Hosted Router) VDI image from the MikroTik website.
+
+Step 1: Create a New Virtual Machine
+
+    Launch the VirtualBox application.
+
+    Create a New VM:
+
+        Click on New to create a new virtual machine.
+
+        Name and Operating System:
+
+            Name: Enter a name for your VM (e.g., MikroTik_CHR).
+            Type: Select Linux.
+
+            Version: Select Other Linux (64-bit).
+
+        Click Next.
+
+Step 2: Configure Memory Size
+
+    Memory Size: Allocate memory for the VM. It is recommended to allocate at least 256 MB of RAM (since RouterOS 7.15.1).
+
+    Processors: Select the desired quantity of CPUs.
+    Click Next.
+
+Step 3: Create a Virtual Hard Disk
+
+    Virtual Hard Disk:
+        Select "Use an existing Hard Disk File"
+        Add the downloaded VDI image file
+        Click Choose.
+
+        Click Next.
+
+Check the settings and click Finish.
+
+Step 4: Configure Virtual Machine Settings
+
+    Settings: Select your newly created VM and click on Settings.
+
+    System: Go to the System tab and uncheck Floppy, Optical in the Boot Order section.
+    Processors:
+        Go to the Processor tab.
+        Select the desired quantity of CPUs.
+    Network:
+        Go to the Network tab.
+
+        Adapter 1: Enable the network adapter and attach it to Bridged Adapter or NAT (depending on your network setup).
+
+Step 5: Start the Virtual Machine
+
+    Start VM: Click Start to boot your new virtual machine.
+
+    Login: After the VM reboots, you will see the CHR login prompt. The default login credentials are:
+        Username: admin
+        Password: (blank)
+
+    Initial Configuration: Configure the CHR as per your network requirements using the MikroTik CLI or WebFig.
+
+Congratulations! You have successfully installed MikroTik CHR on VirtualBox. You can now proceed with configuring your network settings and using the full features of MikroTik RouterOS.
+
+
+
+
+
+CHR: Hetzner Cloud Installation
+
+    Creado por Serhii T. el ago 09, 2024 2 min de lectura
+
+Hetzner Cloud is a cloud computing platform that allows users to run virtual machines (VMs) in the cloud. It offers scalable infrastructure and a range of pre-configured Linux distributions. However, for those needing advanced networking features, Hetzner Cloud is also a great platform for deploying RouterOS CHR (Cloud Hosted Router).
+CHR is a MikroTik product that provides a fully functional RouterOS installation in a virtual environment, ideal for cloud-based routing, VPN services, and other network management tasks. By running RouterOS CHR on Hetzner Cloud, users can leverage powerful networking tools with the flexibility and scalability of a cloud environment.
+
+    Create a Hetzner Cloud Server
+    Begin by creating a new server on Hetzner Cloud. Any of the available server options will work.
+
+    Activate Rescue System
+        In the Hetzner Cloud admin interface, activate the Enable Rescue system by selecting "ENABLE RESCUE & POWER CYCLE"
+        Choose 'linux64' as the Rescue OS.
+        The system will display a username and password. Use these credentials to log into the rescue system via SSH.
+
+    Install CHR (Cloud Hosted Router)
+        Once logged into the rescue system, download the CHR RAW disk image and write it over the system disk of the cloud server using the following command: 
+        curl -L https://download.mikrotik.com/routeros/7.15.3/chr-7.15.3.img.zip | funzip | dd of=/dev/sda bs=1M
+
+Note: Replace the URL with the link to the latest CHR version available on the MikroTik download page.
+
+Reboot the Server
+
+After the installation is complete, reboot the server by issuing the reboot command.
+It is crucial to secure your RouterOS installation immediately!
+
+Make sure to keep your RouterOS updated and follow best security practices to maintain the safety and performance of your server.
+
+
+
+
+    Creado por Oskars K., actualizado por última vez por GG el feb 08, 2024 3 min de lectura
+
+    Create a new guest with the system disk and other devices as required.
+
+    Then you have to manually upload the CHR disk (in qcow format) on the ProxMox host.
+
+    Use scp or any other comparable tool as that will use SSH for the upload and it does not require any additional configuration.
+
+    Either copy the file to the server and then manually edit the VM's .conf file or replace the previously created system image file used for booting the guest.
+
+    Local storage on ProxMox is in /var/lib/vz directory. There should be a subdirectory called images with a directory for each VM (named by the VM number). You can copy the files directly there.
+
+    To add the existing file to the VM, edit the VM's .conf file directly. Look in /etc/pve/qemu-server/ for a file with the VM number followed by .conf.
+
+Note: It's a good idea to create a second test VM so you can refer to it's.conf file to make sure you get the syntax right
+Alternative approach
+
+    Create Basic VM via ProxMox web GUI.
+    Make sure that VM storage is on local storage (this way there will be no need to work with the LVM config side, and the disk image can be moved later on to LVM or other desired storage if needed).
+    Log into ProxMox host via SSH and navigate to the VM image directory. Default local storage is located in: var/lib/vz/images/(VM_ID)
+    Via scp, wget or any other tool download CHR raw image (.img file) into this directory.
+    Now convert the CHR raw image to qcow2 format using qemu-img tool:
+
+qemu-img convert -f raw -O qcow2 chr-6.40.3.img vm-(VM_ID)-disk-1.qcow2
+
+Bash script approach
+
+If you have access to the ProxMox host then CHR VM can also be created quickly via BASH script. Below is an example of one such script.
+
+What this script does:
+
+    Stores tmp files in: /root/temp dir.
+    Downloads raw image archive from MikroTik download page.
+    Converts image file to qcow format.
+    Creates a basic VM that is attached to the MGMT bridge.
+
+#!/bin/bash
+
+#vars
+version="nil"
+vmID="nil"
+
+echo "############## Start of Script ##############
+
+## Checking if temp dir is available..."
+if [ -d /root/temp ] 
+then
+    echo "-- Directory exists!"
+else
+    echo "-- Creating temp dir!"
+    mkdir /root/temp
+fi
+# Ask user for version
+echo "## Preparing for image download and VM creation!"
+read -p "Please input CHR version to deploy (6.38.2, 6.40.1, etc):" version
+# Check if image is available and download if needed
+if [ -f /root/temp/chr-$version.img ] 
+then
+    echo "-- CHR image is available."
+else
+    echo "-- Downloading CHR $version image file."
+    cd  /root/temp
+    echo "---------------------------------------------------------------------------"
+    wget https://download.mikrotik.com/routeros/$version/chr-$version.img.zip
+    unzip chr-$version.img.zip
+    echo "---------------------------------------------------------------------------"
+fi
+# List already existing VM's and ask for vmID
+echo "== Printing list of VM's on this hypervisor!"
+qm list
+echo ""
+read -p "Please Enter free vm ID to use:" vmID
+echo ""
+# Create storage dir for VM if needed.
+if [ -d /var/lib/vz/images/$vmID ] 
+then
+    echo "-- VM Directory exists! Ideally try another vm ID!"
+    read -p "Please Enter free vm ID to use:" vmID
+else
+    echo "-- Creating VM image dir!"
+    mkdir /var/lib/vz/images/$vmID
+fi
+# Creating qcow2 image for CHR.
+echo "-- Converting image to qcow2 format "
+qemu-img convert \
+    -f raw \
+    -O qcow2 \
+    /root/temp/chr-$version.img \
+    /var/lib/vz/images/$vmID/vm-$vmID-disk-1.qcow2
+# Creating VM
+echo "-- Creating new CHR VM"
+qm create $vmID \
+  --name chr-$version \
+  --net0 virtio,bridge=vmbr0 \
+  --bootdisk virtio0 \
+  --ostype l26 \
+  --memory 256 \
+  --onboot no \
+  --sockets 1 \
+  --cores 1 \
+  --virtio0 local:$vmID/vm-$vmID-disk-1.qcow2
+echo "############## End of Script ##############"
+
+Useful tips
+
+    Useful snippet to clean up the BASH script from Windows formatting that may interfere with the script if it's edited on a Windows workstation:
+
+sed -i -e 's/\r$//' *.sh
+
+    Sin etiquetas 
+
+
+
+
+
+    Creado por Oskars K., actualizado por última vez por Serhii T. el sept 19, 2024 2 min de lectura
+
+Vultr has more than two dozen data center locations where you can choose to deploy MikroTik CHR for the best throughput and latency.
+Follow these steps to install MikroTik CHR at Vultr.
+Step 1: Deploy a server in rescue mode
+
+In this step, you'll deploy a new server at Vultr with SystemRescue, a bootable Linux ISO.
+
+    Deploy a new Cloud Compute instance.
+    Choose the location with the best performance for your needs. You can use Vultr's network-looking glass to test the throughput and latency of any location.
+    Select the ISO Library tab in the Server Image section.
+    Choose SystemRescue x64.
+    Choose a server size with enough bandwidth allowance for your requirements.
+    Give the server a hostname, and a label, and then click Deploy Now.
+
+When the server finishes deploying, proceed to the next step.
+Step 2: Write the CHR image to the disk
+In your web browser, navigate to the MikroTik download page.
+Locate the latest Stable RAW CHR disk image. Vultr requires version 7.2.3 Stable or later.
+Right-click the floppy disk icon to copy the URL. Don't download the image now, you'll download it to the server in a later step.
+Navigate to the server's information page in the Vultr customer portal.
+Connect to the web console.
+In the web console, download the CHR image to the server with "wget". If you copied the download URL to your clipboard, you can send it to the server through the web console.
+
+Substitute your version for x.x.x in the examples that follow.
+# wget https://download.mikrotik.com/routeros/x.x.x/chr-x.x.x.img.zip
+
+Unzip the downloaded file.
+# unzip chr-x.x.x.img.zip
+
+Write the MikroTik CHR image to the server's disk with dd.
+
+    # dd if=chr-x.x.x.img of=/dev/vda
+
+         if is the image that you unzipped in the previous step.
+         of is the server's disk:  /dev/vda.
+
+This procedure takes a couple of minutes; proceed to the next step when complete.
+Step 3: Connect to MikroTik CHR
+Navigate to the server's settings page.
+Choose the Custom ISO menu, then click Remove ISO. The server will reboot.
+Connect to the web console.
+Log in as admin. There is no password set, so press Enter at the prompt.
+View the software license, then choose a new, strong password.
+Close the web console, then open a terminal on your local computer.
+
+SSH as admin to the server's IP address.
+
+    $ ssh admin@192.0.2.2
+    Enter the strong password you set in the prior step.
+
+This completes the basic installation. Please secure your MikroTik CHR router and consult the documentation to configure the server for production use. Visit Vultr site for configuration manual and for their firewall features.
+
+
+
+
+    Creado por Normunds R., actualizado por última vez el nov 12, 2024 5 min de lectura
+
+Introduction
+
+This document describes the recommended steps for upgrading RouterOS to v7 major release and the possible caveats when doing so. 
+
+Upgrading from v6 to v7 happens the same way, as upgrading within v6 releases. Please follow the Upgrade manual for more detailed steps. If you are currently running RouterOS version 6 or older, we first suggest upgrading to the latest stable or long-term release in v6.
+
+Note that in your RouterOS v6.x, only RouterOS release 7.12.1 will be shown as the latest release. You must upgrade to this version first and only then further upgrades to newer versions will become available.
+
+In most RouterOS setups that run fine with the aforementioned v6 versions, no extra steps are required. Upgrading to v7 will automatically convert the configuration and your device will function right away.
+
+Note: We do not recommend running v7 on hardware that does not have at least 64 MB of RAM.
+Feature list compatibility
+
+As previously stated, nearly all RouterOS systems can use the "Check for updates" functionality and upgrade to v7 in a few clicks, but there are some features, where extra steps may be required:
+CAPsMAN	OK
+Interfaces	OK
+
+Wireless
+	OK
+Bridge/Switching	OK
+Tunnels/PPP	OK
+IPv6	
+
+OK
+
+BGP
+	
+
+OK, but attention is required  *
+OSPF	OK, but attention is required **
+MPLS	OK, but attention is required ***
+
+Routing filters
+	OK, but attention is required ****
+
+PIM-SM
+	See notes
+
+IGMP Proxy
+	OK
+Tools	OK
+
+Queues
+	
+
+OK
+Firewall	OK
+HotSpot	OK
+Static Routing	OK
+User Manager	See notes
+Notes
+
+The routing protocol configuration upgrade is triggered only once. This means that if a router was downgraded to ROSv6, the configuration was modified and the router got upgraded back to ROSv7, then the resulting configuration is the one that was present before the downgrade. To re-trigger v6 configuration conversion, load ROSv6 backup with the option force-v6-to-v7-configuration-upgrade=yes. 
+BGP
+
+All known configurations will upgrade from 6.x to 7.x successfully. But keep in mind that there is a complete redesign of the configuration. v7 BGP implementation provides with connection, template and session menus.
+
+Template contains all BGP protocol-related configuration options. It can be used as a template for dynamic peers and apply a similar config to a group of peers. Most of the parameters are similar to the previous implementation except that some are grouped in the output and input section making the config more readable and easier to understand whether the option is applied on input or output.
+
+BGP connection minimal set of parameters are remote.address, template, connect, listen and local.role
+Connect and listen to parameters specify whether peers will try to connect and listen to a remote address or just connect or just listen. It is possible that in setups where peer uses the multi-hop connection local.address must be configured too. Peer role is now a mandatory parameter, for basic setups, you can just use ibgp, ebgp.
+
+Now you can monitor the status of all connected and disconnected peers from /routing bgp session menu.
+Other great debugging information on all routing processes can be monitored from /routing stats menu.
+
+Networks are added to the firewall address-list and referenced in the BGP connection configuration.
+
+
+OSPF
+
+All known configurations will upgrade from 6.x to 7.x successfully.
+OSPFv2 and OSPFv3 are now merged into one single menu /routing ospf. At the moment there are no default instances and areas. To start OSPF you need to create an instance and then add area to the instance.
+
+RouterOSv7 uses templates to match the interface against the template and apply configuration from the matched template. OSPF menus interface and neighbor contains read-only entries for status monitoring.
+
+
+MPLS
+
+Upgrade MPLS setups with caution, and make sure to backup configuration before the upgrade.
+
+
+Routing filters
+
+All supported options are upgraded without any issue, in the case of an unsupported option - an empty entry is created. The routing filter configuration is changed to a script-like configuration. 
+
+The rule now can have "if .. then" syntax to set parameters or apply actions based on conditions from the "if" statement.
+
+Multiple rules without action are stacked in a single rule and executed in order like a firewall, the reason is that the "set" parameter order is important, and writing one "set"s per line, allows for an easier understanding from top to bottom on what actions were applied.
+
+More RouterOSv7 routing filter examples are here.
+
+
+PIM-SM
+
+Upgrading RouterOS to v7 will not preserve PIM-related configuration. After the upgrade, multicast routing configuration will be available under the /routing/pimsm menu and an additional "multicast" package is not required anymore. More information is available here.
+
+
+User Manager
+
+RouterOSv7 provides the new and redesigned implementation of User Manager, configuration is now integrated into RouterOS WinBox and console (WEB admin configuration interface is not available), more information is available here. Direct migration from older User Manager is not possible, it is possible to migrate older database from /user-manager/database/migrate-legacy-db However, it might be a good idea to start configuration from the scratch.
+New features
+
+A New Kernel is implemented in RouterOSv7, which leads to performance changes due to route cache, as well some tasks might require higher CPU and RAM usage for different processes.
+
+    completely new NTP client and server implementation
+    merged individual packages, only bundle and a few extra packages remain (dropped support for LCD and KVM packages)
+    new Command Line Interface (CLI) style (RouterOS v6 commands are still supported)
+    support for Let's Encrypt certificate generation
+    support for REST API
+    support for UEFI boot mode on x86
+    CHR FastPath support for "vmxnet3" and "virtio-net" drivers
+    support for "Cake" and "FQ_Codel" type queues
+    support for IPv6 NAT
+    support for Layer 3 hardware acceleration on all CRS3xx devices
+    support for MBIM driver with basic functionality support for all modems with MBIM mode
+    support for MLAG on CRS3xx devices
+    support for VRRP grouping and connection tracking data synchronization between nodes
+    support for Virtual eXtensible Local Area Network (VXLAN)
+    support for L2TPv3
+    support for OpenVPN UDP transport protocol
+    support for WireGuard
+    support for hardware offloaded VLAN filtering on RTL8367 (RB4011, RB100AHx4) and MT7621 (hEX, hEX S, RBM33G) switches
+    support for ZeroTier on ARM and ARM64 devices
+    completely new alternative wireless package "wifiwave2" with 802.11ac Wave2, WPA3, and 802.11w management frame protection support (requires ARM CPU and 256MB RAM)
+    support for hardware offloaded VLAN filtering on RTL8367 (RB4011, RB100AHx4) and MT7621 (hEX, hEX S, RBM33G) switches
+    support CPU frequency scaling for x86 devices
+
+Dropped support
+
+In RouterOS v7 has been dropped support for:
+
+    LCD package
+    KVM package
+	
+	
+	
+
+    Creado por Oskars K., actualizado por última vez por GG el feb 08, 2024 5 min de lectura
+
+    Main and Backup loaders
+    RouterBOARD reset button
+    Configuration Reset For Wireless Wire kits
+    Configuration
+    Simple Upgrade
+    Checking RouterBOOT version
+
+RouterBOOT is responsible for starting RouterOS in RouterBOARD devices.
+Main and Backup loaders
+
+By default, the main (regular) loader is used, but RouterBOARD devices also have a secondary (backup) bootloader, which can be used in case the main doesn't work. It is possible to call the backup loader with a configuration setting in RouterOS:
+system/routerboard/settings/set force-backup-booter=yes
+
+It is also possible to use the backup booter by turning on the device, with the RESET button pushed. It is only possible to upgrade the main RouterBOOT, so in case of failure, you can use the backup booter to start the device and downgrade the main loader. For upgrade instructions, follow the separate instructions in RouterBOARD#UpgradingRouterBOOT
+RouterBOARD reset button
+
+RouterBOOT reset button has three functions:
+
+    Hold this button during boot time until the LED light starts flashing, and release the button to reset the RouterOS configuration (total 5 seconds)
+    Keep holding for 5 more seconds, LED turns solid, release now to turn on CAPs mode (total 10 seconds)
+    Or Keep holding the button for 5 more seconds until the LED turns off, then release it to make the RouterBOARD look for Netinstall servers
+
+If you hold the button before applying power, backup RouterBOOT will be used in addition to all the above actions. To do the above actions without loading the backup loader, push the button right after applying power to the device.
+
+Reset the password
+
+https://www.youtube.com/watch?v=6Unz92rABs8 
+Configuration Reset For Wireless Wire kits
+
+The reset button has the same functionality as on other devices, explained in detail https://help.mikrotik.com/docs/display/ROS/Reset+Button
+
+5-second button hold on startup (USR LED light starts flashing) - resets to password-protected state.
+
+10-second button hold on startup (USR LED turns solid after flashing) - completely removes configuration.
+Configuration
+
+For RouterBOARD devices that feature a serial console connector, it is possible to access the RouterBOOT loader configuration menu. The required cable is described in the Serial Console manual. RouterBOARD serial port is configured to 115200bit/s, 8 data bits, 1 stop bit, and no parity. We suggest disabling the hardware flow control. 
+
+This example shows the menu which is available in RouterBOOT 7.4beta4:
+RouterBOOT booter 7.4beta4
+
+CRS328-24P-4S+
+
+built by build at Jun/15/2022 11:34:09 from revision 73B4521C
+
+CPU frequency: 800 MHz
+  Memory size: 512 MiB
+ Storage size:  16 MiB
+
+Press Ctrl+E to enter etherboot mode
+Press any key within 2 seconds to enter setup
+
+
+RouterBOOT-7.4beta4
+What do you want to configure?
+   d - boot delay
+   k - boot key
+   s - serial console
+   n - silent boot
+   o - boot device
+   z - extra kernel parameters
+   r - reset booter configuration
+   e - format storage
+   w - repartition nand
+   g - upgrade firmware
+   i - board info
+   p - boot protocol
+   b - booter options
+   j - boot os
+   t - hardware tests
+   l - erase license
+   x - exit setup
+your choice: 
+
+The options are self-explanatory.
+d	boot delay	Delays starting of RouterOS to allow an interface to initialize
+k	boot key	The button that will open the configuration menu
+s	serial console	Sets the baud rate of the serial port
+n	silent boot	Suppresses all output on the serial port, in case some device is connected to it (like a GPS device or a temperature monitor)
+o	boot device	Allows to enable Netinstall booting
+z	extra kernel parameters	
+r	reset booter configuration	Resets the settings in this menu. Warning, no confirmation!
+e	format storage	Destroys all data on the NAND, including RouterOS configuration and license
+w	repartition nand	Refer to the Partitions document for more info
+y	active partition	Choose an active partition from which to try to load RouterOS
+g	upgrade firmware	Allows upgrading RouterBOOT version through the network, or the XModem protocol
+i	board info	
+p	boot protocol	
+b	booter options	Select which bootloader to use by default
+t	do memory testing	booter options
+j	boot os	do memory testing
+t	hardware tests	
+l	erase license	
+x	
+
+exit setup
+	
+
+Hitting the appropriate keyboard letter will give you a list of further options, they are shown below:
+
+# d - boot delay:
+
+Select boot delay:
+   1 - 1s
+ * 2 - 2s
+   3 - 3s
+   4 - 4s
+   5 - 5s
+   6 - 6s
+   7 - 7s
+   8 - 8s
+   9 - 9s
+
+# k - boot key:
+
+Select key which will enter setup on boot:
+ * 1 - any key
+   2 - <Delete> key only
+
+# s - serial console:
+
+Select baud rate for serial console:
+ * 1 - 115200
+   2 - 57600
+   3 - 38400
+   4 - 19200
+   5 - 9600
+   6 - 4800
+   7 - 2400
+   8 - 1200
+   9 - off
+
+# n - silent boot:
+
+Silent boot:
+   0 - off
+ * 1 - on
+
+# o - boot device:
+
+Select boot device:
+   e - boot over Ethernet
+ * n - boot from NAND, if fail then Ethernet
+   1 - boot Ethernet once, then NAND
+   o - boot from NAND only
+   b - boot chosen device
+   f - boot Flash Configure Mode
+   3 - boot Flash Configure Mode once, then NAND
+
+
+# f - cpu frequency:
+
+Select CPU frequency:
+   a -  200MHz
+   b -  400MHz
+   c -  600MHz
+   d -  800MHz
+   e - 1000MHz
+ * f - 1200MHz
+
+# r - reset booter configuration:
+
+# e - format nand:
+
+Do you realy want to format your storage device?
+that would result in losing all your data
+type "yes" to confirm: 
+
+# w - repartition nand:
+
+Select parititon count:
+   1 - partition
+ * 2 - partitions
+   3 - partitions
+   4 - partitions
+
+# y - active partition:
+
+Select active partiton:
+ * 0 - partition
+   1 - partition
+
+# g - upgrade firmware:
+
+Upgrade firmware options:
+   e - upgrade firmware over ethernet
+   s - upgrade firmware over serial port
+
+# i - board info:
+
+Board Info:
+
+        Board type: CCR1009-8G-1S-1S+
+     Serial number: 48FF01DDE6FD
+  Firmware version: 3.19
+     CPU frequency: 1200 MHz
+       Memory size: 2048 MiB
+         NAND size: 128 MiB
+        Build time: 2014-09-23 15:02:34
+  eth1 MAC address: 00:0C:42:00:BE:4A
+  eth2 MAC address: 00:0C:42:00:BE:4B
+  eth3 MAC address: 00:0C:42:00:BE:4C
+  eth4 MAC address: 00:0C:42:00:BE:4D
+  eth5 MAC address: 00:0C:42:00:BE:4E
+  eth6 MAC address: 00:0C:42:00:BE:4F
+  eth7 MAC address: 00:0C:42:00:BE:50
+  eth8 MAC address: 00:0C:42:00:BE:51
+  eth9 MAC address: 00:0C:42:00:BE:52
+ eth10 MAC address: 00:0C:42:00:BE:53
+
+# p - boot protocol:
+
+Choose which boot protocol to use:
+ * 1 - bootp protocol
+   2 - dhcp protocol
+
+# b - booter options:
+
+Select which booter you want to load:
+ * 1 - load regular booter
+   2 - force backup-booter loading
+
+#t - do memory testing:
+
+launches built in memory test!
+
+# x - exit setup:
+
+Exit bios configuration menu and continues with system startup.
+
+
+Simple Upgrade
+
+RouterBOOT can be upgraded from RouterOS by:
+
+    Run command /system routerboard upgrade
+    Reboot your router to apply the upgrade (/system reboot)]
+
+[admin@admin] > system/routerboard/upgrade 
+Do you really want to upgrade firmware? [y/n] 
+
+Every ROS version has a new RouterBoot version included in it, once you perform a ROS upgrade we always recommend upgrading RouterBoot also.
+Checking RouterBOOT version
+
+This command shows the current RouterBOOT version of your device and the available upgrade which is included in routeros-x.yy.npk package, or if you uploaded a *.FWF file corresponding to the device model:
+[admin@admin] >  system/routerboard/print 
+                ;;; Firmware upgraded successfully, please reboot for changes 
+                    to take effect!
+       routerboard: yes
+        board-name: hAP ac
+             model: RouterBOARD 962UiGS-5HacT2HnT
+     serial-number: 6737057562DD
+     firmware-type: qca9550L
+  factory-firmware: 3.29
+  current-firmware: 6.49.5
+  upgrade-firmware: 7.4beta5 
+
+In this case, you see, there is a newer version of the Bootloader firmware available already inside your current RouterOS version and it has been updated and requires a reboot.
+
+A downgrade is also possible by uploading *.FWF file with an older version may be required for troubleshooting purposes when contacting MikroTik support.
+
+
+
