@@ -1,1981 +1,1863 @@
 
 
-    Creado por Māris B., actualizado por última vez el jul 06, 2021 1 min de lectura
-
-Fantasy menu is a fancy way to generate large amount of routes for testing purposes. Main benefits of this approach compared to script is the generation speed and simplicity. It is easy to remove all fantasy generated routes just by disabling fantasy rule.
-
-Fantasy uses random generator from hashed route sequence number, seed and other parameters. 
-Configuration Options
-comment (string)	
-count (integer:[0..4294967295])	How many routes to generate.
-dealer-id (start-[end]:: integer:[0..4294967295])	
-disabled (yes | no)	ID reference is not used.
-dst-address(Prefix)	Prefix from which route will be generated. 
-gateway (string)	
-instance-id (start-[end]:: integer:[0..4294967295])	
-name (string)	Reference name
-offset (integer:[0..4294967295])	Route sequence number offset
-prefix-length (start-[end]:: integer:[0..4294967295] )	Prefix length for generated route (can be specified as integer range). For example dst-address 192.168.0.0/16 and prefix-length 24 will generate /24 routes from 192.168.0.0/16 subnet.
-priv-offset (start-[end]:: integer: [0..4294967295])	
-priv-size (start-[end]:: integer: [0..100000])	
-scope (start-[end]:: integer: [0..255])	Scope to be set, can be set as range
-seed (string)	Random generator seed
-target-scope (start-[end]:: integer: [0..255])	Target scope to be set, can be set as range
-use-hold (yes | no)	
+    Creado por Artūrs C., actualizado por última vez por Jānis Bērziņš el feb 10, 2025 7 min de lectura
 
+    Introduction
+    Create a file
+    Append text to a file in a new line
+    Check if IP on the interface has changed
+    Strip netmask
+    Resolve host-name
+    Write simple queue stats in multiple files
+    Generate backup and send it by e-mail
+    Check bandwidth and add limitations
+    Block access to specific websites
+    Parse file to add ppp secrets
+    Detect new log entry
+    Allow use of ntp.org pool service for NTP
+    Other scripts
 
+Introduction
 
+This section contains some useful scripts and shows all available scripting features. Script examples used in this section were tested with the latest 3.x version.
+Create a file
 
+it is not possible to create a file directly, however, there is a workaround:
+/file print file=myFile
+/file set myFile.txt contents=""
+Append text to a file in a new line
 
-    Creado por Māris B., actualizado por última vez el feb 04, 2022 4 min de lectura
-
-A read-only table that lists routes from all the address families as well as all filtered routes with all possible route attributes.
-
-
-Default example output of the table with various route types:
-[admin@MikroTik] /routing/route> print 
-Flags: A - ACTIVE; c, s, a, l, y - COPY; H - HW-OFFLOADED
-Columns: DST-ADDRESS, GATEWAY, AFI, DISTANCE, SCOPE, TARGET-SCOPE, IMMEDIATE-GW
-    DST-ADDRESS                 GATEWAY           AFI   D  SCOPE  TA  IMMEDIATE-GW       
- lH 10.0.0.0/8                                    ip4   0                                
-;;; defconf
-As  10.0.0.0/8                  10.155.130.1      ip4   1     30  10  10.155.130.1%ether1
- lH 10.155.130.0/25                               ip4   0                                
-Ac  10.155.130.0/25             ether1            ip4   0     10      ether1             
- aH 10.155.130.12/32                              ip4   0                                
- lH 111.13.0.0/24                                 ip4   0                                
-Ac  111.13.0.0/24               ether2            ip4   0     10      ether2             
- aH 111.13.0.1/32                                 ip4   0                                
-Ac  111.111.111.2/32            loopback@vrfTest  ip4   0     10      loopback           
-Ac  2111:4::/64                 ether2            ip6   0     10      ether2             
-Ac  fe80::%ether1/64            ether1            ip6   0     10      ether1             
-Ac  fe80::%ether2/64            ether2            ip6   0     10      ether2             
-Ac  fe80::%ether3/64            ether3            ip6   0     10      ether3             
-Ac  fe80::%ether4/64            ether4            ip6   0     10      ether4             
-Ac  3333::2/128                 loopback@vrfTest  ip6   0     10      loopback           
-Ac  fe80::%loopback/64          loopback@vrfTest  ip6   0     10      loopback           
-Ay  111.111.111.2/32&65530:100  loopback@vrfTest  vpn4  0     10   5  loopback           
-Ay  3333::2/128&65530:100       loopback@vrfTest  vpn6  0     10   5  loopback           
-A H ether1                                        link  0                                
-A H ether2                                        link  0                                
-A H ether3                                        link  0                                
-A H ether4                                        link  0                                
-A H loopback                                      link  0 
-
-
-Detailed example output with some BGP, OSPF, and other routes:
-[admin@MikroTik] /routing/route> print detail 
-Flags: X - disabled, F - filtered, U - unreachable, A - active; 
-c - connect, s - static, r - rip, b - bgp, o - ospf, d - dhcp, v - vpn, m - modem, a - ldp-address, l - ldp-mapping, y - copy; H - hw-offloaded; 
-+ - ecmp, B - blackhole 
-  o   afi=ip4 contribution=best-candidate dst-address=0.0.0.0/0 routing-table=main gateway=10.155.101.1%ether1 immediate-gw=10.155.101.1%ether1 
-       distance=110 scope=20 target-scope=10 belongs-to="OSPF route" 
-       ospf.metric=2 .tag=111 .type=ext-type-1 
-       debug.fwp-ptr=0x203425A0 
-
- Ad + afi=ip4 contribution=active dst-address=0.0.0.0/0 routing-table=main pref-src="" gateway=10.155.101.1 immediate-gw=10.155.101.1%ether1 
-       distance=1 scope=30 target-scope=10 vrf-interface=ether1 belongs-to="DHCP route" 
-       debug.fwp-ptr=0x20342060 
-
- As + afi=ip4 contribution=active dst-address=0.0.0.0/0 routing-table=main pref-src="" gateway=10.155.101.1 immediate-gw=10.155.101.1%ether1 
-       distance=1 scope=30 target-scope=10 belongs-to="Static route" 
-       debug.fwp-ptr=0x20342060 
-
- Fb   afi=ip4 contribution=filtered dst-address=1.0.0.0/24 routing-table=main gateway=10.155.101.1 immediate-gw=10.155.101.1%ether1 distance=20 
-       scope=40 target-scope=10 belongs-to="BGP IP routes from 10.155.101.217" rpki=valid 
-       bgp.peer-cache-id=*B000002 .aggregator="13335:172.68.180.1" .as-path="65530,100,9002,13335" .atomic-aggregate=yes .origin=igp 
-       debug.fwp-ptr=0x20342960 
-
-
-
-Property	Description
-active (yes | no)	A flag indicates whether the route is elected as Active and eligible to be added to the FIB.
-afi (ip4 | ip6 | link)	Address family this route belongs to.
-belongs-to (string)	Descriptive info showing from where the route was received.
-bgp (yes | no)	A flag indicates whether this route was added by the BGP protocol.
-bgp - a group of parameters associated with the BGP protocol
-
-	.as-path(string)	value of the AS_PATH BGP attribute
-
-	.aggregator (string)	
-
-	.atomic-aggregate (yes | no)	
-
-	.cluster-list (string)	
-
-	.communities (string)	value of the COMMUNITIES BGP attribute
-
-	.ext-communities (string)	value of the EXTENDED_COMMUNITIES BGP attribute
-
-	.igp-metric(string)	value of the IGP_METRIC BGP attribute
-
-	.large-communities (string)	value of the LARGE_COMMUNITIES BGP attribute
-
-	.local-pref (string)	value of the LOCAL_PREF BGP attribute
-
-	.med (string)	value of the MED BGP attribute
-
-	.nexthop (string)	
-
-	.origin (string)	
-
-	.originator-id (string)	
-
-	.out-nexthop(string)	
-
-	.peer-cache-id (string)	The ID of the BGP session that installed the route. See /routing/bgp/session menu.
-
-	.unknown (string)	hex blob of unknown BGP attributes
-
-	.weight (string)	
-blackhole (yes | no)	A flag indicates whether it is a blackhole route
-check-gateway (ping | arp | bfd)	Currently used check-gateway option.
-comment (string)	
-connect (yes | no)	A flag indicates whether it is a connected network route.
-contribution (string)	Shows the route status contributing to the election process, e.g "filtered, active, candidate"
-copy (yes | no)	A flag indicates a copy of the route to be redistributed as the L3VPN route. VPNv4/6 related attributes are attached to this "copy" route.
-create-time (string)	
-debug - a group of debugging parameters
-
-	
-	
-dhcp (yes | no)	A flag indicates whether the route was added by the DHCP service.
-disabled (yes | no)	A flag indicates whether the route is disabled.
-distance (integer)	
-dst-address (prefix)	Route destination.
-ecmp (yes | no)	A flag indicates whether the route is added as an Equal-Cost Multi-Path route in the FIB. Read more>>
-filtered (yes | no)	A flag indicates whether the route was filtered by routing filters and excluded from being used as the best route.
-gateway (string)	Configured gateway, for the actually resolved gateway, see immediate-gw parameter.
-hw-offloaded (yes | no)	Indicates whether the route is eligible to be hardware offloaded on supported hardware.
-immediate-gw (string)	Shows actual (resolved) gateway and interface that will be used for packet forwarding. Displayed in format [ip%interface].
-label (integer)	
-ldp-address (yes | no)	A flag indicates whether the route entry is an LDP address.
-ldp-mapping (yes | no)	A flag indicates whether the route entry is the LDP mapping
-ldp - a group of parameters associated with the LDP protocol
-
-	.label (integer)	LDP mapped MPLS label.
-
-	.peer-id ()	
-local-address (IP)	Local IP address of the connected network.
-modem (yes | no)	A flag indicates whether the route is added by the LTE or 3g modems.
-mpls - group of generic parameters associated with the MPLS
-
-	.in-label ()	Mapped MPLS ingress label
-
-	.labels ()	
-
-	.out-label ()	Mapped MPLS egress label
-nexthop-id ()	
-ospf (yes | no)	A flag indicates whether the route was added by the OSPF routing protocol.
-ospf - group of parameters associated with the OSPF protocol
-
-	.metric (integer)	
-
-	.type (string)	
-pref-src ()	
-received-from ()	
-rip (yes | no)	A flag indicates whether the route was added by the RIP routing protocol
-rip - group of parameters associated with the RIP protocol
-
-	.metric ()	
-
-	.route-tag ()	
-route-cost ()	
-routing-table ()	Routing table this route belongs to.
-rpki (valid | invalid | unknown)	Current status of the prefix from the RPKI validation process.
-scope (integer)	Scope used in the next-hop lookup process. Read more>>
-static (yes | no)	A flag indicates statically added routes.
-target-scope (integer)	Target scope used in next-hop lookup process. Read more>>
-te-tunnel-id ()	Traffic Engineering tunnel ID
-total-cost ()	
-unreachable (yes | no)	A flag indicates whether the route next-hop is unreachable.
-update-time ()	
-
-	ve-block-offset	
-
-	ve-block-size	
-
-	ve-id	
-vpn (yes | no)	A flag indicates whether the route was added by one of the VPN protocols (PPPoE, L2TP, SSTP, etc.)
-vrf-interface ()	Internal use only parameter which allows identifying to which VRF route should be added. Used by services that add routes dynamically, for example, DHCP client. Shown for debugging purposes.
-
-
-
-
-    Creado por Māris B., actualizado por última vez el jul 04, 2024 1 min de lectura
-
-Global Router ID election configuration. ID can be configured explicitly or set to be elected from one of the Routers IP addresses.
-
-For each VRF table RouterOS adds dynamic ID instance, that elects the ID from one of the IP addresses belonging to a particular VRF:
-[admin@rack1_b33_CCR1036] /routing/id> print 
-Flags: D - DYNAMIC, I - INACTIVE
-Columns: NAME, DYNAMIC-ID, SELECT-DYNAMIC-ID, SELECT-FROM-VRF
-#   NAME   DYNAMIC-ID      SELECT-D   SELE
-0 D main   111.111.111.2   only-vrf   main
-Configuration Options
-comment (string)	
-disabled (yes | no)	ID reference is not used.
-id(IP)	Parameter to explicitly set the Router ID. If ID is not explicitly specified, then it can be elected from one of the configured IP addresses on the router. See parameters select-dynamic-id and select-from-vrf.
-name (string)	Reference name
-select-dynamic-id(any | lowest | only-active | only-loopback | only-static | only-vrf)	States what IP addresses to use for the ID election:
-
-    any - any address found on the router can be elected as the Router ID.
-    lowest - pick the lowest IP address.
-    only-active - pick an ID only from active IP addresses.
-    only-loopback - pick an ID only from loopback addresses (loopback address is considered any non point to point /32 address).
-    only-vrf - pick an ID only from selected VRF. Works with select-from-vrf property.
-
-select-from-vrf (name)	VRF from which to select IP addresses for the ID election.
-
-
-Read-only Properties
-dynamic (yes | no)	
-dynamic-id (IP)	Currently selected ID.
-inactive (yes | no)	If there was a problem to get a valid ID, then item can become inactive.
-
-    Sin etiquetas 
-
-
-
-
-
-    Creado por Māris B., actualizado por última vez el jun 16, 2023 2 min de lectura
-
-Summary
-
-Bidirectional Forwarding Detection (BFD) is a low-overhead and short-duration protocol intended to detect faults in the bidirectional path between two forwarding engines, including physical interfaces, sub-interfaces, data link(s), and to the extent possible the forwarding engines themselves, with potentially very low latency. It operates independently of media, data protocols, and routing protocols.
-
-BFD is basically a hello protocol for checking bidirectional neighbor reachability. It provides sub-second link failure detection support. BFD is not routing protocol specific, unlike protocol hello timers or such.
-
-BFD Control packets are transmitted in UDP packets with destination port 3784, BFD also uses port 4784 for multihop paths. The source port is in the range 49152 through 65535. And BFD Echo packets are encapsulated in UDP packets with destination port 3785.
-
-Standards and Technologies:
-
-    RFC 5880 Bidirectional Forwarding Detection (BFD)
-    RFC 5881 BFD for IPv4 and IPv6
-    RFC 5882 Generic Application of BFD
-    RFC 5883 Bidirectional Forwarding Detection (BFD) for Multihop Paths
-
-
-Features not yet supported
-
-    echo mode
-    enabling BFD for ip route gateways
-    authentication
-
-
-Configuration
-
-Allowing or forbidding BFD sessions can be done from the /routing bfd configuration menu. For example:
-/routing bfd configuration
-add interfaces=sfp12 forbid-bfd=yes
-add interfaces=static
-
-Configuration entries are order sensitive, which means that in the example above we are forbidding BFD sessions explicitly on the "sfp12" interface and allowing on the rest of the interfaces belonging to the "static" interface list.
-
-
-To be able to filter multi-hop sessions, addresses or address-list properties can be used to match the destination, as well as the appropriate VRF, if a session is not running in the "main" VRF.
-/ip firewall address-list
-add address=10.155.255.183 list=bgp_allow_bfd
-add address=10.155.255.217 list=bgp_allow_bfd
-
-/routing bfd configuration
-add addresses=111.111.0.0/16 vrf=vrf1
-add address-list=bgp_allow_bfd
-
-
-Everything else that is not explicitly listed in the configuration by default is forbidden.
-BFD with BGP
-
-To enable the use of BFD for BGP sessions, enable use-bfd for required entries in /routing bgp connection menu.
-
-A useful feature is that the BGP session will show that the BFD session for that particular BGP session is down:
-[admin@dr_02_BGP_MUM] /routing/bgp/session> print 
-Flags: E - established 
- 0 E ;;; BFD session down
-     name="ovpn_test1-1" 
-     remote.address=111.111.11.11@vrf1 .as=65530 .id=10.155.101.217 
-     .capabilities=mp,rr,as4 .hold-time=infinity .messages=40717 
-     .bytes=3436281 .eor="" 
-     local.address=111.111.11.12@vrf1 .as=555 .id=111.111.11.12 
-     .capabilities=mp,rr,gr,as4 .messages=1 .bytes=19 .eor="" 
-     output.procid=20 
-     input.procid=20 .filter=bgp-in ebgp 
-     hold-time=infinity use-bfd=yes uptime=3s210ms 
-     last-started=2023-05-19 09:54:04 prefix-count=3853 
-BFD with OSPF
-
-To enable the use of BFD for OSPF neighbors, enable use-bfd for required entries in /routing ospf interface-template menu.
-Session Status
-
-The status of the currently available sessions can be observed from /routing bfd session menu:
-[admin@dr_02_BGP_MUM] /routing/bfd/session> print 
-Flags: U - up, I - inactive 
- 0 I ;;; BFD forbidden for destination address
-     multihop=yes remote-address=10.155.101.183 local-address="" desired-tx-interval=0ms required-min-rx=0ms 
-     multiplier=0 
-
- 1   multihop=no remote-address=111.111.11.11%ovpn-out1@vrf1 local-address=111.111.11.12@vrf1 state=down 
-     state-changes=0 desired-tx-interval=200ms required-min-rx=200ms remote-min-rx=1us multiplier=5 
-     packets-rx=0 packets-tx=7674 
-
-
-BFD is picking the highest value between the local tx interval and remote minimum rx interval as desired transmit interval. If the session is not established then desired minimum tx interval is set to 1 second.
-
-
-
-
-    Creado por Māris B., actualizado por última vez el ene 27, 2025 3 min de lectura
-
-    Overview
-    IS-IS Terminology
-    Basic Configuration Example
-    Troubleshooting
-        ISIS does not work and prints warning message "invalid 3way tlv"
-
-Overview
-
-The IS-IS (Intermediate System - Intermediate System) protocol is an Interior Gateway Protocol (IGP) used to distribute IP routing information throughout a single Autonomous System.
-
-It was originally developed as a routing protocol for CLNP but later extended to include IP routing when IP became popular.  An extended version is sometimes referred to as Integrated IS-IS.
-
-IS-IS belongs to the link-state protocol family, which exchanges topology information between nearest neighbors and floods it throughout the AS. The main advantage is that complete knowledge of the network topology allows one to choose the best path to the destination. It can also be useful for traffic engineering purposes.
-
-Neighbours periodically exchange Hello packets, forms adjacency and selects designated IS based on the negotiation. Hello packets are sent individually for Level-1 and Level-2.
-
-Standards and Technologies:
-
-    RFC 1195 Use of OSI IS-IS for Routing in TCP/IP and Dual Environments
-    RFC 5302 Domain-Wide Prefix Distribution with Two-Level IS-IS
-    RFC 5303 Three-Way Handshake for IS-IS Point-to-Point Adjacencies
-    RFC 5305 IS-IS Extensions for Traffic Engineering (only wide metric support)
-    RFC 5308 Routing IPv6 with IS-IS
-
-IS-IS Terminology
-
-
-    IS - Intermediate System is a router capable of forwarding traffic between distantly located hosts.
-    LSP - Link State PDU contains information on the router's local state (usable interfaces, reachable neighbours, and the cost of the interfaces)
-    SPF - Shortest-path-first algorithm
-    DIS - designated intermediate system. DIS ensures that all routes in the network maintain synchronised database. Separate DISs are elected for L1 and L2 routing. Election of the DIS is based on the highest interface priority.
-    Level-1 (L1) routing - Controls distribution of routing information within an IS-IS area. L1 routing is based on system ID.
-    Level-2 (L2) routing - Controls distribution of routing information between IS-IS areas. L2 routing is based on area ID.
-    IS-IS Adjacency - link between IS-IS neighbours. The type of adjacency formed depends on the parameters exchanged in the IS-IS Hello packets. Each of the the adjacent routers runs the DIS election process to determine whether it is eligible to be an L1 or L2 DIS on the broadcast network.
-
-
-Basic Configuration Example
-
-Basic IS-IS setup between three routers.
-
-R1:
-/routing isis instance
-add afi=ip areas=49.2222 disabled=no name=isis-instance-1 system-id=90ab.cdef.0001
-/routing isis interface-template
-add instance=isis-instance-1 interfaces=ether1 levels=l1,l2
-
-
-[] /routing/isis/neighbor> print 
- 0 instance=isis-instance-1 interface=ether1 level-type=l2 snpa=08:00:27:22:B4:A2 srcid="1111.2222.aded" state=up 
-
- 1 instance=isis-instance-1 interface=ether1 level-type=l2 snpa=D4:CA:6D:78:2F:2E srcid="1111.2222.cded" state=up 
-
- 2 instance=isis-instance-1 interface=ether1 level-type=l1 snpa=08:00:27:22:B4:A2 srcid="1111.2222.aded" state=up 
-
- 3 instance=isis-instance-1 interface=ether1 level-type=l1 snpa=D4:CA:6D:78:2F:2E srcid="1111.2222.cded" state=up 
-
-
-[] /routing/route> print where is-is
-Flags: A - ACTIVE; i - IS-IS
-Columns: DST-ADDRESS, GATEWAY, AFI, DISTANCE, SCOPE, TARGET-SCOPE, IMMEDIATE-GW
-   DST-ADDRESS        GATEWAY                AFI  DISTANCE  SCOPE  TARGET-SCOPE  IMMEDIATE-GW         
- i 0.0.0.0/0          10.155.101.214%ether1  ip4       115     20            10  10.155.101.214%ether1
- i 10.155.101.0/24    10.155.101.216%ether1  ip4       115     20            10  10.155.101.216%ether1
-Ai 10.255.255.162/32  10.155.101.216%ether1  ip4       115     20            10  10.155.101.216%ether1
-
-
-R2:
-/routing isis instance
-add afi=ip areas=49.2222 disabled=no l1.originate-default=always l2.originate-default=always name=isis-instance-1 \
-    system-id=1111.2222.cded
-/routing isis interface-template
-add instance=isis-instance-1 interfaces=sfp12 levels=l1,l2
-add instance=isis-instance-1 interfaces=lo levels=l2
-
-
-[] /routing/isis/neighbor> print 
- 0 instance=isis-instance-1 interface=sfp12 level-type=l1 snpa=08:00:27:22:B4:A2 srcid="1111.2222.aded" state=up 
-
- 1 instance=isis-instance-1 interface=sfp12 level-type=l1 snpa=C4:AD:34:43:EA:5C srcid="90ab.cdef.0001" state=up 
-
- 2 instance=isis-instance-1 interface=sfp12 level-type=l2 snpa=08:00:27:22:B4:A2 srcid="1111.2222.aded" state=up 
-
- 3 instance=isis-instance-1 interface=sfp12 level-type=l2 snpa=C4:AD:34:43:EA:5C srcid="90ab.cdef.0001" state=up 
-
-
-
-R3 Cisco:
-interface Loopback0
- ip address 10.255.255.162 255.255.255.255
- ip router isis 
-!
-interface GigabitEthernet1
- ip address dhcp
- ip router isis 
- negotiation auto
-!
-router isis
- net 49.2222.1111.2222.aded.00
-!
-
-
-
-# show isis neighbors 
-
-Tag null:
-System Id      Type Interface   IP Address      State Holdtime Circuit Id
-90AB.CDEF.0001 L1   Gi1         10.155.101.183  UP    27       1111.2222.CDED.01  
-90AB.CDEF.0001 L2   Gi1         10.155.101.183  UP    27       1111.2222.CDED.01  
-1111.2222.CDED L1   Gi1         10.155.101.214  UP    9        1111.2222.CDED.01  
-1111.2222.CDED L2   Gi1         10.155.101.214  UP    9        1111.2222.CDED.01 
-
-# show ip route
-
-i*L1  0.0.0.0/0 [115/11] via 10.155.101.214, 4w5d, GigabitEthernet1
-      10.0.0.0/8 is variably subnetted, 5 subnets, 2 masks
-C        10.155.101.0/24 is directly connected, GigabitEthernet1
-L        10.155.101.216/32 is directly connected, GigabitEthernet1
-i L2     10.155.255.214/32 [115/10] via 10.155.101.183, 2w3d, GigabitEthernet1
-
-
-Troubleshooting
-ISIS does not work and prints warning message "invalid 3way tlv"
-This warning indicates that most likely remote neighbor does not comply  to 3-way handshake for point-to-point networks from RFC 5302. For example, on Cisco you have to enable "isis three-way-handshake ietf" on interface to have 15byte TLV.
-
-
-
-    Creado por Māris B., actualizado por última vez el jun 26, 2025 11 min de lectura
-
-    Overview
-    Terminology
-    Route list
-    Configuration Examples
-        Basic Configuration Example
-        Bridged EVPN VXLAN Overlay with Arista's Eos and ROS
-            Topology
-            Underlay Configuration
-                Ros_Spine
-                Ros_Leaf_3
-                Eos_Leaf
-            BGP EVPN Overlay
-                Ros_Spine
-                Ros_Leaf_3
-                Eos_Leaf
-                Verify BGP Connectivity
-            VXLAN and EVPN configuration
-                Ros_Leaf_3
-                Eos_Leaf
-                Host_1
-                Host_3
-            Validate L2VPN Service 
-        Bridged EVPN Overlay with Arista ESI LAG
-            Topology
-            Configuration Prerequisities
-            Port Channel configuration
-            Validate setup
-
-Overview
-
-Ethernet Virtual Private Network (EVPN) is a technology to extend Layer 2 and 3 connectivity between different network segments. MPLS or VXLAN encapsulations can be used to transfer ethernet frames over MPLS or IP-based networks.
-
-BGP EVPN  is used as a control plane for multiple data-planes encapsulations (for both Layer2 and Layer3 VPN services). MP-BGP carries MAC addresses, MAC/IP bindings and IP prefixes. 
-
-RFC7432 is initial EVPN standard thad defines BGP as control plane for MPLS data plane. RFC8365 extends the use of additional data planes, VXLAN, NVGRE and MPLS over GRE and defines the use of EVPN as Network Virtualization Overlay (NVO).
-Terminology
-
-    NVO: Network Virtualization Overlay used to deliver Layer2 and Layer 3 VPN services.
-    NVE: Network Virtualization Endpoint is Provider Edge (PE) node within the NVO environment. It is responsible for encapsulation/decapsulation of VPN traffic. In case of VXLAN this defines VTEP (Virtual Tunnel End Point).
-    VNI: Virtual Network Identifier 
-    EVI: EVPN Instance
-    RD: Route Distinguisher is a 64-bit prefix appended to IP prefix to make it unique, multiple tenants can use overlapping IP range.
-    RT: Route Target is BGP extended community used to control import and export of routes. Typically, RT is based on the AS number and the VNI of the MAC-VRF
-    MAC-VRF: VRF table for MAC addresses on a PE (VTEP). Requires RD and RT.
-    BUM:  Broadcast, unknown Unicast and Multicast traffic is a multi-destination layer2 traffic in vxlan networks.
-    Ingress replication: unicast approach to handle BUM traffic. It uses IMET routes to auto-discover remote peers.  Ingress device replicates BUM traffic to all the VTEPS associated with the Layer-2 VNI.
-    ESI - Ethernet Segment Identifier
-
-For MP-BGP to carry EVPN, new AFI/SAFI was defined 25(L2 VPN)/70(EVPN). Next-hop address within the NLRI is an IP address of the VTEP advertising the EVPN route.
-
-There are five EVPN route types:
-
-    Type-1: (Ethernet A-D) announces reachability of multi-homed ethernet segment
-    Type-2:( MAC advertisement MACIP) advertises MAC address of MAC/IP binding learned by specific EVI
-    Type-3: (Inclusive multicast IMET) advertises membership of a Layer 2 domain, allowing to auto discover VTEPs 
-    Type-4: (Ethernet segment) is used to discover VTEPs attached to the same shared Ethernet Segment for EVPN multi-homing model (active-active, active-standby forwarding)
-    Type-5: (IP prefix) Advertising IP prefix into the EVPN domain allows to create classic Layer 3 VPN. 
-
-Data plane encapsulation is defined with encapsulation extended community value:
-
-    8 - VXLAN (currently only one supported by ROS)
-    9 - NVGRE
-    10 - MPLS
-    11 - MPLSoGRE
-
-There are two methods for supporting inter-subnet routing with EVPN: symmetric and asymmetric integrated routing and bridging (IRB). The main difference between the two methods is that the symmetric method supports both routing and bridged on both the ingress and egress VTEPs, where the asymmetric method supports routing on the ingress, but only bridging on the egress.
-
-
-Route list
-
-RouterOS will show local and received EVPN routes in the /routing/route list
-
-Locally generated routes will hace e-evpn flag. for example:
-[admin@ros_leaf_3] /routing/route> print where evpn 
-Flags: e - EVPN
-Columns: DST-ADDRESS, GATEWAY, AFI, DISTANCE, SCOPE, TARGET-SCOPE
-  DST-ADDRESS                                     GATEWAY        AFI   DISTANCE  SCOPE  TARGET-SCOPE
-e [10.155.101.133:1010]macip:0|0C:50:85:84:00:01  203.0.255.133  evpn       200     40            10
-e [10.155.101.133:1010]imet:0|203.0.255.133       203.0.255.133  evpn       200     40            10
-e [203.0.255.133:4]imet:0|203.0.255.133           203.0.255.133  evpn       200     40            10
-
-
-EVPN data is encoded in dst-address parameter:
-
-    Dst [rd]type:x|y
-         ^  ^    ^ 
-         |  |    + - where x - tag or ESI; y - type specific data (can show mac addresses, ip addresses, ethernet segments etc.)
-         |  +------- name of the EVPN route type (macip, imet, es, ad, prefix)
-         +---------- route distinguisher in square brackets
-
-
-
-Configuration Examples
-Basic Configuration Example
-
-Basic Layer2 EVPN Vxlan configuration:
-/interface bridge
-add name=bridge1 vlan-filtering=yes pvid=40
-/interface bridge port
-add bridge=bridge1 interface=sfp-sfpplus3 pvid=40
-
-/ip address 
-add address=203.0.113.1 interface=lo
-
-/interface vxlan
-add bridge=bridge1 bridge-pvid=40 local-address=203.0.113.1 name=vxlan1 vni=100040 learning=no
-
-/routing bgp instance
-add as=65000 name=evpn-inst
-
-/routing bgp connection
-add afi=evpn instance=evpn-inst local.address=203.0.113.1 .role=ebgp multihop=yes name=to-leaf-lo remote.address=203.0.113.2 .as=65001
-
-/routing bgp evpn
-add instance=evpn-inst name=bgp-evpn-1o vni=100040
-
-For simple setups with only one vni, there is no need to set route distinguisher and import/export route targets.
+There is no direct way to append text to a file, however you can store the old content and append to it in a new line:
+:local oldText [/file get test.txt contents as-string]
+:local addText "test append"
+:local newText ($oldText."\n".$addText)
+/file set myFile.txt contents=$newText
+Check if IP on the interface has changed
+
+Sometimes provider gives dynamic IP addresses. This script will compare if a dynamic IP address is changed.
+:global currentIP;
+
+:local newIP [/ip address get [find interface="ether1"] address];
+
+:if ($newIP != $currentIP) do={
+    :put "ip address $currentIP changed to $newIP";
+    :set currentIP $newIP;
+}
+
+
+Strip netmask
+
+This script is useful if you need an IP address without a netmask (for example to use it in a firewall), but "/ip address get [id] address" returns the IP address and netmask.
+:global ipaddress 10.1.101.1/24
+
+:for i from=( [:len $ipaddress] - 1) to=0 do={ 
+	:if ( [:pick $ipaddress $i] = "/") do={ 
+		:put [:pick $ipaddress 0 $i]
+	} 
+}
+
+
+
+Another much more simple way:
+:global ipaddress 10.1.101.1/24
+:put [:pick $ipaddress 0 [:find $ipaddress "/"]]
+Resolve host-name
+
+Many users are asking features to use DNS names instead of IP addresses for radius servers, firewall rules, etc.
+
+So here is an example of how to resolve the RADIUS server's IP.
+
+Let's say we have the radius server configured:
+/radius 
+add address=3.4.5.6 comment=myRad
+
+
+And here is a script that will resolve the IP address, compare resolved IP with configured one, and replace it if not equal:
+/system script add name="resolver" source= {
+
+:local resolvedIP [:resolve "server.example.com"];
+:local radiusID [/radius find comment="myRad"];
+:local currentIP [/radius get $radiusID address];
+
+:if ($resolvedIP != $currentIP) do={
+   /radius set $radiusID address=$resolvedIP;
+   /log info "radius ip updated";
+}
+
+}
+
+
+Add this script to the scheduler to run for example every 5 minutes
+/system scheduler add name=resolveRadiusIP on-event="resolver" interval=5m
+
+
+Write simple queue stats in multiple files
+
+Let's consider queue namings are "some text.1" so we can search queues by the last number right after the dot.
+:local entriesPerFile 10;
+:local currentQueue 0;
+:local queuesInFile 0;
+:local fileContent "";
+#determine needed file count
+:local numQueues [/queue simple print count-only] ;
+:local fileCount ($numQueues / $entriesPerFile);
+:if ( ($fileCount * $entriesPerFile) != $numQueues) do={
+   :set fileCount ($fileCount + 1);
+}
+
+#remove old files 
+/file remove [find name~"stats"];
+
+:put "fileCount=$fileCount";
+
+:for i from=1 to=$fileCount do={
+#create file
+   /file print file="stats$i.txt";
+#clear content
+   /file set [find name="stats$i.txt"] contents="";
+
+   :while ($queuesInFile < $entriesPerFile) do={
+     :if ($currentQueue < $numQueues) do={
+         :set currentQueue ($currentQueue +1);
+         :put $currentQueue ;
+         /queue simple
+         :local internalID [find name~"\\.$currentQueue\$"];
+         :put "internalID=$internalID";
+         :set fileContent ($fileContent . [get $internalID target-address] . \
+           " " . [get $internalID total-bytes] . "\r\n");
+     }
+     :set queuesInFile ($queuesInFile +1);
+     
+   }
+   /file set "stats$i.txt" contents=$fileContent;
+   :set fileContent "";
+   :set queuesInFile 0;
+
+}
  
-When RTs or RD are not specified, values are derived automatically. Route targets are set to <PE ASN>:<VNI>, route distinguishers <PE address>:<num derived from config id>).
 
-EVPN configuration is directly mapped to VXLAN configurations with matching VNIs
 
+Generate backup and send it by e-mail
 
-Bridged EVPN VXLAN Overlay with Arista's Eos and ROS
-Topology
+This script generates a backup file and sends it to a specified e-mail address. The mail subject contains the router's name, current date, and time.
 
-For this example we will use the following topology:
+Note that the SMTP server must be configured before this script can be used. See /tool e-mail for configuration options.
 
 
-    203.0.255.0/24 address range is used for loopback addresses
-    Subnets from 172.16.0.0/16 range is used for underlay connectivity of leaf and spine routers
-    Subnets from 192.168.0.0/16 range is used for host addressing on vlans.
+/system backup save name=email_backup
+/tool e-mail send file=email_backup.backup to="me@test.com" body="See attached file" \
+   subject="$[/system identity get name] $[/system clock get time] $[/system clock get date] Backup")
 
-Underlay Configuration
 
-Underly connectivity can depend on already existing setups, it can be eBGP, OSPF, ISIS or even static routing. In this case we will be using OSPF as underly routing protocol to advertise routes for addresses associated with loopback interfaces.
-Ros_Spine
-/ip address
-add address=203.0.255.138 interface=lo
-add address=172.16.1.1/30 interface=ether3
-add address=172.16.2.1/30 interface=ether4
-add address=172.16.3.1/30 interface=ether5
-add address=172.16.4.1/30 interface=ether6
-add address=172.16.5.1/30 interface=ether7
 
-/routing ospf instance
-add name=evpn_underlay
-/routing ospf area
-add disabled=no instance=evpn_underlay name=evpn-underlay-bb
-/routing ospf interface-template
-add area=evpn-underlay-bb disabled=no networks=172.16.0.0/16
-add area=evpn-underlay-bb disabled=no interfaces=lo passive
+The backup file contains sensitive information like passwords. So to get access to generated backup files, the script or scheduler must have a 'sensitive' policy.
 
+Use string as a function
+:global printA [:parse ":local A; :put \$A;" ];   
+$printA  
 
-Ros_Leaf_3
-/ip address
-add address=203.0.255.133 interface=lo
-add address=172.16.3.2/30 interface=ether10
 
-/routing ospf instance
-add name=evpn_underlay
-/routing ospf area
-add disabled=no instance=evpn_underlay name=evpn-underlay-bb
-/routing ospf interface-template
-add area=evpn-underlay-bb disabled=no networks=172.16.0.0/16
-add area=evpn-underlay-bb disabled=no interfaces=lo passive
+Check bandwidth and add limitations
 
-
-Eos_Leaf
-interface Ethernet1
-   no switchport
-   ip address 172.16.5.2/30
-!
-interface Loopback0
-   ip address 203.0.255.128/32
-!
-ip routing
-!
-router ospf 100
-   router-id 203.0.255.135
-   redistribute connected
-   network 172.16.1.0/30 area 0.0.0.0
-!
-
-
-BGP EVPN Overlay
-
-For BGP overly we will be using multihop eBGP that uses loopback addresses.
-
-To simplify configuration we will utilize BGP template to set common parameters and set connection to listen on all loopback address range. This is great for scalability, if we will want to add more leaf routers we won't need to configure anything on the spine routers.
-
-Also it is recommended to set nexthop-choice to propagate especially if there is more than one spine. In case if iBGP is used as overlay then spines should be route reflectors and nexthop propagation is happening by default.
-Ros_Spine
-/routing bgp instance
-add as=65000 name=bgp-instance-1
-/routing bgp template
-set default afi=evpn multihop=yes nexthop-choice=propagate
-/routing bgp connection
-add instance=bgp-instance-1 local.address=203.0.255.138 .role=ebgp name=evpn_leafs remote.address=\
-    203.0.255.0/24 templates=default
-
-
-Ros_Leaf_3
-/routing bgp instance
-add as=65003 disabled=no name=bgp-instance-1
-/routing bgp connection
-add afi=evpn instance=bgp-instance-1 local.address=203.0.255.133 .role=ebgp multihop=yes name=to_spine remote.address=\
-    203.0.255.138
-
-
-Eos_Leaf
-service routing protocols model multi-agent
-!
-router bgp 65005
-   neighbor SPINE_EVPN peer group
-   neighbor SPINE_EVPN remote-as 65000
-   neighbor SPINE_EVPN update-source Loopback0
-   neighbor SPINE_EVPN ebgp-multihop 10
-   neighbor SPINE_EVPN send-community extended
-   neighbor 203.0.255.138 peer group SPINE_EVPN
-   !
-   address-family evpn
-      neighbor SPINE_EVPN activate
-!
-
-
-Verify BGP Connectivity
-
-Eos_Leaf
-localhost#show bgp summary 
-BGP summary information for VRF default
-Router identifier 203.0.255.128, local AS number 65005
-Neighbor               AS Session State AFI/SAFI                AFI/SAFI State   NLRI Rcd   NLRI Acc
-------------- ----------- ------------- ----------------------- -------------- ---------- ----------
-203.0.255.138       65000 Established   IPv4 Unicast            Advertised              0          0
-203.0.255.138       65000 Established   L2VPN EVPN              Negotiated              6          6
-
-Ros_Leaf_3
-[admin@ros_leaf_3] /routing/bgp/session> print 
-Flags: E - established 
- 0 E name="to_spine-1" instance=bgp-instance-1 
-     remote.address=203.0.255.138 .as=65000 .id=203.0.255.138 .capabilities=mp,rr,gr,as4 .afi=evpn .messages=7 .bytes=682 .eor="" 
-     local.address=203.0.255.133 .as=65003 .id=203.0.255.133 .cluster-id=203.0.255.133 .capabilities=mp,rr,gr,as4 .afi=evpn .messages=7 
-     .bytes=698 .eor="" 
-     output.procid=20 
-     input.procid=20 ebgp 
-     multihop=yes hold-time=3m keepalive-time=1m uptime=1s620ms last-started=2025-05-29 11:01:38 prefix-count=0 
-
-
-
-VXLAN and EVPN configuration
-Ros_Leaf_3
-
-Just for demonstration purposes, on RouterOS leaf we will be sending vlan tagged traffic to the host.
-
-VXLAN learning should be disabled as we are using BGP EVPN for discovery.
-/interface bridge
-add name=bridge1 pvid=10 vlan-filtering=yes
-/interface vxlan
-add bridge=bridge1 bridge-pvid=10 learning=no local-address=203.0.255.133 mac-address=C2:16:F6:B2:CC:D3 name=vxlan1 vni=1010
-/interface bridge port
-add bridge=bridge1 interface=ether11 pvid=10
-/ip address
-add address=192.168.10.133/24 interface=bridge1
-/routing bgp evpn
-add disabled=no export.route-targets=1010:1010 import.route-targets=1010:1010 instance=bgp-instance-1 name=bgp-evpn-1 vni=1010
-
-
-Eos_Leaf
-
-On the Arista router we are setting vlan trunk, untagged traffic will be sent to the host
-vlan 10
-!
-interface Ethernet2
-   switchport trunk allowed vlan 10
-   switchport mode trunk
-!
-interface Vlan10
-   ip address 192.168.10.128/24
-!
-interface Vxlan1
-   vxlan source-interface Loopback0
-   vxlan vlan 10 vni 1010
-!
-router bgp 65501
-   vlan 10
-      rd 203.0.255.128:1010
-      route-target both 1010:1010
-      redistribute learned
-
-
-Host_1
-/ip address
-add address=192.168.10.132/24 interface=ether2
-
-
-Host_3
-/interface vlan
-add interface=ether2 name=vlan10 vlan-id=10
-/ip address
-add address=192.168.10.129/24 interface=vlan10
-
-
-Validate L2VPN Service 
-
-Lets verify that IMET routes are present on leaf routers and that vteps are discovered
-[admin@ros_leaf_3] /routing/route> print where dst-address~"imet"
-Flags: A - ACTIVE; b - BGP, e - EVPN
-Columns: DST-ADDRESS, GATEWAY, AFI, DISTANCE, SCOPE, TARGET-SCOPE, IMMEDIATE-GW
-   DST-ADDRESS                               GATEWAY        AFI   DISTANCE  SCOPE  TARGET-SCOPE  IMMEDIATE-GW      
-Ab [203.0.255.128:1010]imet:0|203.0.255.128  203.0.255.128  evpn        20     40            30  172.16.3.1%ether10
- e [203.0.255.133:256]imet:0|203.0.255.133   203.0.255.133  evpn       200     40            10                    
-
-
-[admin@ros_leaf_3] /interface/vxlan/vteps> print 
-Flags: D - DYNAMIC
-Columns: INTERFACE, REMOTE-IP
-#   INTERFACE  REMOTE-IP    
-0 D vxlan1     203.0.255.128
-
-On Arista:
-localhost#show bgp evpn route-type imet
-BGP routing table information for VRF default
-Router identifier 203.0.255.135, local AS number 65501
-Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
-                    c - Contributing to ECMP, % - Pending BGP convergence
-Origin codes: i - IGP, e - EGP, ? - incomplete
-AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
-
-          Network                Next Hop              Metric  LocPref Weight  Path
- * >      RD: 203.0.255.128:1010 imet 203.0.255.128
-                                 -                     -       -       0       i
- * >      RD: 203.0.255.133:256 imet 203.0.255.133
-                                 203.0.255.133         -       100     0       65000 65003 i
-
-localhost#show interfaces vxlan1
-Vxlan1 is up, line protocol is up (connected)
-  Hardware is Vxlan
-  Source interface is Loopback0 and is active with 203.0.255.128
-  Listening on UDP port 4789
-  Replication/Flood Mode is headend with Flood List Source: EVPN
-  Remote MAC learning via EVPN
-  VNI mapping to VLANs
-  Static VLAN to VNI mapping is 
-    [10, 1010]       
-  Note: All Dynamic VLANs used by VCS are internal VLANs.
-        Use 'show vxlan vni' for details.
-  Static VRF to VNI mapping is not configured
-  Headend replication flood vtep list is:
-    10 203.0.255.133 
-  Shared Router MAC is 0000.0000.0000
-
-
-localhost#show vxlan flood vtep vlan 10
-          VXLAN Flood VTEP Table
---------------------------------------------------------------------------------
-
-VLANS                            Ip Address
------------------------------   ------------------------------------------------
-10                              203.0.255.133  
-                                
-
-
-
-At this point we can try to ping host_3 from host_1:
-[admin@host_1] /interface> print 
-...
-1 R ether2  ether           1500  0C:50:85:84:00:01
-
-[admin@host_1] /ip/address> /ping 192.168.10.129
-  SEQ HOST                                     SIZE TTL TIME       STATUS                                                 
-    0 192.168.10.129                             56  64 17ms26us  
-    1 192.168.10.129                             56  64 13ms119us 
-    2 192.168.10.129                             56  64 17ms192us 
-
-host-3
-[admin@host_1] /interface> print 
-...
-1 R ether2  ether           1500  0C:74:39:88:00:01
-
-
-
-Now we should be able to see that EVPN is used to learn remote MAC addresses by looking at MACIP routes.
-
-If we look at routes on ros_leaf, we can see that router 203.0.255.128 sent the macip route for 0C:74:39:88:00:01 mac address which is the host_1 mac address located behind eos_leaf.
-
-Eos also sends MAC/IP binding which is used for arp/nd suppression. Unfortunately at the time of writing this article RouterOS does not have this functionality.
-[admin@ros_leaf_3] /routing/route> print where dst-address~"macip"    
-Flags: A - ACTIVE; b - BGP, e - EVPN
-Columns: DST-ADDRESS, GATEWAY, AFI, DISTANCE, SCOPE, TARGET-SCOPE, IMMEDIATE-GW
-   DST-ADDRESS                                                   GATEWAY        AFI   DISTANCE  SCOPE  TARGET-SCOPE  IMMEDIATE-GW      
-Ab [203.0.255.128:1010]macip:0|0C:74:39:88:00:01                 203.0.255.128  evpn        20     40            30  172.16.3.1%ether10
- e [203.0.255.133:256]macip:0|0C:50:85:84:00:01                  203.0.255.133  evpn       200     40            10                    
-Ab [203.0.255.128:1010]macip:0|0C:74:39:88:00:01|192.168.10.129  203.0.255.128  evpn        20     40            30  172.16.3.1%ether10
-
-
-Arista allows additionally to see remotely learned mac addresses in "vxlan mac table" and "vlan mac-address table" includes local mac addresses as well:
-localhost#show bgp evpn route-type mac-ip detail 
-BGP routing table information for VRF default
-Router identifier 203.0.255.128, local AS number 65005
-BGP routing table entry for mac-ip 0c50.8584.0001, Route Distinguisher: 203.0.255.133:256
- Paths: 1 available
-  65000 65003
-    203.0.255.133 from 203.0.255.138 (203.0.255.138)
-      Origin IGP, metric -, localpref 100, weight 0, tag 0, valid, external, best
-      Extended Community: Route-Target-AS:1010:1010 TunnelEncap:tunnelTypeVxlan
-      VNI: 0 ESI: 0000:0000:0000:0000:0000
-BGP routing table entry for mac-ip 0c74.3988.0001, Route Distinguisher: 203.0.255.128:1010
- Paths: 1 available
-  Local
-    - from - (0.0.0.0)
-      Origin IGP, metric -, localpref -, weight 0, tag 0, valid, local, best
-      Extended Community: Route-Target-AS:1010:1010 TunnelEncap:tunnelTypeVxlan
-      VNI: 1010 ESI: 0000:0000:0000:0000:0000
-BGP routing table entry for mac-ip 0c74.3988.0001 192.168.10.129, Route Distinguisher: 203.0.255.128:1010
- Paths: 1 available
-  Local
-    - from - (0.0.0.0)
-      Origin IGP, metric -, localpref -, weight 0, tag 0, valid, local, best
-      Extended Community: Route-Target-AS:1010:1010 TunnelEncap:tunnelTypeVxlan
-      VNI: 1010 ESI: 0000:0000:0000:0000:0000
-
-
-localhost#show vxlan address-table vlan 10
-          Vxlan Mac Address Table
-----------------------------------------------------------------------
-
-VLAN  Mac Address     Type      Prt  VTEP             Moves   Last Move
-----  -----------     ----      ---  ----             -----   ---------
-  10  0c50.8584.0001  EVPN      Vx1  203.0.255.133    1       1:30:49 ago
-Total Remote Mac Addresses for this criterion: 1
-
-
-
-localhost#show mac address-table vlan 10
-          Mac Address Table
-------------------------------------------------------------------
-
-Vlan    Mac Address       Type        Ports      Moves   Last Move
-----    -----------       ----        -----      -----   ---------
-  10    0c50.8584.0001    DYNAMIC     Vx1        1       1:31:17 ago
-  10    0c74.3988.0001    DYNAMIC     Et2        1       1 day, 23:45:18 ago
-Total Mac Addresses for this criterion: 2
-
-          Multicast Mac Address Table
-------------------------------------------------------------------
-
-Vlan    Mac Address       Type        Ports
-----    -----------       ----        -----
-Total Mac Addresses for this criterion: 0
-
-
-
-Bridged EVPN Overlay with Arista ESI LAG
-
-ESI-LAG (Ethernet Segment Identifier - Link Aggregation) or EVPN-LAG  is a networking concept that enables multihoming using EVPN (Ethernet Virtual Private Network) technology, where client devices (like access switches) can connect to core devices (like distribution switches) through multiple links, forming a logical LAG interface.
-Topology
-
-Lets extend the topology from the previous example. Host_2 is a RouterOS device with LACP enabled on links connecting to two ARISTA Leafs, forming active-active multihoming setup.
-
-
-Configuration Prerequisities
-
-On how to set up underly and EVPN overly configuration refer to example above. In this example we will focus on ESI LAG configuration and setup validation.
-
-
-Port Channel configuration
-
-Assuming that underly and overly is configured, and is up and running, we will proceed to port channel configuration on Arista switches:
-
-leaf_2 and leaf_4 config is exactly the same
-interface Port-Channel3
-   switchport access vlan 10
-   switchport trunk allowed vlan 10
-   switchport mode trunk
-   !
-   evpn ethernet-segment
-      identifier 0000:0000:0000:0333:3333
-      route-target import 00:00:03:33:33:33
-   lacp system-id 0000.0333.3333
-!
-interface Ethernet2
-   channel-group 3 mode active
-
-
-ros_host_2
-/interface bonding
-add mode=802.3ad name=bond1 slaves=ether2,ether3
-/interface vlan
-add interface=bond1 mtu=1496 name=vlan10 vlan-id=10
-/ip address
-add address=192.168.10.130/24 interface=vlan10
-
-
-Validate setup
-
-Now if we look at evpn routes we should see some new route types. Both Arista switches are advertising Type-1 AD routes and Type-4 Ethernet Segment (ES) routes to discover multihoming VTEPs 
-[admin@gns3_spine1_ros] /routing/route>  print where afi=evpn dst-address~"(ad|es)"
-Flags: A - ACTIVE; b - BGP
-Columns: DST-ADDRESS, GATEWAY, AFI, DISTANCE, SCOPE, TARGET-SCOPE
-   DST-ADDRESS                                                      GATEWAY        AFI   DISTANCE  SCOPE  TA
-Ab [203.0.255.127:1]ad:4294967295|00:00:00:00:00:00:03:33:33:33     203.0.255.127  evpn        20     40  30
-Ab [203.0.255.127:1]es:00:00:00:00:00:00:03:33:33:33|203.0.255.127  203.0.255.127  evpn        20     40  30
-Ab [203.0.255.127:1010]ad:0|00:00:00:00:00:00:03:33:33:33           203.0.255.127  evpn        20     40  30
-
-Ab [203.0.255.134:1]ad:4294967295|00:00:00:00:00:00:03:33:33:33     203.0.255.134  evpn        20     40  30
-Ab [203.0.255.134:1]es:00:00:00:00:00:00:03:33:33:33|203.0.255.134  203.0.255.134  evpn        20     40  30
-Ab [203.0.255.134:1010]ad:0|00:00:00:00:00:00:03:33:33:33           203.0.255.134  evpn        20     40  30
-
-
-
-If we check both Eos leafs, we will see that designated forwarder 203.0.255.127 (eos_leaf_4) is selected:
-eos_leaf_2#show bgp evpn instance vlan 10
-EVPN instance: VLAN 10
-  Route distinguisher: 203.0.255.134:1010
-  Route target import: Route-Target-AS:1010:1010
-  Route target export: Route-Target-AS:1010:1010
-  Service interface: VLAN-based
-  Local VXLAN IP address: 203.0.255.134
-  VXLAN: enabled
-  MPLS: disabled
-  Local ethernet segment:
-    ESI: 0000:0000:0000:0333:3333
-      Type: 0 (administratively configured)
-      Interface: Port-Channel3
-      Mode: all-active
-      State: up
-      ES-Import RT: 00:00:03:33:33:33
-      DF election algorithm: modulus
-      Designated forwarder: 203.0.255.127
-      Non-Designated forwarder: 203.0.255.134
-
-
-Lets suspend the link from host2 to eos_leaf_4 and see what happens:
-
-eos_leaf_2#show bgp evpn instance vlan 10
-EVPN instance: VLAN 10
-  Route distinguisher: 203.0.255.134:1010
-  Route target import: Route-Target-AS:1010:1010
-  Route target export: Route-Target-AS:1010:1010
-  Service interface: VLAN-based
-  Local VXLAN IP address: 203.0.255.134
-  VXLAN: enabled
-  MPLS: disabled
-  Local ethernet segment:
-    ESI: 0000:0000:0000:0333:3333
-      Type: 0 (administratively configured)
-      Interface: Port-Channel3
-      Mode: all-active
-      State: up
-      ES-Import RT: 00:00:03:33:33:33
-      DF election algorithm: modulus
-      Designated forwarder: 203.0.255.134
-
-
-
-[admin@spine1_ros] /routing/route>  print interval=1 where dst-address~"ad|es"
-Flags: A - ACTIVE; b - BGP
-Columns: DST-ADDRESS, GATEWAY, AFI, DISTANCE, SCOPE, TARGET-SCOPE
-   DST-ADDRESS                                                      GATEWAY        AFI   DISTANCE  SCOPE  TA
-Ab [203.0.255.134:1]ad:4294967295|00:00:00:00:00:00:03:33:33:33     203.0.255.134  evpn        20     40  30
-Ab [203.0.255.134:1]es:00:00:00:00:00:00:03:33:33:33|203.0.255.134  203.0.255.134  evpn        20     40  30
-Ab [203.0.255.134:1010]ad:0|00:00:00:00:00:00:03:33:33:33           203.0.255.134  evpn        20     40  30
-
-
-[admin@host_2] /interface/bonding> /ping 192.168.10.132 interval=500ms
-  SEQ HOST                                     SIZE TTL TIME       STATUS                                    
-    0 192.168.10.132                             56  64 2ms90us   
-    1 192.168.10.132                             56  64 2ms172us  
-    2 192.168.10.132                             56  64 2ms503us  
-    3 192.168.10.132                                               timeout                                   
-    4 192.168.10.132                                               timeout                                   
-    5 192.168.10.132                                               timeout                                   
-    6 192.168.10.132                             56  64 2ms191us  
-    7 192.168.10.132                             56  64 2ms31us   
-
-eos_leaf_2 became forwarder, eos_leaf_4 withdraw  ES and AD routes and traffic switched to other LACP link.
-
-
-
-
-
-
-
-    Creado por Oskars K., actualizado por última vez por Lība Klepecka el jun 02, 2025 21 min de lectura
-
-Scripting language manual
-
-This manual provides an introduction to RouterOS's built-in powerful scripting language.
-
-Scripting host provides a way to automate some router maintenance tasks by means of executing user-defined scripts bounded to some event occurrence.
-
-Scripts can be stored in the Script repository or can be written directly to the console. The events used to trigger script execution include, but are not limited to the System Scheduler, the Traffic Monitoring Tool, and the Netwatch Tool generated events.
-
-If you are already familiar with scripting in RouterOS, you might want to see our Tips & Tricks.
-Line structure
-
-The RouterOS script is divided into a number of command lines. Command lines are executed one by one until the end of the script or until a runtime error occurs.
-Command-line
-
-The RouterOS console uses the following command syntax:
-
-[prefix] [path] command [uparam] [param=[value]] .. [param=[value]]
-
-    [prefix] - ":" or "/" character which indicates if a command is ICE or path. It may not be required.
-    [path] - relative path to the desired menu level. It may not be required.
-    command - one of the commands available at the specified menu level.
-    [uparam] - unnamed parameter, must be specified if the command requires it.
-    [params] - a sequence of named parameters followed by respective values
-
-The end of the command line is represented by the token “;” or NEWLINE. Sometimes “;” or NEWLINE is not required to end the command line.
-
-Single command inside (), [] or {} does not require any end-of-command character. The end of the command is determined by the content of the whole script
-:if ( true ) do={ :put "lala" }
-
-Each command line inside another command line starts and ends with square brackets "[ ]" (command concatenation).
-:put [/ip route get [find gateway=1.1.1.1]]; 
-
-Notice that the code above contains three command lines:
-
-    :put
-    /ip route get
-    find gateway=1.1.1.1
-
-Command-line can be constructed from more than one physical line by following line joining rules.
-Physical Line
-
-A physical line is a sequence of characters terminated by an end-of-line (EOL) sequence. Any of the standard platform line termination sequences can be used:
-
-    Unix – ASCII LF;
-    Windows – ASCII CR LF;
-    mac – ASCII CR;
-
-Standard C conventions for newline characters can be used ( the \n character).
-Comments
-
-The following rules apply to a comment:
-
-    A comment starts with a hash character (#) and ends at the end of the physical line.
-    RouterOS does not support multiline comments.
-    If a # character appears inside the string it is not considered a comment.
-
-Example
-# this is a comment 
-# next line comment
-:global a; # another valid comment
-
-:global myStr "part of the string # is not a comment"
-Line joining
-
-Two or more physical lines may be joined into logical lines using the backslash character (\).
-
-The following rules apply to using backslash as a line-joining tool:
-
-    A line ending in a backslash cannot carry a comment.
-    A backslash does not continue a comment.
-    A backslash does not continue a token except for string literals.
-    A backslash is illegal elsewhere on a line outside a string literal.
-
-Example
-:if ($a = true \
-	and $b=false) do={ :put "$a $b"; } 
-:if ($a = true \ # bad comment 
-	and $b=false) do={ :put "$a $b"; }
-# comment \
-	continued - invalid (syntax error)
-Whitespace between tokens
-
-Whitespace can be used to separate tokens. Whitespace is necessary between two tokens only if their concatenation could be interpreted as a different token. Example:
-{  
-	:local a true; :local b false;
-# whitespace is not required 
-	:put (a&&b); 
-# whitespace is required  
-	:put (a and b); 
-}
-
-Whitespace characters are not allowed
-
-    between '<parameter>='
-    between 'from=' 'to=' 'step=' 'in=' 'do=' 'else='
-
-Example:
-#incorrect: 
-:for i from = 1 to = 2 do = { :put $i } 
-#correct syntax: 
-:for i from=1 to=2 do={ :put $i } 
-:for i from= 1 to= 2 do={ :put $i } 
-
-#incorrect 
-/ip route add gateway = 3.3.3.3 
-#correct 
-/ip route add gateway=3.3.3.3
-Scopes
-
-Variables can be used only in certain regions of the script called scopes. These regions determine the visibility of the variable. There are two types of scopes - global and local. A variable declared within a block is accessible only within that block and blocks enclosed by it, and only after the point of declaration.
-Global scope
-
-Global scope or root scope is the default scope of the script. It is created automatically and can not be turned off.
-Previously set global variable can be used in scripts by declaring it without setting the value.
-Local scope
-
-User can define their own groups to block access to certain variables, these scopes are called local scopes. Each local scope is enclosed in curly braces ("{ }").
-{  
-	:local a 3;
-	{  
-		:local b 4;  
-		:put ($a+$b); 
-	} #line below will show variable b in light red color since it is not defined in scope  
-	:put ($a+$b); 
-}
-
-In the code above variable, b has local scope and will not be accessible after a closing curly brace.
-Each line written in the terminal is treated as local scope
-
-So for example, the defined local variable will not be visible in the next command line and will generate a syntax error
-
-[admin@MikroTik] > :local myVar a;
-[admin@MikroTik] > :put $myVar
-syntax error (line 1 column 7)
-
-Do not define global variables inside local scopes.
-
-Note that even variable can be defined as global, it will be available only from its scope unless it is not referenced to be visible outside of the scope.
-{  
-	:local a 3; 
-	{  
-		:global b 4; 
-	}  
-	:put ($a+$b); 
-}
-
-The code above will output 3, because outside of the scope b is not visible. 
-
-The following code will fix the problem and will output 7:
-{  
-	:local a 3; 
-	{  
-		:global b 4; 
-	}
-	:global b;  
-	:put ($a+$b); 
+This script checks if the download on an interface is more than 512kbps if true then the queue is added to limit the speed to 256kbps.
+:foreach i in=[/interface find] do={
+    /interface monitor-traffic $i once do={
+        :if ($"received-bits-per-second" > 0 ) do={
+            :local tmpIP [/ip address get [/ip address find interface=$i] address] ;
+#            :log warning $tmpIP ;
+            :for j from=( [:len $tmpIP] - 1) to=0 do={
+                :if ( [:pick $tmpIP $j] = "/") do={
+                    /queue simple add name=$i max-limit=256000/256000 dst-address=[:pick $tmpIP 0 $j] ;
+                } 
+            }
+        }
+    }
 }
 
 
-Keywords
+Block access to specific websites
 
-The following words are keywords and cannot be used as variable and function names:
+This script is useful if you want to block certain websites but you don't want to use a web proxy.
 
-and       or       in
+This example looks at entries "Rapidshare" and "youtube" in the DNS cache and adds IPs to the address list named "restricted". Before you begin, you must set up a router to catch all DNS requests:
+/ip firewall nat
+add action=redirect chain=dstnat comment=DNS dst-port=53 protocol=tcp to-ports=53
+add action=redirect chain=dstnat dst-port=53 protocol=udp to-ports=53
 
-Delimiters
 
-The following tokens serve as delimiters in the grammar:
+and add firewall
+/ip firewall filter
+add chain=forward dst-address-list=restricted action=drop
 
-()  []  {}  :   ;   $   / 
 
-Data types
+Now we can write a script and schedule it to run, let's say, every 30 seconds.
 
-RouterOS scripting language has the following data types:
-num (number)	- 64bit signed integer, possible hexadecimal input;
-bool (boolean)	- values can bee true or false;
-str (string)	- character sequence;
-ip	- IP address;
-ip-prefix	- IP prefix;
-ip6	- IPv6 address
-ip6-prefix	- IPv6 prefix
-id (internal ID)	- hexadecimal value prefixed by '*' sign. Each menu item has an assigned unique number - internal ID;
-time	- date and time value;
-array	- sequence of values organized in an array;
-nil	- default variable type if no value is assigned;
-Constant Escape Sequences
+Script Code:
+:foreach i in=[/ip dns cache find] do={
+    :local bNew "true";
+    :local cacheName [/ip dns cache all get $i name] ;
+#    :put $cacheName;
 
-Following escape sequences can be used to define certain special characters within a string:
-\"	Insert double quote
-\\	Insert backslash
-\n	Insert newline
-\r	Insert carriage return
-\t	Insert horizontal tab
-\$	Output $ character. Otherwise, $ is used to link the variable.
-\?	Output ? character. Otherwise ? is used to print "help" in the console. Removed since v7.1rc2
-\_	- space
-\a	- BEL (0x07)
-\b	- backspace (0x08)
-\f	- form feed (0xFF)
-\v	Insert vertical tab
-\xx	A print character from hex value. Hex numbers should use capital letters.
-Example
+    :if (([:find $cacheName "rapidshare"] >= 0) || ([:find $cacheName "youtube"] >= 0)) do={
 
-:put "\48\45\4C\4C\4F\r\nThis\r\nis\r\na\r\ntest";
+        :local tmpAddress [/ip dns cache get $i address] ;
+#	:put $tmpAddress;
 
-which will show on the display
-HELLO
-This
-is
-a
-test
-Operators
-Arithmetic Operators
-
-Usual arithmetic operators are supported in the RouterOS scripting language
-"+"	binary addition	:put (3+4);
-"-"	binary subtraction	:put (1-6);
-"*"	binary multiplication	:put (4*5);
-"/"	binary division	:put (10 / 2); :put ((10)/2)
-"%"	modulo operation	:put (5 % 3);
-"-"	unary negation	{ :local a 1; :put (-a); }
-
-Note: for the division to work you have to use braces or spaces around the dividend so it is not mistaken as an IP address
-Relational Operators
-"<"	less	:put (3<4);
-">"	greater	:put (3>4);
-"="	equal	:put (2=2);
-"<="	less or equal	
-">="	greater or equal	
-"!="	not equal	
-
-To negate an expression, you can use "expression=false". To print all interfaces that are not "ethernet", you can use expression negation like this:
-/interface/print where (name~"ether")=false
-
-Or to do the opposite, you can use "expression=true":
-/interface/print where (name~"ether")=true
-Logical Operators
-“!”	logical NOT	:put (!true);
-“&&”, “and”	logical AND	:put (true&&true)
-“||”, “or”	logical OR	:put (true||false);
-“in”	
-	:put (1.1.1.1/32 in 1.0.0.0/8);
-Bitwise Operators
-
-Bitwise operators are working on number, IP, and IPv6 address data types.
-“~”	bit inversion	:put (~0.0.0.0)
-:put (~::ffff)
-“|”	bitwise OR. Performs logical OR operation on each pair of corresponding bits. In each pair the result is “1” if one of the bits or both bits is “1”, otherwise the result is “0”.	:put (192.168.88.0|0.0.0.255)
-:put (2001::1|::ffff)
-“^”	bitwise XOR. The same as OR, but the result in each position is “1” if two bits are not equal, and “0” if the bits are equal.	:put (1.1.1.1^255.255.0.0)
-:put (2001::ffff:1^::ffff:0)
-“&”	bitwise AND. In each pair, the result is “1” if the first and second bit is “1”. Otherwise, the result is “0”.	:put (192.168.88.77&255.255.255.0)
-:put (2001::1111&ffff::)
-“<<”	left shift by a given amount of bits, not supported for IPv6 address data type	:put (192.168.88.77<<8)
-“>>”	right shift by a given amount of bits, not supported for IPv6 address data type	:put (192.168.88.77>>24)
-
-Calculate the subnet address from the given IP and CIDR Netmask using the "&" operator:
-{ 
-:local IP 192.168.88.77; 
-:local CIDRnetmask 255.255.255.0; 
-:put ($IP&$CIDRnetmask); 
+# if address list is empty do not check
+        :if ( [/ip firewall address-list find list="restricted" ] = "") do={
+            :log info ("added entry: $[/ip dns cache get $i name] IP $tmpAddress");
+            /ip firewall address-list add address=$tmpAddress list=restricted comment=$cacheName;
+        } else={
+            :foreach j in=[/ip firewall address-list find list="restricted"] do={
+                :if ( [/ip firewall address-list get $j address] = $tmpAddress ) do={
+                    :set bNew "false";
+                }
+            }
+            :if ( $bNew = "true" ) do={
+                :log info ("added entry: $[/ip dns cache get $i name] IP $tmpAddress");
+                /ip firewall address-list add address=$tmpAddress list=restricted comment=$cacheName;
+            }
+        }
+    }
 }
 
-Get the last 8 bits from the given IP addresses:
- :put (192.168.88.77&0.0.0.255);
 
-Use the "|" operator and inverted CIDR mask to calculate the broadcast address:
-{ 
-:local IP 192.168.88.77; 
-:local Network 192.168.88.0; 
-:local CIDRnetmask 255.255.255.0; 
-:local InvertedCIDR (~$CIDRnetmask); 
-:put ($Network|$InvertedCIDR) 
-}
-Concatenation Operators
-"."	concatenates two strings	:put ("concatenate" . " " . "string");
-","	concatenates two arrays or adds an element to the array	:put ({1;2;3} , 5 );
+Parse file to add ppp secrets
 
-It is possible to add variable values to strings without a concatenation operator:
-:global myVar "world"; 
+This script requires that entries inside the file are in the following format:
 
-:put ("Hello " . $myVar); 
-# next line does the same as above 
-:put "Hello $myVar";
-
-By using $[] and $() in the string it is possible to add expressions inside strings:
-:local a 5; 
-:local b 6; 
-:put " 5x6 = $($a * $b)"; 
-
-:put " We have $[ :len [/ip route find] ] routes";
-Other Operators
-
-
-“[]”	command substitution. Can contain only a single command line	:put [ :len "my test string"; ];
-“()”	subexpression or grouping operator	:put ( "value is " . (4+5));
-“$”	substitution operator	:global a 5; :put $a;
-“~”	the binary operator that matches value against POSIX extended regular expression	Print all routes whose gateway ends with 202:
-/ip route print where gateway~"^[0-9 \\.]*202\$"
-“->”	Get an array element by key	
-
-[admin@x86] >:global aaa {a=1;b=2}
-[admin@x86] > :put ($aaa->"a")
-1
-[admin@x86] > :put ($aaa->"b")
-2
-
-Variables
-
-The scripting language has two types of variables:
-
-    global - accessible from all scripts created by the current user, defined by global keyword;
-    local - accessible only within the current scope, defined by local keyword.
-
-There can be undefined variables. When a variable is undefined, the parser will try to look for variables set, for example, by DHCP lease-script or Hotspot on-login
-
-Every variable, except for built-in RouterOS variables, must be declared before usage by local or global keywords. Undefined variables will be marked as undefined and will result in a compilation error. Example:
-# following code will result in compilation error, because myVar is used without declaration 
-:set myVar "my value"; 
-:put $myVar
-
-Correct code:
-:local myVar; 
-:set myVar "my value"; 
-:put $myVar;
-
-The exception is when using variables set, for example, by DHCP lease-script
-/system script 
-add name=myLeaseScript policy=\ 
-	ftp,reboot,read,write,policy,test,winbox,password,sniff,sensitive,api \ 
-	source=":log info \$leaseActIP\r\ 
-	\n:log info \$leaseActMAC\r\ 
-	\n:log info \$leaseServerName\r\ 
-	\n:log info \$leaseBound" 
-
-/ip dhcp-server set myServer lease-script=myLeaseScript
-
-Valid characters in variable names are letters and digits. If the variable name contains any other character, then the variable name should be put in double quotes. Example:
-#valid variable name 
-:local myVar; 
-#invalid variable name 
-:local my-var; 
-#valid because double quoted 
-:global "my-var";
-
-If a variable is initially defined without value then the variable data type is set to nil, otherwise, a data type is determined automatically by the scripting engine. Sometimes conversion from one data type to another is required. It can be achieved using data conversion commands. Example:
-#convert string to array 
-:local myStr "1,2,3,4,5"; 
-:put [:typeof $myStr]; 
-:local myArr [:toarray $myStr]; 
-:put [:typeof $myArr]
-
-Variable names are case-sensitive.
-:local myVar "hello" 
-# following line will generate error, because variable myVAr is not defined 
-:put $myVAr 
-# correct code 
-:put $myVar
-
-Set command without value will un-define the variable (remove from environment, new in v6.2)
-#remove variable from environment 
-:global myVar "myValue" 
-:set myVar;
-
-Use quotes on the full variable name when the name of the variable contains operators. Example:
-:local "my-Var";
-:set "my-Var" "my value";
-:put $"my-Var";
-Reserved variable names
-
-All built-in RouterOS properties are reserved variables. Variables that will be defined the same as the RouterOS built-in properties can cause errors. To avoid such errors, use custom designations.
-
-For example, the following script will not work:
-{ 
-:local type "ether1"; 
-/interface print where name=$type; 
-}
-
-But will work with different defined variables:
- { 
-:local customname "ether1"; 
-/interface print where name=$customname; 
-}
-Commands
-Global commands
-
-Every global command should start with the ":" token, otherwise, it will be treated as a variable.
-/	
-	go to the root menu	
-..	
-	go back by one menu level	
-?	
-	list all available menu commands and brief descriptions	
-global	:global <var> [<value>]	define a global variable	:global myVar "something"; :put $myVar;
-local	:local <var> [<value>]	define the local variable	{ :local myLocalVar "I am local"; :put $myVar; }
-beep	:beep frequency=[num] length=[num]	beep built-in speaker	
-convert	:convert from=[arg] to=[arg]	
-
-Converts specified value from one format to another. By default uses an automatically parsed value, if the "from" format is not specified (for example, "001" becomes "1", "10.1" becomes "10.0.0.1", etc.).
-
-from specifies the format of the value - base32, base64, byte-array, hex, num, raw, url.
-
-to specifies the format of the output value - base32, base64, bit-array-lsb, bit-array-msb, byte-array, hex, num, raw, url.
-
-transform to transform values - lc (transforms value to be in lowercases), uc (uppercases), lcfirst (first value to lowercase), ucfirst (first value to uppercase), crlf, ed25519-private-to-x25519-private, none, rot 13, x25519-private-to-x25519-public, ed25519-private-to-ed25519-public, ed25519-public-to-x25519-public, md5, reverse (reverses text), sha512.
-	
-
-:put [:convert 001 to=hex ]
-
-31
-
-:put [:convert [/ip dhcp-client/option/get hostname raw-value] from=hex to=raw ]
-
-MikroTik
-
-:put [convert transform=lc "AAA"]         
-
-aaa
-delay	:delay <time>	do nothing for a given period of time	
-environment	:environment print <start>	print initialized variable information	:global myVar true; :environment print;
-error	:error <output>	Generate console error and stop executing the script	
-execute	:execute <expression>	
-
-Execute the script in the background. The result can be written in the file by setting a "file" parameter or printed to the CLI by setting "as-string".
-
-When using the "as-string" parameter executed script is blocked (not executed in the background).
-
-Executed script can not be larger than 64kB
-	
-{
-:local j [:execute {/interface print follow where [:log info ~Sname~]}];
-:delay 10s;
-:onerror e {/system script job remove $j}
-}
-find	:find <arg> <arg> <start>	return position of a substring or array element	:put [:find "abc" "a" -1];
-grep	:grep script=[str] pattern=[expression] after=[num] before=[num] filename=[str]
-
-	Command ":grep" executes "script" part of a command in terminal and provides just the output which matches "pattern". Additional options "after" and "before" allow to print out specific number of lines of script output which are available also after/before matched pattern. Results can be directly saved into a file with "filename" parameter.	
-
-:grep script="/interface print" pattern="ether" after=1 before=1 filename=results.txt
-jobname
-	:jobname	return current script name	
-Limit script execution to single instance
-:if ([/system script job print count-only as-value where script=[:jobname] ] > 1) do={
-  :error "script instance already running"
-  }
-
-
-len	:len <expression>	return string length or array element count	:put [:len "length=8"];
-log	:log <topic> <message>	write a message to the system log. Available topics are "debug, error, info and warning"	:log info "Hello from script";
-onerror	:onerror <var_name> in={<command>} do={<expression>}	
-
-The command used to catch errors and get error details. The do={...} block is executed, when in={...} block has an error,  and error details are written in <var_name> variable. 
-
-Parameter order is important. The "error" parameter must be set before "do" block, otherwise do block will not see the local variable. 
-
-
-:onerror will return false (if there is no error) and true (if there is an error) unless otherwise specified (with commands such as :return or :error), so it can be used in :if condition statement scripts.
-	 :onerror errorName in={ :error "failure" } do={ :put "Critical $errorName" }
-parse	:parse <expression>	parse the string and return parsed console commands. Can be used as a function.	:global myFunc [:parse ":put hello!"];
-$myFunc;
-pick	:pick <var> <start> [<end>]	
-
-return range of elements or substring. If the count is not specified, will return only one element from an array.
-
-    var - value to pick elements from
-    start - element to start picking from (the first element index is 0)
-    end - terminating index (element at this index is not included)
-
-	
-
-
-[admin@MikroTik] > :put [:pick "abcde" 1 3]
-bc
-
-
-put	:put <expression>	put the supplied argument into the console	:put "Hello world"
-range	:range <var> <var>	creates an array from the specified range	
-
-:put [:range 2 8]
-2;3;4;5;6;7;8
-
-resolve	:resolve <arg> [<domain-name>][<server>][<server-port>][<type>]	
-
-return the IP address of the given DNS name
-
-    domain-name - DNS name that needs to be resolved;
-    server - specific server that will be used to resolve DNS name (returned results will not be cached);
-    server-port - server port;
-    type - any/any6/ipv4/ipv6:
-        any - first tries to resolve ipv4, if fails tries ipv6;
-        any6 - first tries to resolve ipv6, if fails tries ipv4;
-        ipv4 - tries to resolve only ipv4;
-        ipv6 - tries to resolve only ipv6
-
-	
-
-:put [:resolve "www.mikrotik.com"];
-
-:put [:resolve domain-name="www.mikrotik.com"];
-
-:put [:resolve domain-name="www.mikrotik.com" server=192.168.88.1 port=53];
-
-:put [:resolve domain-name="www.mikrotik.com" type=ipv6];
-retry	
-
-:onerror e {:retry command=<expr> delay=[num] max=[num]} do={<expr>}
-	Try to execute the given command "max" amount of times with a given "delay" in seconds between tries. On failure, execute the command in the do={} block.	
-:onerror e {:retry command={abc} delay=1 max=2} do={:put "got error"}
-got error
-typeof	:typeof <var>	the return data type of variable	:put [:typeof 4];
-rndnum	:rndnum from=[num] to=[num]	random number generator	:put [:rndnum from=1 to=99];
-rndstr	:rndstr from=[str] length=[num]	
-
-Random string generator.
-
-from specifies characters to construct the string from and defaults to all ASCII letters and numerals.
-length specifies the length of the string to create and defaults to 16.
-	
-
-:put [:rndstr from="abcdef%^&" length=33];
-
-
-
-set	:set <var> [<value>]	assign value to a declared variable.	:global a; :set a true;
-serialize	:serialize [<value>] to=[arg]	
-
-Serialize specified value/array to JSON or dsv (delimiter separated values) format.
-
-value specifues which values to process.
-
-to specifies the format - json, dsv
-
-delimiter sets the "separator".
-
-order specifies the order for variables.
-
-options specifies additional options:
-
-    json.pretty  - makes the JSON output more visually appealing;
-
-    json.no-string-conversion - prevents implict conversions from console string type to json number type;
-    dsv.wrap-strings - wraps string values inside quatation marks;
-    dsv.ignore-size - if array values have different sizes, e.g. a=(1,2);b=(3,4);c=(5,6,7), this option will work around array size mismatch error and set "empty" values in those slots.
-    dsv.remap - merges array of dictionaries into a single dictionary (useful when working with "print as-value")
-
-file-name enables the option to generate command's output into a file (available for download in the "/files" section).
-	
-
-
-:put [:serialize value=a,b,c to=json]                 
-["a","b","c"]
-
-:local test {a=(1,2,3);b=(4,5,6);c=(7,"text",9)}; :put [ :serialize to=dsv delimiter=";" value=$test order=("c","a","b") ]     
-c;a;b
-7;1;4
-text;2;5
-9;3;6
-
-:global var ({ "string"="1234"; "number"=1234 });:put [ :serialize to=json value=$var ]
-{"number":1234,"string":1234.000000}
-:put [ :serialize to=json value=$var options=json.no-string-conversion  ]
-{"number":1234,"string":"1234"}
-
-:put [:serialize to=dsv options=dsv.remap delimiter="#" [/ip/address/print as-value]]  
-.id#address#comment#interface#network
-*1#192.168.88.1/24#defconf#bridge#192.168.88.0
-*2#192.168.69.190/24##ether1#192.168.69.0
-
-
-deserialize	:deserialize [<value>] from=[arg]	
-
-Deserialize specified value/array from JSON or dsv (delimiter separated values) format.
-
-from specifies the format - json, dsv
-
-delimiter sets the "separator".
-
-options specifies additional options:
-
-    dsv.plain - deserializes every line as an array (input does not have a header or column names);
-    dsv.array - expects a header (column names) and will return an array of dictionaries, where values are mapped to column names provided in the header.
-    json.no-string-conversion - prevents implicit conversions from json string type to console values (number, ip, etc.).
-
-	
-:put [:deserialize from=json value="[\"a\",\"b\",\"c\"]"]
-a;b;c
-
-:put ([ :deserialize from=dsv delimiter=";" value="a;b;c\n1;findme;3" options=dsv.plain ]->1->1) 
-findme
-
-:put ([ :deserialize from=dsv delimiter=";" value="a;b;c\n1;findme;3" options=dsv.plain ]->0->1)   
-b
-
-:put ([:deserialize from=dsv "a;b;c\n1;2;3\n4;5;6" delimiter=";" options=dsv.array]->1->"b") 
-5
-
-:put ([:deserialize from=dsv "a;b;c\n1;2;3\n4;5;6" delimiter=";" options=dsv.array]->0->"c")    
-3
-
-:put [typeof ([:deserialize "{ \"str\": \"123\" }" from=json options=json.no-string-conversion]->"str")]
-str
-
-:deserialize [/file/get file.json contents] from=json
-time	:time <expression>	return interval of time needed to execute the command	:put [:time {:for i from=1 to=10 do={ :delay 100ms }}];
-timestamp	:timestamp	returns the time since epoch, where epoch is January 1, 1970 (Thursday), not counting leap seconds	
-[admin@MikroTik] > :put [:timestamp]
-2735w21:41:43.481891543
-or
-[admin@MikroTik] > :put [:timestamp]
-2735w1d21:41:43.481891543
-with the day offset
-toarray	:toarray <var>	convert a variable to the array	
-tobool	:tobool <var>	convert a variable to boolean	
-toid	:toid <var>	convert a variable to internal ID	
-toip	:toip <var>	convert a variable to IP address	
-toip6	:toip6 <var>	convert a variable to IPv6 address	
-tonum	:tonum <var>	convert a variable to an integer	
-tostr	:tostr <var>	convert a variable to a string	
-totime	:totime <var>	convert a variable to time	
-tonsec	:tonsec <var>	convert time to nanoseconds	
-
-:put [:tonsec value=10:00]               
-36000000000000
-
-tocrlf	:tocrlf <var>	converts line endings to CRLF	
-
-:put [:tocrlf  "AAA\r\nBBB\r\nCCC" ]                                                                                                             
-AAA                                              
-BBB
-CCC
-
-tolf	:tolf <var>	converts line endings to LF	
-
-:put [:tolf  "AAA\nBBB\nCCC" ]      
-AAA
-   BBB
-      CCC
-
-nothing	:nothing	return a value of nothing	
-
-:if ([:nothing] = 0) do={:put true} else={:put false}
-false
-:if ([:nothing] > 0) do={:put true} else={:put false} 
-false
-:if ([:nothing] < 0) do={:put true} else={:put false} 
-true
-
-Menu specific commands
-Common commands
-
-The following commands are available from most sub-menus:
-add	add <param>=<value>..<param>=<value>	add new item
-remove	remove <id>	remove selected item
-enable	enable <id>	enable selected item
-disable	disable <id>	disable selected item
-set	set <id> <param>=<value>..<param>=<value>	change selected items parameter, more than one parameter can be specified at the time. The parameter can be unset by specifying '!' before the parameter.
-
-Example:
-/ip firewall filter add chain=blah action=accept protocol=tcp port=123 nth=4,2
-print
-set 0 !port chain=blah2 !nth protocol=udp
-get	get <id> <param>=<value>	get the selected item's parameter value
-print	print <param><param>=[<value>]	print menu items. Output depends on the print parameters specified. The most common print parameters are described here
-export	export [file=<value>]	export configuration from the current menu and its sub-menus (if present). If the file parameter is specified output will be written to the file with the extension '.rsc', otherwise the output will be printed to the console. Exported commands can be imported by import command
-edit	edit <id> <param>	edit selected items property in the built-in text editor
-find	find <expression>	Returns list of internal numbers for items that are matched by given expression. For example:  :put [/interface find name~"ether"]
-import
-
-The import command is available from the root menu and is used to import configuration from files created by an export command or written manually by hand.
-
-Starting from 7.16.x version, its possible to catch syntax errors:
-[admin@admin] > do { import test.rsc } on-error={ :put "Failure" }  
-Failure
-
-New parameter onerror can be used:
-[admin@admin] > onerror e in={ import test.rsc } do={ :put "Failure - $e" }       
-Failure - Script Error: bad command name this (line 1 column 1)
-
-In addition, the import command has new options in verbose mode - the dry-run parameter is specially designed for debugging and can find multiple errors without changing the configuration.
-[admin@admin] > import test.rsc verbose=yes dry-run 
-#line 1
-this
-bad command name this (line 1 column 1)
-...
-Script Error: found 5 error(s) in import file
-print parameters
-
-Several parameters are available for print command:
-append	
-	
-as-value	print output as an array of parameters and its values	:put [/ip address print as-value]
-brief	print brief description	
-detail	print detailed description, the output is not as readable as brief output but may be useful to view all parameters	
-count-only	print only count of menu items	
-file	print output to a file	
-follow	print all current entries and track new entries until ctrl-c is pressed, very useful when viewing log entries	/log print follow
-follow-only	print and track only new entries until ctrl-c is pressed, very useful when viewing log entries	/log print follow-only
-from	print parameters only from specified item	/user print from=admin
-interval	continuously print output in a selected time interval, useful to track down changes where follow is not acceptable	/interface print interval=2
-terse	show details in a compact and machine-friendly format	
-value-list	show values single per line (good for parsing purposes)	
-without-paging	If the output does not fit in the console screen then do not stop, print all information in one piece	
-where	expressions followed by where parameters can be used to filter outmatched entries	
-
-/ip route print where interface="ether1"
-about	returns entries that have the "about" parameter, such as "managed by CAPsMAN "information or warnings	
-
-/interface wifi print where about
-
-More than one parameter can be specified at a time, for example, /ip route print count-only interval=1 where interface="ether1"
-Loops and conditional statements
-Loops
-do..while	:do { <commands> } while=( <conditions> ); :while ( <conditions> ) do={ <commands> };	execute commands until a given condition is met.
-for	:for <var> from=<int> to=<int> step=<int> do={ <commands> }	execute commands over a given number of iterations
-foreach	:foreach <var> in=<array> do={ <commands> };	execute commands for each element in a list
-Conditional statement
-if	:if (<condition>) do={<commands>} else={<commands>}	If a given condition is true then execute commands in the do block, otherwise execute commands in the else block if specified.
-
-Example:
-{  
-	:local myBool true;  
-	:if ($myBool = false) do={ :put "value is false" } else={ :put "value is true" } 
-}
-Functions
-
-Scripting language does not allow you to create functions directly, however, you could use :parse command as a workaround.
-
-Starting from v6.2 new syntax is added to easier define such functions and even pass parameters. It is also possible to return function value with :return command.
-
-See examples below:
-#define function and run it
-:global myFunc do={:put "hello from function"}
-$myFunc
-
-output:
-hello from function
-
-#pass arguments to the function
-:global myFunc do={:put "arg a=$a"; :put "arg '1'=$1"} 
-$myFunc a="this is arg a value" "this is arg1 value"
-
-output:
-arg a=this is arg a value
-arg '1'=this is arg1 value
-
-Notice that there are two ways how to pass arguments:
-
-    pass arg with a specific name ("a" in our example)
-    pass value without arg name, in such case arg "1", "2" .. "n" is used.
-
-Return example
-:global myFunc do={ :return ($a + $b)} 
-:put [$myFunc a=6 b=2] 
-
-output: 
-8
-
-You can even clone an existing script from the script environment and use it as a function.
-#add script
-/system script add name=myScript source=":put \"Hello $myVar !\""
-
-:global myFunc [:parse [/system script get myScript source]]
-$myFunc myVar=world
-
-output:
-Hello world !
-If the function contains a defined global variable that names match the name of the passed parameter, then the globally defined variable is ignored, for compatibility with scripts written for older versions. This feature can change in future versions. Avoid using parameters with the same name as global variables.
+username,password,local_address,remote_address,profile,service
 
 For example:
-:global my2 "123" 
+janis,123,1.1.1.1,2.2.2.1,ppp_profile,myService
+juris,456,1.1.1.1,2.2.2.2,ppp_profile,myService
+aija,678,1.1.1.1,2.2.2.3,ppp_profile,myService
 
-:global myFunc do={ :global my2; :put $my2; :set my2 "lala"; :put $my2 } 
-$myFunc my2=1234 
+
+
+:global content [/file get [/file find name=test.txt] contents] ;
+:global contentLen [ :len $content ] ;
+
+:global lineEnd 0;
+:global line "";
+:global lastEnd 0;
+
+
+:do {
+       :set lineEnd [:find $content "\r\n" $lastEnd ] ;
+       :set line [:pick $content $lastEnd $lineEnd] ;
+       :set lastEnd ( $lineEnd + 2 ) ;
+
+       :local tmpArray [:toarray $line] ;
+	:if ( [:pick $tmpArray 0] != "" ) do={
+	:put $tmpArray;
+         /ppp secret add name=[:pick $tmpArray 0] password=[:pick $tmpArray 1] \
+             local-address=[:pick $tmpArray 2] remote-address=[:pick $tmpArray 3] \
+             profile=[:pick $tmpArray 4] service=[:pick $tmpArray 5];
+}
+} while ($lineEnd < $contentLen)
+
+
+Detect new log entry
+
+This script is checking if a new log entry is added to a particular buffer.
+
+In this example we will use PPPoE logs:
+/system logging action
+add name="pppoe"
+/system logging
+add action=pppoe topics=pppoe,info,!ppp,!debug
+
+
+Log buffer will look similar to this one:
+[admin@mainGW] > /log print where buffer=pppoe 
+13:11:08 pppoe,info PPPoE connection established from 00:0C:42:04:4C:EE  
+
+
+Now we can write a script to detect if a new entry is added.
+:global lastTime;
+
+:global currentBuf [ :toarray [ /log find buffer=pppoe  ] ] ;
+:global currentLineCount [ :len $currentBuf ] ;
+:global currentTime [ :totime [/log get [ :pick $currentBuf ($currentLineCount -1) ] time   ] ];
+
+:global message "";
+
+:if ( $lastTime = "" ) do={ 
+	:set lastTime $currentTime ; 
+	:set message [/log get [ :pick $currentBuf ($currentLineCount-1) ] message];
+
+} else={
+	:if ( $lastTime < $currentTime ) do={ 
+		:set lastTime $currentTime ; 
+		:set message [/log get [ :pick $currentBuf ($currentLineCount-1) ] message];
+	}
+}
+
+
+After a new entry is detected, it is saved in the "message" variable, which you can use later to parse log messages, for example, to get the PPPoE client's mac addresses.
+Allow use of ntp.org pool service for NTP
+
+This script resolves the hostnames of two NTP servers, compares the result with the current NTP settings, and changes the addresses if they're different. This script is required as RouterOS does not allow hostnames to be used in the NTP configuration. Two scripts are used. The first defines some system variables which are used in other scripts and the second does the grunt work:
+# System configuration script - "GlobalVars"
+
+:put "Setting system globals";
+
+# System name
+:global SYSname [/system identity get name];
+
+# E-mail address to send notifications to
+:global SYSsendemail "mail@my.address";
+
+# E-mail address to send notifications from
+:global SYSmyemail "routeros@my.address";
+
+# Mail server to use
+:global SYSemailserver "1.2.3.4";
+
+# NTP pools to use (check www.pool.ntp.org)
+:global SYSntpa "0.uk.pool.ntp.org";
+:global SYSntpb "1.uk.pool.ntp.org";
+# Check and set NTP servers - "setntppool"
+
+# We need to use the following globals which must be defined here even
+# though they are also defined in the script we call to set them.
+:global SYSname;
+:global SYSsendemail;
+:global SYSmyemail;
+:global SYSmyname;
+:global SYSemailserver;
+:global SYSntpa;
+:global SYSntpb;
+
+# Load the global variables with the system defaults
+/system script run GlobalVars
+
+# Resolve the two ntp pool hostnames
+:local ntpipa [:resolve $SYSntpa];
+:local ntpipb [:resolve $SYSntpb];
+
+# Get the current settings
+:local ntpcura [/system ntp client get primary-ntp];
+:local ntpcurb [/system ntp client get secondary-ntp];
+
+# Define a variable so we know if anything's changed.
+:local changea 0;
+:local changeb 0;
+
+# Debug output
+:put ("Old: " . $ntpcura . " New: " . $ntpipa);
+:put ("Old: " . $ntpcurb . " New: " . $ntpipb);
+
+# Change primary if required
+:if ($ntpipa != $ntpcura) do={
+    :put "Changing primary NTP";
+    /system ntp client set primary-ntp="$ntpipa";
+    :set changea 1;
+    }
+
+# Change secondary if required
+:if ($ntpipb != $ntpcurb) do={
+    :put "Changing secondary NTP";
+    /system ntp client set secondary-ntp="$ntpipb";
+    :set changeb 1;
+    }
+
+# If we've made a change, send an e-mail to say so.
+:if (($changea = 1) || ($changeb = 1)) do={
+    :put "Sending e-mail.";
+    /tool e-mail send \
+        to=$SYSsendemail \
+        subject=($SYSname . " NTP change") \
+        from=$SYSmyemail \
+        server=$SYSemailserver \
+        body=("Your NTP servers have just been changed:\n\nPrimary:\nOld: " . $ntpcura . "\nNew: " \
+          . $ntpipa . "\n\nSecondary\nOld: " . $ntpcurb . "\nNew: " . $ntpipb);
+    }
+
+Scheduler entry:
+/system scheduler add \
+  comment="Check and set NTP servers" \
+  disabled=no \
+  interval=12h \
+  name=CheckNTPServers \
+  on-event=setntppool \
+  policy=read,write,test \
+  start-date=jan/01/1970 \
+  start-time=16:00:00
+Other scripts
+
+    Dynamic_DNS_Update_Script_for_EveryDNS
+    Dynamic_DNS_Update_Script_for_ChangeIP.com
+    UPS Script
+
+
+
+
+    Creado por Antons B. el nov 21, 2024 8 min de lectura
+
+    Do not use console numbers to get parameter values
+    Why find does not work even if correct value is specified?
+    How to define empty array
+    How to remove variables
+    Get values for properties if 'get' command is not available
+    Always check what value and type command returns
+    Be careful when adding array to string
+    Get/Set unnamed elements in array
+    Set element value in 2D array
+    Read value of global variable defined in other script
+    Accessing global variable from function
+    Running function from another function
+    Always use unique variable names
+    Get values from looped interactive commands like "monitor"
+    Get file content received by fetch tool
+    Check script permissions
+    Be careful when using dont-require-permissions
+
+Do not use console numbers to get parameter values
+
+Lets start with very basics. When you work with console to access parameters, you are used to following syntax:
+
+[admin@rack1_b34_CCR1036] /interface> print 
+Flags: D - dynamic, X - disabled, R - running, S - slave 
+ #     NAME                                TYPE       ACTUAL-MTU L2MTU  MAX-L2MTU
+ 0  R  ether1                              ether            1500  1580      1022
+[admin@rack1_b34_CCR1036] /interface> set 0 name=LAN   
+
+What print command does is temporary saves buffer with id numbers referencing to internal ID numbers, so obviously if you are trying to use non-existent buffer values script will fail, like, for example this script:
+
+/system script add name=script1 source={
+  /ip route set 0 gateway=3.3.3.3
+}
+
+Script does not know what you assume by "1" and will throw an error. Proper way is to use internal ID numbers, those numbers can be seen if you are doing print as-value or returned by find command, for example:
+
+[admin@rack1_b34_CCR1036] /ip route> :put [find where dst-address="10.0.0.0/8"] 
+*1
+
+So in this case proper script would be:
+
+/system script add name=script1 source={
+  /ip route set *1 gateway=3.3.3.3
+}
+
+Note that it is not recommended to use internal numbers directly, since items can be removed and re-added in which case internal id number will change and script will fail again, so instead use find command directly in your code:
+
+/system script add name=script1 source={
+  /ip route set [find dst-address="0.0.0.0/0"] gateway=3.3.3.3
+}
+
+
+Why find does not work even if correct value is specified?
+
+Lets say we want to print specific address:
+
+[admin@rack1_b34_CCR1036] /ip address> print where address=111.111.1.1/24
+Flags: X - disabled, I - invalid, D - dynamic 
+ #   ADDRESS            NETWORK         INTERFACE      
+
+So why it does not work?
+
+Console tries to convert variable types as hard as it can, but it is not always possible to do it correctly, so lets look closely why this particular example does not work. First lets check what variable type "address" is:
+
+[admin@rack1_b34_CCR1036] /ip address> :put [:typeof ([print as-value]->0->"address")]
+str
+
+So obviously we are comparing string to ip-prefix. And conversion from ip-prefix to string does not happen, so what we can do to solve the problem? Convert variable to correct format:
+
+[admin@rack1_b34_CCR1036] /ip address> print where address=[:tostr 111.111.1.1/24]
+  
+Flags: X - disabled, I - invalid, D - dynamic 
+ #   ADDRESS            NETWORK         INTERFACE                                
+ 0   111.111.1.1/24     111.111.1.0     ether2  
+
+
+Or use string directly:
+
+[admin@rack1_b34_CCR1036] /ip address> print where address="111.111.1.1/24"
+  
+Flags: X - disabled, I - invalid, D - dynamic 
+ #   ADDRESS            NETWORK         INTERFACE                                
+ 0   111.111.1.1/24     111.111.1.0     ether2  
+
+Obviously second method is not suitable if you are getting ip prefix from a variable, then conversion should be done as in first example or by writing variable to string with "$myVar".
+How to define empty array
+
+RouterOS does not allow to define empty array in a way that you think it should work:
+
+[admin@1p_DUT_wAP ac] /interface> :global array {}
+syntax error (line 1 column 17)
+
+Insted a work around is to convert empty string to an array:
+
+[admin@rack1_b36_CCR1009] > :global array [:toarray ""]
+[admin@rack1_b36_CCR1009] > :environment print 
+array={}
+
+From here we can use this array to set elements:
+
+[admin@rack1_b36_CCR1009] > :set ($array->"el0") "el0_val"       
+[admin@rack1_b36_CCR1009] > :environment print            
+array={el0="el0_val"}
+
+
+How to remove variables
+
+You could use /system script environment remove to remove unused variables, however more preferred method is to unset variable.
+
+Setting no value to existing parameter will unset it, see example below:
+
+[admin@MikroTik] /system script environment> :global myVar 1
+[admin@MikroTik] /system script environment> print 
+ # NAME               VALUE                                                      
+ 0 myVar              1                                                          
+[admin@MikroTik] /system script environment> :set myVar
+[admin@MikroTik] /system script environment> print 
+ # NAME               VALUE                                                      
+[admin@MikroTik] /system script environment> 
+
+Get values for properties if 'get' command is not available
+
+For example, how do you get usable output for scripting from /interface wireless info hw-info command? Use as-value:
+
+[admin@1p_DUT_wAP ac] /interface wireless info> :put [hw-info wlan1 as-value ]
+ranges=2312-2732/5/b;g;gn20;gn40;2484-2484/5/b;g;gn20;gn40;rx-chains=0;1;tx-chains=0;1
+
+Output is 1D array so you can easily get interested property value
+
+[admin@1p_DUT_wAP ac] /interface wireless info> :put ([hw-info wlan1 as-value ]->"tx-chains")      
+0;1
+
+Always check what value and type command returns
+
+Lets say we want to get gateway of specific route using as-value, if we execute following command it will return nothing
+
+[admin@rack1_b36_CCR1009] /ip address> :put ([/ip route print as-value where gateway="ether1"]->"gateway") 
+
+
+Command assumes that output will be 1D array from which we could extract element gateway.
+
+At first lets check if print is actually find anything:
+
+[admin@rack1_b36_CCR1009] /ip address> :put ([/ip route print as-value where gateway="ether1"])  
+.id=*400ae12f;distance=255;dst-address=111.111.111.1/32;gateway=ether1;pref-src=111.111.111.1
+
+So obviously there is something wrong with variable itself or variable type returned. Lets check it more closely:
+
+[admin@rack1_b36_CCR1009] /ip address> :global aa ([/ip route print as-value where gateway="ether1"
+])       
+[admin@rack1_b36_CCR1009] /ip address> :environment print 
+aa={{.id=*400ae12f; distance=255; dst-address=111.111.111.1/32; gateway={"ether1"}; pref-src=111.11
+1.111.1}}
+
+Now it is clear that returned value is 2D array with one element. So the right sequence to extract gateway will be:
+
+    get 2d array
+    get first element
+    get "gateway" from picked element
+
+[admin@rack1_b36_CCR1009] /ip address> :put ([:pick [/ip route print as-value where gateway="ether1"] 0]->"gateway")  
+ether1
+
+Be careful when adding array to string
+
+If you want to print an array or add an array to existing string, be very careful as it may lead to unexpected results. For example ,we have array with two elements and we want to print the array value on screen:
+
+[admin@1p_DUT_wAP ac] /> :global array {"cccc", "ddddd"}
+[admin@1p_DUT_wAP ac] /> :put ("array value is: " . $array )       
+array value is: cccc;array value is: ddddd
+
+Obviously this is not what we expected, because what . does is adds string to each array element and then prints the output. Instead you need to convert to string first:
+
+[admin@1p_DUT_wAP ac] /> :put ("array value is: " . [:tostr  $array] )
+array value is: cccc;ddddd
+
+
+Get/Set unnamed elements in array
+
+Lets say we have an array of elements { "el1"; "el2"; "el3" }. It is possible to pick elements of an array with pick command, but is not so neat as syntax below:
+
+[admin@1p_DUT_wAP ac] /> :global test { "el1"; "el2"; "el3" }   
+[admin@1p_DUT_wAP ac] /> :put ($test->1)                     
+el2
+
+The same syntax can be used to set values:
+
+[admin@1p_DUT_wAP ac] /> :set ($test->2) "el3_changed"
+[admin@1p_DUT_wAP ac] /> :environment print 
+test={"el1"; "el2"; "el3_changed"}
+
+
+Set element value in 2D array
+
+Syntax used in example above can also be used to set element value in 2D array:
+
+[admin@1p_DUT_wAP ac] /> :global test {{"11";"12";"13"};{"21";"22";"23"}}   
+[admin@1p_DUT_wAP ac] > :set ($test->1->1) "22_changed"
+[admin@1p_DUT_wAP ac] > :put [($test->1->1)]           
+22_changed
+[admin@1p_DUT_wAP ac] > :environment print  
+test={{"11"; "12"; "13"}; {"21"; "22_changed"; "23"}}
+
+
+Read value of global variable defined in other script
+
+Lets say we have one script that declares variable and sets the value:
+
+/system script add name=script1 source={
+  :global myVar "hello!"
+}
+
+And we want to write the value of that variable in log from another script. Simply adding /log info $myVar will fail to return correct value, because second script does not know anything about variables defined in another scripts. To make it work properly variable need to be defined, so correct second script code is:
+
+/system script add name=script2 source={
+  :global myVar;
+  :log info "value is: $myvar"
+}
+
+Accessing global variable from function
+
+Logically you would think that globally defined variables should be accessible in functions too, but that is not really the case. Lets see an example:
+
+:global myVar "test"
+:global myFunc do={
+  :put "global var=$myVar"
+}
+[$myFunc]
+
+Output is:
+
+global var=
+
+So obviously global variable is not accessible directly. To make it work we need do declare global variable inside the function:
+
+:global myVar "test"
+:global myFunc do={
+  :global myVar;
+  :put "global var=$myVar"
+}
+[$myFunc]
+
+Output:
+
+global var=test
+
+
+Running function from another function
+
+Same as above applies also to functions. If you want to run function from another function then it need to be declared.
+
+:global test do={
+  :return ($1 + 1)
+}
+
+:global testtest do={
+  :local x 5
+  :local y [$test $x]
+  :put "typeof = $[:typeof $y]"
+  :put "testets_res=$y"
+}
+
+Code above will not work as expected, output will be:
+
+typeof = nil
+testets_res=
+
+To fix this we need to declare global "test" in "testtest" function
+
+:global testtest do={
+  :global test
+  :local x 5
+  :local y [$test $x]
+  :put "typeof = $[:typeof $y]"
+  :put "testets_res=$y"
+}
+
+Always use unique variable names
+
+One of the most common scripting mistakes that most users are doing is not using unique varible names, for example, variable defined in function has the same name as globally defined variable, which leads to unexpected result:
+
+:global my2 "123"
+
+:global myFunc do={ :global my2; :put $my2; :set my2 "lala"; :put $my2 }
+$myFunc my2=1234
 :put "global value $my2"
 
-The output will be:
+Output will be:
 
 1234
 lala
 global value 123
 
-Nested function example
 
-Note: to call another function its name needs to be declared (the same as for variables)
-:global funcA do={ :return 5 } 
-:global funcB do={  
-	:global funcA;  
-	:return ([$funcA] + 4) 
-} 
-:put [$funcB] 
+Another common case is when user defined variable have the same name as RouterOS built in variable, for example, we want to print route with dst address defined in variable:
 
-Output: 
-9
-Catch run-time errors
+[admin@1p_DUT_wAP ac] /ip route> :global "dst-address" "0.0.0.0/0"
+[admin@1p_DUT_wAP ac] /ip route> print where dst-address=$"dst-address" 
+Flags: X - disabled, A - active, D - dynamic, C - connect, S - static, r - rip, b - bgp, o - ospf, m - mme, 
+B - blackhole, U - unreachable, P - prohibit 
+ #      DST-ADDRESS        PREF-SRC        GATEWAY            DISTANCE
+ 0 ADS  0.0.0.0/0                          10.155.136.1              1
+ 1 ADC  10.155.136.0/24    10.155.136.41   ether1                    0
 
-Starting from v6.2 scripting has the ability to catch run-time errors.
+Obviously result is not as expected, simple solution, use unique variable name:
 
-For example, the [code]:reslove[/code] command if failed will throw an error and break the script.
+[admin@1p_DUT_wAP ac] /ip route> :global myDst "0.0.0.0/0"
+[admin@1p_DUT_wAP ac] /ip route> print where dst-address=$myDst             
+Flags: X - disabled, A - active, D - dynamic, C - connect, S - static, r - rip, b - bgp, o - ospf, m - mme, 
+B - blackhole, U - unreachable, P - prohibit 
+ #      DST-ADDRESS        PREF-SRC        GATEWAY            DISTANCE
+ 0 ADS  0.0.0.0/0                          10.155.136.1              1
 
-[admin@MikroTik] > { :put [:resolve www.example.com]; :put "lala";}
-failure: dns name does not exist
 
-Now we want to catch this error and proceed with our script:
-:onerror e {:put [:resolve www.example.com]} do={:put "resolver failed"}
-:put "lalala"
+Get values from looped interactive commands like "monitor"
 
-output: 
+Frequently asked question s how to get values in script returned by, for example, monitor command? First problem with such commands is that they are running infinitely until user action is applied, obviously you cannot do that from script. Instead you can run with additional parameter once, it will allow to execute command only once and stop. Another problem is getting variable value sin script, there is no as-value, there is no get, but they have do. What it does is allows to access variables returned by the command as in example below:
 
-resolver failed 
-lala
-Operations with Arrays
+[admin@1p_DUT_wAP ac] /interface> monitor-traffic ether1 once do={:global myBps $"rx-bits-per-second" }
+...
+[admin@1p_DUT_wAP ac] /interface> :environment print 
+myBps=71464
 
-Warning: Key name in the array contains any character other than a lowercase character, it should be put in quotes
+
+Get file content received by fetch tool
+
+Fetch tool allows for ease of use downloading file content into memory and allowing to access this data by script. To make it work use as-value parameter and output=user:
+
+[admin@rack1_b34_CCR1036] > :put ([/tool fetch ftp://admin:@10.155.136.41/test.txt
+ output=user as-value ]->"data")
+my file content
+
+
+Check script permissions
+
+Lets say we have a script that creates and writes content to the file:
+
+/system script add name=script1 policy=ftp,read,write source={
+       /file print file=test;
+       /file set test.txt content="my content"
+}
+
+Now lets add scheduler that will try to execute this script:
+
+/system scheduler
+add interval=10s name=test on-event=script2 policy=read,write
+
+So now we wait 10 seconds, file not created, we wait another 10 seconds and still no file. What is going on? If you look closely script requires policy "ftp", to create a file, but scheduler has only "read" and "write" policies, so script will not be executed. Fix is to set scheduler to run with correct policies "read,write,ftp".
+
+This applies also if you are trying to run script from netwatch, ppp on event and so on, which are limited to specific policies "read,write,test,reboot", so you will not be able to run advanced scripts that creates backups, creates files and so on.
+
+Limitation could be fixed by using dont-require-permissions, but be very careful, read below.
+Be careful when using dont-require-permissions
+
+It is possible to set script with dont-require-permissions parameter. Basically it allows anyone without adequate permissions to execute the script. For example, if script has policies "read,write,test,sensitive", but user or application that executes the script has less, for example, "read,write", then by setting dont-require-permissions=yes will allow to run script anyway.
+
+This could potentially allow to change sensitive information using script even if user doe snot have enough permissions. 
+
+
+System Information and Utilities
+
+    Creado por Usuario desconocido (emils), actualizado por última vez el may 31, 2022 1 min de lectura
+
+In This Section:
+
+        Clock
+        Device-mode
+        E-mail
+        Fetch
+        Files
+        Identity
+        Interface Lists
+        Neighbor discovery
+        Note
+        NTP
+        Partitions
+        Precision Time Protocol
+        Scheduler
+        Services
+        TFTP
+
+
+
+
+
+    Creado por Usuario desconocido (olga), actualizado por última vez por Mārtiņš S. el feb 05, 2025 3 min de lectura
+
+Introduction
+
+RouterOS uses data from the TZ database, Most of the time zones from this database are included, and have the same names. Because local time on the router is used mostly for timestamping and time-dependent configuration, and not for historical date calculations, time zone information about past years is not included. Currently, only information starting from 2005 is included.
+
+Following settings are available in the /system clock console path and in the "Time" tab of the "System > Clock" WinBox window.
+
+Startup date and time is jan/02/1970 00:00:00 [+|-]gmt-offset. 
+Properties
+
+time (HH:MM:SS);
+	
+
+where HH - hour 00..24, MM - minutes 00..59, SS - seconds 00..59).
+date (mmm/DD/YYYY);	where mmm - month, one of jan, feb, mar, apr, may, jun, jul, aug, sep, oct, nov, dec, DD - date, 00..31, YYYY - year, 1970..2037): date and time show current local time on the router. These values can be adjusted using the set command. Local time cannot, however, be exported, and is not stored with the rest of the configuration.
+time-zone-name (manual, or name of time zone; default value: manual);	Name of the time zone. As most of the text values in RouterOS, this value is case sensitive. Special value manual applies manually configured GMT offset, which by default is 00:00 with no daylight saving time.
+time-zone-autodetect (yes or no; default: yes);	Feature available from v6.27. If enabled, the time zone will be set automatically.
+
+ Time-zone-autodetect by default is enabled on new RouterOS installation and after configuration reset. The time zone is detected depending on the router's public IP address and our Cloud servers database. Since RouterOS v6.43 your device will use cloud2.mikrotik.com to communicate with MikroTik's Cloud server. Older versions will use cloud.mikrotik.com to communicate with the MikroTik's Cloud server.
+
+Be aware that the router's internal CPU clock is not a reliable time source for precise timing operations, as its frequency may vary due to power management, thermal conditions, and hardware differences, even between identical models. This variation is expected and does not affect normal router performance. For accurate timekeeping, it is recommended to use network-based time synchronisation, such as NTP (Network Time Protocol).
+
+Configuration
+Active time zone information
+
+    dst-active (yes or no>; read-only property): This property has the value yes while daylight saving time of the current time zone is active.
+    gmt-offset ([+|-]HH:MM - offset in hours and minutes; read-only property): This is the current value of GMT offset used by the system, after applying base time zone offset and active daylight saving time offset.
+
+Manual time zone configuration
+
+These settings are available in /system clock manual console path and in the "Manual Time Zone" tab of the "System > Clock" WinBox window. These settings have an effect only when time-zone-name=manual. It is only possible to manually configure single daylight saving time period.
+
+    time-zone, dst-delta ([+|-]HH:MM - time offset in hours and minutes, leading plus sign is optional; default value: +00:00) : While DST is not active use GMT offset time-zone. While DST is active use GMT offset time-zone + dst-delta.
+    dst-start, dst-end (mmm/DD/YYYY HH:MM: SS - date and time, either date or time can be omitted in the set command; default value: jan/01/1970 00:00:00): Local time when DST starts and ends.
+
+
+
+
+
+    Creado por Oskars K., actualizado por última vez por Serhii T. el mar 28, 2025 7 min de lectura
+
+The device-mode is a feature which sets specific limitations on a device, or limits access to specific configuration options. Such feature is required in order to protect your router and network from attackers who might in some way gain access to your router and use it as a gateway for attacks to other networks. By protecting your device in such a way, even if an attacker manages to gain access to your unprotected device, he will not be able to use it in order to abuse your or any other network.
+
+There are three available modes: advanced, home and basic. Device modes are factory pre-installed to routers, if the router is manufactured and shipped with MikroTik RouterOS v7.17 or later. Advanced (previously called enterprise) mode is assigned to CCR and 1100 series devices, home mode is assigned to home routers and basic mode to any other type of device. For devices running versions prior to RouterOS version 7.17, all devices use the advanced/enterprise mode. 
+[admin@MikroTik] > system/device-mode/print 
+                 mode: advanced     
+     allowed-versions: 7.13+,6.49.8+
+              flagged: no           
+     flagging-enabled: yes          
+            scheduler: yes          
+                socks: yes          
+                fetch: yes          
+                 pptp: yes          
+                 l2tp: yes          
+       bandwidth-test: yes          
+          traffic-gen: no           
+              sniffer: yes          
+                ipsec: yes          
+                romon: yes          
+                proxy: yes          
+              hotspot: yes          
+                  smb: yes          
+                email: yes          
+             zerotier: yes          
+            container: no           
+  install-any-version: no           
+           partitions: no           
+          routerboard: yes          
+        attempt-count: 0   
+
+The device-mode can be changed by the user, but remote access to the device is not enough to change it. After changing the device-mode, you need to confirm it, by pressing a button on the device itself, or perform a "cold reboot" - that is, unplug the power. When the change is confirmed, regardless of confirmation mode, the device will be rebooted! 
+[admin@MikroTik] > system/device-mode/update mode=home 
+  update: please activate by turning power off or pressing reset or mode button 
+          in 5m00s
+-- [Q quit|D dump|C-z pause]
+
+If no power off or button press is performed within the specified time, the mode change is canceled. If another update command is run in parallel, both will be canceled. 
+
+There are several EOL products which do not "confirm" mode changes with a reset button press. These routers can confirm mode change only with a power cycle.
+
+In order to protect your device against attacker who might silently gain access to your router, abuse it with some scripts and simply try to wait until you will reboot your router and not even know that at that time you are accepting changes requested by some intruder, you can "update" mode only three times. There is a counter which will count how many update attempts are made and will not allow any more updates. This counter can be reset only when administrator does power-cycle the router or press a button when seeing such a warning on mode settings update attempt (same as with accepting any updates).
+[admin@MikroTik] > system/device-mode/update container=yes 
+  update: too many unsuccessful attempts, turn off power or reboot by pressing reset or mode button in 4m55s to reset attempt-count
+
+The following commands are available in the /system/device-mode menu: 
+
+get
+	
+
+Returns value that you can assign to variable or print on the screen.
+print	Shows the active mode and its properties.
+update	Applies changes to the specified properties, see below. 
+Available device-mode modes
+
+There are three device modes available for configuration (mode=advanced is default one), each mode has a subset of features that are not allowed when it is used. Note that there is no mode, which has all features enabled. Certain features need to be enabled even if you have "advanced" mode enabled. See section "Feature clarification" for more details about what each option means. So, as per the below table it can be seen that "traffic-gen, container, partitions, routerboard" features are always disabled, unless specifically enabled by the admin user. 
+advanced (default)	traffic-gen, container, install-any-version, partitions, routerboard
+basic	
+
+socks, bandwidth-test, traffic-gen, proxy, hotspot, zerotier, container, install-any-version, partitions, routerboard
+home	scheduler, socks, fetch, bandwidth-test, traffic-gen, sniffer, romon, proxy, hotspot, email, zerotier, container, install-any-version, partitions, routerboard
+List of available properties
+scheduler, socks, fetch, pptp, l2tp, bandwidth-test, traffic-gen, sniffer, ipsec, romon, proxy, hotspot, smb, email, zerotier, container, install-any-version, partitions, routerboard  (yes | no)	The list of available features, which can be controlled with the device-mode option. See section "Feature clarification" for more details about what each option means. 
+activation-timeout (default: 5m);	The reset button or power off activation timeout can be set in range 00:00:10 .. 1d00:00:00. If the reset button is not pressed (or cold reboot is not performed) during this interval, the update will be canceled. 
+flagging-enabled (yes | no; Default: yes)	
+
+Device will perform configuration analysis and if traces of suspicious code are found, flagged mode will be triggered, setting flagged=yes, enabling restrictions described in the flagged=yes. See the See the "Flagged status" paragraph.
+flagged (yes | no; Default: no)	RouterOS employs various mechanisms to detect tampering with it's system files. If the system has detected unauthorized access to RouterOS, the status "flagged" is set to yes. If "flagged" is set to yes, for your safety, certain limitations are put in place. See below chapter for more information. 
+mode: (basic, home, advanced; default: advanced);	Allows choosing from available modes that will limit device functionality.
+
+By default, advanced mode allows options except traffic-gen, container, partitions, install-any-version, routerboard. So to use these features, you will need to turn it on by performing a device-mode update. 
+
+By default, home mode disables the following features: scheduler, socks, fetch, bandwidth-test, traffic-gen, sniffer, romon, proxy, hotspot, email, zerotier, container, install-any-version, partitions, routerboard.
+
+More specific control over the available features is possible. Each of the features controlled by device-mode can be specifically turned on or off. 
+
+For instance scheduler won't allow to perform any action at system scheduler. Used device-mode disables all listed features, for instance  mode=home is used, but zerotier is required for your setup, device-mode update /system device-mode update zerotier=yes will be required with the physical access to device to push the button or cut the power.
+
+ 
+[admin@MikroTik] > system/device-mode/update mode=home email=yes
+[admin@MikroTik] > system/device-mode/update mode=advanced zerotier=no
+
+If the update command specifies any of the mode parameters, this update replaces the entire device-mode configuration. In this case, all "per-feature" settings will be lost, except those specified with this command. For instance:
+[admin@MikroTik] > system/device-mode/update mode=home email=yes fetch=yes
+[admin@MikroTik] > system/device-mode/print config
+   mode: home
+  fetch: yes
+  email: yes
+[admin@MikroTik] > system/device-mode/update mode=advanced sniffer=no
+-- reboot --
+[admin@MikroTik] > system/device-mode/print config
+     mode: advanced
+  sniffer: no
+
+We see that fetch = yes and email = yes is missing, as they were overriden with the mode change. However, specifying only "per-feature" settings will change only those:
+[admin@MikroTik] > system/device-mode/update hotspot=no
+-- reboot --
+[admin@MikroTik] > system/device-mode/print config
+     mode: advanced
+  sniffer: no
+  hotspot: no
+
+If the feature is disabled, an error message is displayed for interactive commands:
+[admin@MikroTik] > system/device-mode/print config
+     mode: advanced
+  sniffer: no
+  hotspot: no
+[admin@MikroTik] > tool/sniffer/quick 
+failure: not allowed by device-mode
+
+However, it is possible to add the configuration to a disabled feature, but there will be a comment showing the disabled feature in the device-mode:
+[admin@MikroTik] > ip hotspot/add interface=ether1 
+[admin@MikroTik] > ip hotspot/print 
+Flags: X, S - HTTPS
+Columns: NAME, INTERFACE, PROFILE, IDLE-TIMEOUT
+#   NAME      INTERFACE  PROFILE  IDLE-TIMEOUT
+;;; inactivated, not allowed by device-mode
+0 X hotspot1  ether1     default  5m          
+Feature clarification 
+Feature	Clarification of which menus become unavailable to change
+bandwidth-test	
+
+/tool bandwidth-test
+/tool bandwidth-server
+
+/tool speed-test
+routerboard	/system routerboard settings (except auto-upgrade option)
+container	all container functionality
+
+install-any-version
+	
+
+RouterOS will no longer allow for you to install RouterOS version below versions listed under "allowed-versions" attribute.
+email	/tool e-mail 
+fetch	/tool fetch
+hotspot	/ip hotspot
+ipsec	/ip ipsec
+l2tp	
+
+/interface l2tp-server
+
+/interface l2tp-client
+partitions	
+
+/partitions 
+
+does not allow to change count of partitions. If your router is unable to boot, it will still be able to boot into your other partitions. No restriction for crash recovery.
+pptp	
+
+/interface pptp-server
+
+/interface pptp-client
+proxy	/ip proxy
+romon	/tool romon
+scheduler	/system scheduler
+smb	/ip smb
+sniffer	/tool sniffer
+socks	/ip socks
+traffic-gen	
+
+/tool traffic-generator
+
+/tool flood-ping
+
+/tool ping-speed
+zerotier	/zerotier
+Allowed versions
+
+Device mode lists in its parameters an argument called "allowed-versions". This is a list of versions which MikroTik considers as secure and which ones do not include any serious vulnerabilities which could be used by an attacker. This list can be updated to versions which includes some major changes in RouterOS below which downgrade should not be allowed.
+
+This setting does not depend on the installed RouterOS version and works as a separate mechanism, in order to disallow attacker to downgrade version step-by-step in order to reach some vulnerable RouterOS release. This means that if you upgrade RouterOS to a release where a newer "allowed-versions" list is available, oldest list will be overwritten. If you downgrade RouterOS, "allowed-versions" list will not change and will remain updated to the latest list.
+
+This list is ignored, if device-mode "install-any-version" is enabled.
+Flagged status
+
+Along with the device-mode feature, RouterOS now can analyze the whole configuration at system startup, to determine if there are any signs of unauthorized access to your router. If suspicious configuration is detected, the suspicious configuration will be disabled and the flagged parameter will be set to "yes". The device has now a Flagged state and enforces certain limitations. 
+[admin@MikroTik] > system/device-mode/print 
+     mode: advanced
+  flagged: yes
+  sniffer: no
+  hotspot: no
+
+If the system has this flagged status, the current configuration works, but it is not possible to perform the following actions: 
+
+bandwidth-test, traffic-generator, sniffer, as well as configuration actions that enable or create new configuration entries (it will still be possible to disable or delete them) for the following programs: system scheduler, SOCKS proxy, pptp, l2tp, ipsec, proxy, smb.
+
+When performing the aforementioned actions while the router has the flagged state, you will receive an error message:
+[admin@MikroTik] > /tool sniffer/quick 
+failure: configuration flagged, check all router configuration for unauthorized changes and update device-mode
+[admin@MikroTik] > /int l2tp-client/add connect-to=1.1.1.1 user=user
+failure: configuration flagged, check all router configuration for unauthorized changes and update device-mode
+
+To exit the flagged state, you must perform the command "/system/device-mode/update flagged=no". The system will ask to either press a button, or issue a hard reboot (cut power physically or do a hard reboot of the virtual machine). 
+
+Important! Although the system has disabled any malicious looking rules, which triggered the flagged state, it is crucial to inspect all of your configuration for other unknown things, before exiting the flagged state. If your system has been flagged, assume that your system has been compromised and do a full audit of all settings before re-enabling the system for use. After completing the audit, change all the system passwords and upgrade to the latest RouterOS version. 
+
+Starting from RouterOS version 7.17 device-mode restricts SwOS/RouterOS transition for dual-boot; in order to enable: system/device-mode/update routerboard=yes
+
+
+
+    Creado por Usuario desconocido (reinisjs), actualizado por última vez por Serhii T. el abr 25, 2025 3 min de lectura
+
+    Properties
+    Sending Email
+    Basic examples
+
+An E-mail tool is a utility that allows sending e-mails from the router. The tool can be used to send regular configuration backups and exports to a network administrator.
+
+Email tool uses only plain authentication and TLS encryption. Other methods are not supported.
+Properties
+/tool e-mail
+
+This submenu allows setting SMTP server that will be used.
+address (IP/IPv6 address; Default: 0.0.0.0)	
+
+SMTP server's IP address.
+from (string; Default: <>)	Name or email address that will be shown as a receiver.
+password (string; Default: "")	Password used for authenticating to an SMTP server.
+port (integer[0..65535]; Default: 25)	SMTP server's port.
+tls (no|yes|starttls; Default: no)	Whether to use TLS encryption:
+
+    yes - sends STARTTLS and drops the session if TLS is not available on the server
+    no - do not send STARTTLS
+    starttls - sends STARTTLS and continue without TLS if a server responds that TLS is not available
+
+user (string; Default: "")	The username used for authenticating to an SMTP server.
+
+vrf (VRF name; default value: main)
+	Set VRF on which service is creating outgoing connections.
+
+
+Note: All server's configurations (if specified) can be overridden by send command.
+Sending Email
+/tool e-mail send
+
+Send command takes the following parameters:
+body (string; Default: )	The actual body of the email message
+cc (string; Default: )	Send a copy to listed recipients. Multiple addresses allowed, use "," to separate entries
+file (File[,File]; Default: )	List of the file names that will be attached to the mail separated by a comma.
+from (string; Default: )	Name or email address which will appear as the sender. If a not specified value from the server's configuration is used.
+password (string; Default: )	Password used to authenticate to an SMTP server. If a not specified value from the server's configuration is used.
+port (integer[0..65535]; Default: )	Port of SMTP server. If not specified, a value from the server's configuration is used.
+server (IP/IPv6 address; Default: )	Ip or IPv6 address of SMTP server. If not specified, a value from the server's configuration is used.
+tls (yes|no|starttls; Default: no)	Whether to use TLS encryption:
+
+    yes - sends STARTTLS and drops the session if TLS is not available on the server
+    no - do not send STARTTLS
+    starttls - sends STARTTLS and continue without TLS if a server responds that TLS is not available
+
+subject (string; Default: )	The subject of the message.
+to (string; Default: )	Destination email address. Single address allowed.
+user (string; Default: )	The username used to authenticate to an SMTP server. If not specified, a value from the server's configuration is used.
+Basic examples
+
+This example will show how to send an email with configuration export every 24hours.
+
+1. Configure SMTP server
+[admin@MikroTik] /tool e-mail> set server=10.1.1.1 port=25 from="router@mydomain.com"
+
+2. Add a new script named "export-send":
+/export file=export 
+/tool e-mail send to="config@mydomain.com" subject="$[/system identity get name] export" \ 
+body="$[/system clock get date] configuration file" file=export.rsc
+
+3. Add scheduler to run our script:
+/system scheduler add on-event="export-send" start-time=00:00:00 interval=24h
+
+
+Send e-mail to a server using TLS/SSL encryption. For example, Google mail requires that.
+
+After the Google mail added a new security policy that does not allow 3d-party devices to authenticate using your standard Gmail password → you need to generate a 16-digit passcode ("App password") and use it instead of your Gmail password. To configure this, navigate to the "Security>How you sign in to Google" section settings and:
+
+    Enable 2-Step Verification;
+    Generate an App password.
+
+Use the newly generated App password in the "set password=mypassword" setting shown below.
+
+1. configure a client to connect to the correct server:
+/tool e-mail 
+set address=smtp.gmail.com
+set port=465
+set tls=yes 
+set from=myuser@gmail.com 
+set user=myuser 
+set password=mypassword
+
+2. send e-mail using send command:
+/tool e-mail send to=myuser@anotherdomain.com subject="email test" body="email test" 
+
+
+
+    Creado por Artūrs C., actualizado por última vez por Matīss O. el feb 25, 2025 4 min de lectura
+
+    Summary
+    Properties
+    Configuration Examples
+        Sending information to a remote host
+        Return value to a variable
+
+Summary
+
+Fetch is one of the console tools in MikroTik RouterOS. It is used to copy files to/from a network device via HTTP, HTTPS, FTP or SFTP. It can also be used to send POST/GET requests and send any kind of data to a remote server. In HTTPS mode by default, no certificate checks are made, setting check-certificate to yes enables trust chain validation from the local certificate store (can be used only in HTTPS mode).
+Properties
+address (string; Default: )	IP address of the device to copy file from. Also at the end of the address you can specify "@vrf_name" in order to run fetch on particular VRF. You can skip specifying address and specify only VRF on this parameter, if you use URL parameter.
+as-value (set | not-set; Default: not-set)	Store the output in a variable, should be used with the output property.
+ascii (yes | no; Default: no)	Can be used with FTP and TFTP
+certificate (string; Default: )	
+
+Certificate that should be used for host verification. Can be used only in HTTPS mode.
+check-certificate (yes | yes-without-crl | no; Default: no)	
+
+Enables trust chain validation from local certificate store. yes-without-crl, validates a certificate, not performing CRL check (certificate revocation list).  Can be used only in HTTPS mode.
+dst-path (string; Default: )	Destination path. Can be used to download file directly into an external disk, for example.
+duration (time; Default: )	
+
+Time how long fetch should run.
+host (string; Default: )	
+
+A domain name or virtual domain name (if used on a website, from which you want to copy information). For example,
+
+address=wiki.mikrotik.com host=forum.mikrotik.com
+
+
+In this example the resolved ip address is the same (66.228.113.27), but hosts are different.
+http-auth-scheme (basic|digest; Default: basic)	HTTP authentication scheme
+
+http-method (delete|get|head|post|put|patch; Default: get)
+	HTTP method to use
+http-data (string; Default: )	The data, that is going to be sent, when using PUT or POST methods. Data limit is 64Kb.
+http-header-field (string; Default: *empty*)	List of all header fields and their values, in the form of http-header-field="h1:fff,h2:yyy" or http-header-field="h:fff\\,yyy" (within a single header multiple values need to be "escaped" using two backlashes).
+http-content-encoding (deflate|gzip; Default: *empty*)	Encodes the payload using gzip or deflate compression and adds a corresponding Content-Encoding header. Usable for HTTP POST and PUT only.
+http-max-redirect-count (integer; Default: 0)	Allows to follow redirects the specified number of times.
+idle-timeout (time; Default: 10s)	Idle timeout since last read/write action.
+keep-result (yes | no; Default: yes)	If yes, creates an input file.
+mode (ftp|http|https|sftp|tftp; Default: http)	Choose the protocol of connection - http, https , ftp, sftp or tftp. Mode option is deprecated. To specify a protocol that you wish to use, we advise using "url" parameter instead (for example, like this "url=sftp://your_IP_address").
+output (none|file|user|user-with-headers; Default: file)	Sets where to store the downloaded data.
+
+    none - do not store downloaded data
+    file - store downloaded data in a file
+    user - store downloaded data in the data variable (variable limit is 64Kb)
+    user-with-headers - store downloaded data and headers in the data variable (variable limit is 64Kb (20Kb for downloaded data, 44Kb for headers))
+
+password (string; Default: anonymous)	Password, which is needed for authentication to the remote device.
+port (integer; Default: )	Connection port.
+src-address (ip address; Default: )	Source address that is used to establish connection. Can be used only HTTP/S and SFTP modes.
+src-path (string; Default: )	Title of the remote file you need to copy.
+upload (yes | no; Default: no)	Only (S)FTP modes support upload. If enabled then fetch will be used to upload files to a remote server. Requires src-path and dst-path parameters to be set.
+url (string; Default: )	URL pointing to file. Can be used instead of address and src-path parameters.
+user (string; Default: anonymous)	Username, which is needed for authentication to the remote device.
+
+
+Configuration Examples
+
+The following example shows how to copy the file with filename "conf.rsc" from a device with ip address 192.168.88.2 by FTP protocol and save it as file with filename "123.rsc". User and password are needed to login into the device.
+[admin@MikroTik] /tool> fetch address=192.168.88.2 src-path=conf.rsc \
+user=admin mode=ftp password=123 dst-path=123.rsc port=21 \
+host="" keep-result=yes
+
+Example to upload file to another router:
+[admin@MikroTik] /tool> fetch address=192.168.88.2 src-path=conf.rsc \
+user=admin mode=ftp password=123 dst-path=123.rsc upload=yes
+
+Another file download example that demonstrates the usage of url property.
+[admin@MikroTik] /> /tool fetch url="https://www.mikrotik.com/img/netaddresses2.pdf" mode=http 
+  status: finished
+
+[admin@test_host] /> /file print 
+ # NAME                     TYPE                  SIZE                 CREATION-TIME       
+ ...
+ 5 netaddresses2.pdf        .pdf file             11547                jun/01/2010 11:59:51
+Sending information to a remote host
+
+It is possible to use an HTTP POST request to send information to a remote server, that is prepared to accept it. In the following example, we send geographic coordinates to a PHP page:
+/tool/fetch http-method=post http-header-field="Content-Type:application/json" http-data="{\"lat\":\"56.12\",\"lon\":\"25.12\"}" url="https://testserver.lv/index.php"    
+
+In this example, the data is uploaded as a file. Important note, since variable data comes from a file, a file can only be in size up to 4KB. This is a limitation of RouterOS variables.
+/export file=export.rsc
+
+:global data [/file get [/file find name=export.rsc] contents];
+:global $url "https://prod-51.westeurope.logic.azure.com:443/workflows/blabla/triggers/manual/paths/invoke....";
+
+/tool fetch mode=https http-method=put http-data=$data url=$url
+Return value to a variable
+
+It is possible to save the result of the fetch command to a variable. For example, it is possible to trigger a certain action based on the result that an HTTP page returns. You can find a very simple example below that disables ether2 whenever a PHP page returns "0":
+{
+    :local result [/tool fetch url=https://10.0.0.1/disable_ether2.php as-value output=user];
+    :if ($result->"status" = "finished") do={
+        :if ($result->"data" = "0") do={
+            /interface ethernet set ether2 disabled=yes;
+        } else={
+            /interface ethernet set ether2 disabled=no;
+        }
+    }
+}
+
+
+
+    Creado por Artūrs C., actualizado por última vez por Matīss O. el feb 11, 2025 3 min de lectura
+
+    Overview
+    Create new file or directory
+        Properties
+    Properties
+    Get file contents
+        Properties
+
+Overview
+
+File menu shows all user space files on the router. It is possible to create a new file, directory, edit file content, delete file or directory.  If RouterOS ".npk" package is uploaded, the file menu will also show package-specific information, for example, architecture, build date and time, etc.
+
+It is possible to retrieve content and edit files up to 60KB in size. For accessing contents of larger files, please refer to section Get File Contents.
+
+
+[admin@MikroTik] > file print detail 
+ 0 name=wireless-7.16.1-arm.npk type=package size=1924.1KiB last-modified=2024-11-25 13:14:28 package-name="wireless" package-version="7.16.1" package-build-time=2024-10-10 14:03:32 
+   package-architecture="arm" 
+
+ 1 name=routeros-7.16.1-arm.npk type=package size=11.1MiB last-modified=2024-11-25 13:14:34 package-name="system" package-version="7.16.1" package-build-time=2024-10-10 14:03:32 
+   package-architecture="arm" 
+
+ 2 name=flash type=disk last-modified=2024-11-25 13:12:10 
+
+ 3 name=flash/skins type=directory last-modified=2024-11-25 13:10:52 
+
+ 4 name=flash/skins/newskin.json type=.json file size=0 last-modified=2024-11-25 13:10:52 
+
+ 5 name=flash/filename type=file size=0 last-modified=2024-11-25 13:11:58 
+
+ 6 name=flash/directory_name type=directory last-modified=2024-11-25 13:12:10 
+Create new file or directory
+
+To create a new file or directory: 
+[admin@MikroTik] > file add name=/flash/filename type=file           
+[admin@MikroTik] > file add name=/flash/directory_name type=directory 
+Properties
+contents (string; Default: )	File contents that must be added. Works only for type=file
+name (string; Default: )	File/directory name
+type (file | directory; Default: file)	Specifies type 
+
+
+If the device has a directory named "flash" in its file list, then files which you want to be kept after the system reboot/power cycle must be stored within it. As anything outside of it is kept within a RAM disk and will be lost upon reboot. This does not include .npk upgrade files as they will be applied by the upgrade process before the system discards the RAM drive content.
+
+For multicore devices with a NAND flash memory (e.g. CCR series routers, RB4011iGS), RouterOS uses a write-back that will cache file changes into RAM memory instead of writing them straight away into flash media. The file changes will be stored on the flash when it is absolutely necessary, the writing can be delayed by up to 40 seconds. This helps to reduce CPU cycles which results in better performance. However, this can cause empty or zero-length files when a device experiences a sudden power loss, because files were not fully saved on a flash.
+Properties
+contents (string; Default: )	The actual content of the file
+
+creation-time (time)
+
+Until RouterOS 7.16
+	
+
+A time when the file was created
+
+last-modified (time) 
+	
+
+The time when the file was created or last modified. Introduced instead of creation-time in RouterOS 7.16.
+name (string)	Name of the file
+package-architecture (string)	Architecture that package is built for. Applies only to RouterOS ".npk" files
+package-built-time (string)	A time when the package was built. Applies only to RouterOS ".npk" files
+package-name (string)	Name of the installable package that. Applies only to RouterOS ".npk" files
+package-version (string)	A version of the installable package that. Applies only to RouterOS ".npk" files
+size (integer)	File size in bytes
+type (string)	Type of the file. For folders, the file type is the directory
+Get file contents
+
+Using the get command, it is possible to retrieve file contents only from files up to 60KB in size. For accessing contents of larger files, use command read. The result is returned as an array.
 
 For example:
-[admin@ce0] > {:local a { "aX"=1; ay=2 }; :put ($a->"aX")} 
-1
+[admin@MikroTik] > :put [/file/get text.txt contents]
+123456
 
-Loop through keys and values
-
-"foreach" command can be used to loop through keys and elements:
-[admin@ce0] > :foreach k,v in={2; "aX"=1; y=2; 5} do={:put ("$k=$v")} 
-
-0=2 
-1=5 
-aX=1 
-y=2
-
-If the "foreach" command is used with one argument, then the element value will be returned:
-[admin@ce0] > :foreach v in={2; "aX"=1; y=2; 5} do={:put ("$v")} 
-
-2 
-5 
-1 
-2
-
-Note: If the array element has a key then these elements are sorted in alphabetical order, elements without keys are moved before elements with keys and their order is not changed (see example above).
-
-Change the value of a single array element
-
-[admin@MikroTik] > :global a {x=1; y=2}
-[admin@MikroTik] > :set ($a->"x") 5 
-[admin@MikroTik] > :environment print 
-a={x=5; y=2}
-
-Script repository
-
-Sub-menu level: /system script
-
-Contains all user-created scripts. Scripts can be executed in several different ways:
-
-    on event - scripts are executed automatically on some facility events ( scheduler, netwatch, VRRP)
-    by another script - running script within the script is allowed
-    manually - from console executing a run command or in winbox
+[admin@MikroTik] > /file/read file=text.txt offset=2 chunk-size=3    
+  data: 345
+Properties
+chunk-size (integer [1..32768]; Default: )	Chunk size that will be read from file
+file (string; Default: )	File name from which to read
+offset (integer; Default:)	Specifies offset where to start read file
 
 
-Only scripts (including schedulers, netwatch, etc) with equal or higher permission rights can execute other scripts.
 
 
-When executing script from GUI or CLI, user permissions are used. To run a script with script permissions, a script must be executed from CLI with additional "use-script-permissions" parameter.
 
 
-comment (string; Default: )	Descriptive comment for the script
-dont-require-permissions (yes | no; Default: no)	Bypass permissions check when the script is being executed, useful when scripts are being executed from services that have limited permissions, such as Netwatch
-name (string; Default: "Script[num]")	name of the script
-policy (string; Default: ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon)	list of applicable policies:
+    Creado por Usuario desconocido (olga), actualizado por última vez por Artūrs C. el ene 28, 2021 1 min de lectura
 
-    ftp - can log on remotely via FTP and send and retrieve files from the router
-    password - change passwords
-    policy - manage user policies, add and remove user
-    read - can retrieve the configuration
-    reboot - can reboot the router
-    sensitive - allows changing "hide sensitive" parameter
-    sniff - can run sniffer, torch, etc
-    test - can run ping, traceroute, bandwidth test
-    write - can change the configuration
+Overview
 
-Read more detailed policy descriptions here
-source (string;)	Script source code
+Setting the System's Identity provides a unique identifying name for when the system identifies itself to other routers in the network and when accessing services such as DHCP, Neighbour Discovery, and default wireless SSID. The default system Identity is set to 'MikroTik'.
 
-Read-only status properties:
-last-started (date)	Date and time when the script was last invoked.
-owner (string)	The user who created the script
-run-count (integer)	Counter that counts how many times the script has been executed
+System Identity has a 64 maximum character length
+Configuration
 
-Menu specific commands
-run (run [id|name])	
-
-Execute the specified script by ID or name using user permissions.
-use-script-permissions	
-
-Additional parameter to execute script using script permissions.
-Environment
-
-Sub-menu level:
-
-    /system script environment
-    /environment
-
-Contains all user-defined variables and their assigned values.
-
-[admin@MikroTik] > :global example;
-[admin@MikroTik] > :set example 123
-[admin@MikroTik] > /environment print  
-"example"=123
+To set system identity in RouterOS:
+[admin@MikroTik] > /system identity set name=New_Identity 
+[admin@New_Identity] >
 
 
-Read-only status properties:
-name (string)	Variable name
-user (string)	The user who defined variable
-value ()	The value assigned to a variable
-Job
+The current System Identity is always displayed after the logged-in account name and with the print command:
+[admin@New_Identity] /system identity>print
+name: New_Identity
+[admin@New_Identity] /system identity>
+SNMP
 
-Sub-menu level: /system script job
+It is also possible to change the router system identity by SNMP set command:
+snmpset -c public -v 1 192.168.0.0 1.3.6.1.2.1.1.5.0 s New_Identity
 
-Contains a list of all currently running scripts.
-Read-only status properties:
-owner (string)	The user who is running the script
-policy (array)	List of all policies applied to the script
-started (date)	Local date and time when the script was started
-See also
+snmpset - Linux based SNMP application used for SNMP SET requests to set information on a network entity;
 
-    Scripting Examples
-    Manual: Scripting Tips and Tricks
+    public - router's community name;
+    192.168.0.0 - IP address of the router;
+    1.3.6.1.2.1.1.5.0 - SNMP value for router's identity;
 
 
-Videos on Scripting
 
-Scripting pt1
 
-Scripting pt2
 
-Scripting: Data Types
+    Creado por Usuario desconocido (emils), actualizado por última vez por GG el mar 26, 2024 2 min de lectura
 
-Scripting: Arrays
+    Summary
+    Lists
+    Members
+
+Summary
+
+Allows defining a set of interfaces for easier interface management in the different interface-based configuration sections such as Neighbor Discovery, Firewall, Bridge, and Internet Detect. 
+Lists
+
+Sub-menu: /interface list
+
+This menu contains information about all interface lists available on the router. There are four predefined lists - all (contains all interfaces), none (contains no interfaces), dynamic (contains dynamic interfaces), and static (contains static interfaces). It is also possible to create additional interface lists.
+
+Dynamic interfaces are interfaces that have a "dynamic" flag. Any interface that doesn't have a dynamic flag will be part of the static interface list.
+
+
+name (string)	Name of the interface list
+include (string)	Defines interface list which members are included in the list. It is possible to add multiple lists separated by commas
+exclude (string)	Defines interface list which members are excluded from the list. It is possible to add multiple lists separated by commas
+
+
+Members are added to the interface list in the following order:
+
+    include members are added to the interface list
+    exclude members are removed from the list
+    Statically configured members are added to the list
+
+Members
+
+Sub-menu: /interface list member
+
+This sub-menu contains information about statically configured interface members to each interface list. Note that dynamically added interfaces by include and exclude statements are not represented in this sub-menu.
+interface (string)	Name of the interface
+list (string)	Name of the interface list
+
+
+Care must be taken when working with bridges and lists. Adding a bridge as a member is not the same as adding all its ports! And adding all slave ports as members is not the same as adding the bridge itself. This can particularly impact functionality of neighbor discovery.
+
+
+
+    Creado por GG, actualizado por última vez por Mārtiņš S. el jun 20, 2025 6 min de lectura
+
+    Summary
+    Neighbor list
+    Discovery configuration
+    LLDP
+
+Summary
+
+Neighbor Discovery protocols allow us to find devices compatible with MNDP (MikroTik Neighbor Discovery Protocol), CDP (Cisco Discovery Protocol), or LLDP (Link Layer Discovery Protocol) in the Layer2 broadcast domain. It can be used to map out your network.
+Neighbor list
+
+The neighbor list shows all discovered neighbors in the Layer2 broadcast domain. It shows to which interface neighbor is connected, its IP/MAC addresses, and other related parameters. The list is read-only, an example of a neighbor list is provided below:
+[admin@MikroTik] /ip neighbor print 
+ # INTERFACE ADDRESS         MAC-ADDRESS       IDENTITY   VERSION    BOARD      
+ 0 ether13   192.168.33.2    00:0C:42:00:38:9F MikroTik   5.99       RB1100AHx2
+ 1 ether11   1.1.1.4         00:0C:42:40:94:25 test-host  5.8        RB1000   
+ 2 Local     10.0.11.203     00:02:B9:3E:AD:E0 c2611-r1   Cisco I...                    
+ 3 Local     10.0.11.47      00:0C:42:84:25:BA 11.47-750  5.7        RB750  
+ 4 Local     10.0.11.254     00:0C:42:70:04:83 tsys-sw1   5.8        RB750G    
+ 5 Local     10.0.11.202     00:17:5A:90:66:08 c7200      Cisco I...
+
+Sub-menu: /ip neighbor
+address (IP)	The highest IP address configured on a discovered device
+address6 (IPv6)	IPv6 address configured on a discovered device
+age (time)	Time interval since last discovery packet
+discovered-by (cdp|lldp|mndp)	Shows the list of protocols the neighbor has been discovered by. The property is available since RouterOS version 7.7.
+board (string)	RouterBoard model. Displayed only to devices with installed RouterOS
+identity (string)	Configured system identity
+interface (string)	Interface name to which discovered device is connected
+interface-name (string)	Interface name on the neighbor device connected to the L2 broadcast domain. Applies to CDP.
+ipv6 (yes | no)	Shows whether the device has IPv6 enabled.
+mac-address (MAC)	Mac address of the remote device. Can be used to connect with mac-telnet.
+platform (string)	Name of the platform. For example "MikroTik", "cisco", etc.
+software-id (string)	RouterOS software ID on a remote device. Applies only to devices installed with RouterOS.
+system-caps (string)	System capabilities reported by the Link-Layer Discovery Protocol (LLDP).
+system-caps-enabled (string)	Enabled system capabilities reported by the Link-Layer Discovery Protocol (LLDP).
+unpack (none|simple|uncompressed-headers|uncompressed-all)	Shows the discovery packet compression type.
+uptime (time)	Uptime of remote device. Shown only to devices installed with RouterOS.
+version (string)	Version number of installed software on a remote device
+running (string array)	Report a list of "features" running on neighbour device. Currently lists only "CAPsMAN" feature.
+
+Starting from RouterOS v6.45, the number of neighbor entries are limited to (total RAM in megabytes)*16 per interface to avoid memory exhaustion.
+Discovery configuration
+
+It is possible to change whether an interface participates in neighbor discovery or not using an Interface list. If the interface is included in the discovery interface list, it will send out basic information about the system and process received discovery packets broadcasted in the Layer2 network. Removing an interface from the interface list will disable both the discovery of neighbors on this interface and also the possibility of discovering this device itself on that interface.
+/ip neighbor discovery-settings
+
+
+discover-interface-list (string; Default: static)	Interface list on which members the discovery protocol will run on.
+discover-interval (time: 5s..9h6m8s; Default: 30s)	Adjusts the frequency at which neighbor discovery packets are transmitted. It also adjusts the Time-to-Live (TTL) TLV value for CDP and LLDP packets using the formula: (discover-interval * 4) + 1. The setting is available since RouterOS version 7.16.
+lldp-dcbx (yes | no; Default: no)	
+
+Whether to send Data Center Bridging Capabilities Exchange Protocol (DCBX) TLVs, which allows to communicate switch QoS settings and capabilities with other neighboring devices using LLDP. Only applies to CRS3xx, CRS5xx, CCR2116 and CCR2216 devices.
+
+Enabled DCBX includes the following TLVs:
+
+    ETS (Enhanced Transmission Selection) Configuration TLV. This TLV is used to share the switch's ETS configuration. It includes:
+        The willingness bit, which indicates whether the device is willing to accept QoS configuration from neighboring devices. In RouterOS, the willing bit is set to disabled, meaning the switch will not accept remote configurations and instead uses its own settings.
+        The priority assignment table, which maps priorities to specific traffic-class.
+        The bandwidth allocation table, where RouterOS calculates the percentage of bandwidth allocated to each queue based on the weight property. This applies to queues using the high-priority-group in the /interface/ethernet/switch/qos/tx-manager/queue settings.
+        The Transmission Selection Algorithm (TSA) table, where high-priority-group queues are assigned to ETS, strict-priority queues to Strict Priority, and low-priority-group or non-hardware offloaded queues to the Vendor Specific Algorithm.
+    ETS Recommendation TLV. This provides a recommendation on how neighboring devices should configure ETS. RouterOS uses the same data as in the ETS Configuration TLV to give its recommendation.
+    Priority-based Flow Control Configuration TLV. This TLV is used to share PFC configuration. Similar to the ETS TLV, the willingness bit is set to disabled, meaning the switch does not accept remote PFC configurations. PFC is enabled for specific priorities based on settings configured under /interface/ethernet/switch/qos/priority-flow-control, and /interface/ethernet/switch/qos/port.
+    Application Priority TLV. This TLV is used to communicate how different applications are prioritized in the network.
+    Application VLAN TLV. This TLV is used to share VLAN configurations for applications. RouterOS currently does not support sending values in this TLV and will send an empty VLAN table instead.
+
+lldp-mac-phy-config (yes | no; Default: no)	
+
+Whether to send MAC/PHY Configuration/Status TLV in LLDP, which indicates the interface capabilities, current setting of the duplex status, bit rate, and auto-negotiation. Only applies to the Ethernet interfaces. While TLV is optional in LLDP, it is mandatory when sending LLDP-MED, meaning this TLV will be included when necessary even though the property is configured as disabled.
+lldp-max-frame-size (yes | no; Default: no)	
+
+Whether to send Maximum Frame Size TLV in LLDP, which indicates the maximum frame size capability of the interface in bytes (l2mtu + 18). Only applies to the Ethernet interfaces.
+lldp-poe-power (yes | no; Default: yes)	
+
+Two specific TLVs facilitate Power over Ethernet (PoE) management between Power Sourcing Equipment (PSE) and Powered Devices (PD):
+
+    IEEE 802.3 Organizationally Specific Power Via MDI TLV
+    TIA-1057 (LLDP-MED) Organizationally Specific Extended Power via MDI TLV
+
+The lldp-poe-power attribute determines whether to transmit the IEEE 802.3 Organizationally Specific Power Via MDI TLV in LLDP messages.
+
+The transmission of LLDP-MED Organizationally Specific Extended Power via MDI TLV is not configurable. It is automatically included in outgoing LLDP-MED packets when the remote device has transmitted LLDP-MED capability of receiving power.
+
+These TLVs are relevant only for Ethernet interfaces that support PoE-Out. The setting is available since RouterOS version 7.15, and it replaces PoE-out port poe-lldp-enabled setting.
+lldp-med-net-policy-vlan (integer 0..4094; Default: disabled)	
+
+Advertised VLAN ID for LLDP-MED Network Policy TLV. This allows assigning a VLAN ID for LLDP-MED capable devices, such as VoIP phones. The TLV will only be added to interfaces where LLDP-MED capable devices are discovered. Other TLV values are predefined and cannot be changed:
+
+    Application Type - Voice
+    VLAN Type - Tagged
+    L2 Priority - 0
+    DSCP Priority - 0
+
+When used together with the bridge interface, the (R/M)STP protocol should be enabled with protocol-mode setting. 
+
+Additionally, other neighbor discovery protocols (e.g. CDP) should be excluded using protocol setting to avoid LLDP-MED misconfiguration.
+lldp-vlan-info (yes | no; Default: no)	
+
+Whether to send IEEE 802.1 Organizationally Specific TLVs in LLDP related to VLANs.
+
+When this setting is enabled, three TLVs are advertised:
+
+    Port VLAN ID. This applies to the bridge port's pvid property.
+    Port And Protocol VLAN ID. This TLV is not used and always indicates "not supported" and "not enabled".
+    VLAN Name. This includes up to 10 active VLANs from the "/interface/bridge/vlan" table.
+
+These TLVs are relevant to interfaces that are added to a vlan-filtering bridge, and the setting is available since RouterOS version 7.16.
+mode (rx-only | tx-only | tx-and-rx; Default: tx-and-rx)	
+
+Selects the neighbor discovery packet sending and receiving mode. The setting is available since RouterOS version 7.7.
+protocol (cdp | lldp | mndp; Default: cdp,lldp,mndp)	List of used discovery protocols.
+
+Since RouterOS v6.44, neighbor discovery is working on individual slave interfaces. Whenever a master interface (e.g. bonding or bridge) is included in the discovery interface list, all its slave interfaces will automatically participate in neighbor discovery. It is possible to allow neighbor discovery only to some slave interfaces. To do that, include the particular slave interface in the list and make sure that the master interface is not included.
+/interface bonding
+add name=bond1 slaves=ether5,ether6
+/interface list
+add name=only-ether5
+/interface list member
+add interface=ether5 list=only-ether5
+/ip neighbor discovery-settings
+set discover-interface-list=only-ether5
+
+Now the neighbor list shows a master interface and actual slave interface on which a discovery message was received.
+[admin@R2] > ip neighbor print
+ # INTERFACE ADDRESS                                           MAC-ADDRESS       IDENTITY   VERSION    BOARD         
+ 0 ether5    192.168.88.1                                      CC:2D:E0:11:22:33 R1         6.45.4 ... CCR1036-8G-2S+
+   bond1    
+LLDP
+
+Depending on RouterOS configuration, different type-length-value (TLV) can be sent in the LLDP message, this includes:
+
+    Chassis ID (MAC address)
+    Port ID (interface name)
+    Time To Live
+    System Name (system identity)
+    System Description (platform - MikroTik, software version - RouterOS version,  hardware name - RouterBoard name)
+    Management Address (all IP addresses configured on the port)
+    System Capabilities (enabled system capabilities, e.g. bridge or router)
+    Port Description (combined interface name like "bridge/ether1" if the sending interface is part of bridge or bond, or interface name same as Port ID)
+    IEEE 802.1 Port VLAN ID
+    IEEE 802.1 Port And Protocol VLAN ID
+    IEEE 802.1 VLAN Name
+    IEEE 802.3 MAC/PHY Configuration/Status
+    IEEE 802.3 Power Via MDI
+    IEEE 802.3 Maximum Frame Size
+    LLDP-MED Media Capabilities (list of MED capabilities)
+    LLDP-MED Network Policy (assigned VLAN ID for voice traffic)
+    LLDP-MED Extended Power via MDI
+    Port Extension (Port Extender and Controller Bridge advertisement)
+    End of LLDPDU
+
+
+
+
+
+
+    Creado por Usuario desconocido (olga), actualizado por última vez por Toms Filatovs el dic 05, 2024 3 min de lectura
+
+Summary
+/system note
+
+
+The system note feature allows you to assign arbitrary text notes or messages that will be displayed on each login right after the banner. For example, you may distribute warnings between system administrators this way, or describe what does that particular router actually do. To configure system note, you may upload a plain text file named sys-note.txt on the router's FTP server, or, additionally, edit the settings in this menu
+Properties
+note (string; Default: )	Note that will be displayed.
+show-at-login (yes | no; Default: yes)	Whether to show system note on each login
+show-at-cli-login (yes | no, Default: no)
+	Whether to show system note before telnet login prompt.
+
+
+Example
+
+It is possible to add multi-line notes using an embedded text editor ( /system note edit note), for example, add ASCII art to your home router:
+
+
+system/note/set note=
+
+                                       .&                                       
+                                     @&   @&                                    
+                                     @@   @#                                    
+                                       @@&                                      
+                                ,      @@@      .                               
+                                @@@@@@@@@@@@@@@@@                               
+                                       @@@                                      
+                                       @@@                                      
+                                       @@@                                      
+                          ,@           @@@           &                          
+                         @@@@          @@@          @@@@                        
+                          @@           @@@           @(                         
+                           &@@         @@@         @@@                          
+                             @@@@@     @@@     &@@@&                            
+                                &@@@@@@@@@@@@@@@&                               
+                                      @@@@@             
+
+
+
+
+
+    Creado por Usuario desconocido (olga), actualizado por última vez por Jānis Bērziņš el may 08, 2025 6 min de lectura
+
+    RouterOS version 6
+        SNTP Client properties:
+        Client settings example: 
+        NTP Server settings:
+    RouterOS version 7
+        NTP Client properties:
+        NTP Server settings:
+    Log messages
+
+RouterOS v6 implements the SNTP protocol defined in RFC4330, manycast mode is not supported. SNTP client is included in the system package. To use an NTP server, ntp package must be installed and enabled.
+
+RouterOS v7 main package includes NTP client and server functionality, which is based on RFC5905.
+
+The client configuration is located in the /system ntp client console path, and the "System > SNTP Client" (RouterOS version 6), "System > NTP Client" (RouterOS version 7) WinBox window. This configuration is shared by the SNTP client implementation in the system package and the NTP client implementation in the ntp package. When ntp package is installed and enabled, the SNTP client is disabled automatically.
+RouterOS version 6
+SNTP Client properties:
+enabled (yes, no default: no)	Enable SNTP client for time synchronization
+mode (broadcast, unicast, filed is read-only)	Mode that the SNTP client will operate in. If no NTP servers are configured broadcast mode will be used. If there is a dynamic or static NTP server IP address or FQDN used it will automatically switch to unicast mode.
+primary-ntp (IP address default: 0.0.0.0)	
+
+IP address of the NTP server that has to be used for time synchronization. If both values are non-zero, then the SNTP client will alternate between the two server addresses, switching to the other when the request to the current server times out or when the "KoD" packet is received, indicating that the server is not willing to respond to requests from this client.
+
+The following formats are accepted:
+
+- ipv4
+- ipv6
+secondary-ntp (IP address default: 0.0.0.0)	see primary-ntp
+server-dns-names (Comma separated domain name list default: )	To set the NTP server using its domain name. The domain name will be resolved each time an NTP request is sent. Router has to have /ip dns configured.
+
+Status
+
+    active-server (IP address; read-only property) : Currently selected NTP server address. This value is equal to primary-ntp or secondary-ntp.
+    poll-interval (Time interval; read-only property) : Current interval between requests sent to the active server. The initial value is 16 seconds, and it is increased by doubling to 15 minutes.
+
+Last received packet information
+
+Values of the following properties are reset when the SNTP client is stopped or restarted, either because of a configuration change, or because of a network error.
+
+    last-update-from (IP address; read-only property) : Source IP address of the last received NTP server packed that was successfully processed.
+    last-update-before (Time interval; read-only property) : Time since the last successfully received server message.
+    last-adjustment (Time interval; read-only property) : Amount of clock adjustment that was calculated from the last successfully received NTP server message.
+    last-bad-packet-from (IP address; read-only property) : Source IP address of last received SNTP packed that was not successfully processed. Reason of the failure and time since this packet was received is available in the next two properties.
+    last-bad-packet-before (Time interval; read-only property) : Time since the last receive failure.
+    last-bad-packet-reason (Text; read-only property) : Text that describes the reason of the last receive failure. Possible values are:
+        bad-packet-length - Packet length is not in the acceptable range.
+        server-not-synchronized - Leap Indicator field is set to "alarm condition" value, which means that clock on the server has not been synchronized yet.
+        zero-transmit-timestamp - Transmit Timestamp field value is 0.
+        bad-mode - Value of the Mode field is neither 'server' nor 'broadcast'.
+        kod-ABCD - Received "KoD" (Kiss-o'-Death) response. ABCD is the short "kiss code" text from the Reference Identifier field.
+        broadcast - Received broadcast message, but mode=unicast.
+        non-broadcast - Received packed was server reply, but mode=broadcast.
+        server-ip-mismatch - Received response from address that is not active-server.
+        originate-timestamp-mismatch - Originate Timestamp field in the server response message is not the same as the one included in the last request.
+        roundtrip-too-long - request/response roundtrip exceeded 1 second.
+
+Client settings example: 
+
+To check the status of the NTP client in CLI, use the "print" command
+[admin@ntp-example_v6] > /system ntp client print 
+           enabled: no
+       primary-ntp: 0.0.0.0
+     secondary-ntp: 0.0.0.0
+  server-dns-names: 
+              mode: unicast
+
+To enable the NTP client and set IP addresses or FQDN of the NTP servers:
+[admin@ntp-example_v6] > /system ntp client set enabled=yes
+[admin@ntp-example_v6] > /system ntp client print 
+             enabled: yes
+         primary-ntp: 0.0.0.0
+       secondary-ntp: 0.0.0.0
+    server-dns-names: 
+                mode: unicast
+     dynamic-servers: x.x.x.x, x.x.x.x
+       poll-interval: 15s
+       active-server: x.x.x.x
+    last-update-from: x.x.x.x
+  last-update-before: 6s570ms
+     last-adjustment: -1ms786us
+[admin@ntp-example_v6] > /system ntp client set primary-ntp=162.159.200.123
+[admin@ntp-example_v6] > /system ntp client print 
+           enabled: yes
+       primary-ntp: 162.159.200.123
+     secondary-ntp: 0.0.0.0
+  server-dns-names: 
+              mode: unicast
+   dynamic-servers: x.x.x.x, x.x.x.x
+     poll-interval: 16s
+     active-server: x.x.x.x
+NTP Server settings:
+
+Server configuration is located in /system ntp server
+
+enabled (yes or no; default value: no)
+	Enable  NTP server
+
+broadcast (yes or no; default value: no)
+	Enable certain NTP server mode, for this mode to work you have to set up broadcast-addresses field
+
+multicast (yes or no; default value: no)
+	Enable certain NTP server mode
+
+manycast (yes or no; default value: no)
+	Enable certain NTP server mode
+
+broadcast-addresses (IP address; default value: )
+	Set broadcast address to use for NTP server broadcast mode
+
+Example:
+
+Set up an NTP server for the local network that is 192.168.88.0/24
+/system ntp server set broadcast=yes broadcast-addresses=192.168.88.255 enabled=yes manycast=no
+RouterOS version 7
+NTP Client properties:
+enabled (yes, no default: no)	Enable NTP client for time synchronization
+mode (broadcast, manycast, multicast, unicast)	Mode that the NTP client will operate in
+
+NTP servers
+	
+
+The list of NTP servers. It is possible to add static entries.
+
+The following formats are accepted:
+
+- FQDN ("Resolved Address" will appear in the "Servers"- window in an appropriate column if the address is resolved) or IP address can be used. If DHCP-Client property use-peer-ntp=yes - the dynamic entries advertised by DHCP
+- ipv4
+- ipv4@vrf
+- ipv6
+- ipv6@vrf
+- ipv6-linklocal%interface
+vrf (default: main)	Virtual Routing and Forwarding
+Servers (Button/Section)	
+
+A detailed table of dynamically and statically added NTP servers (Address, Resolved address, Min Poll, Max Poll, iBurst, Auth. Key)
+
+To set the NTP server using its FQDN. The domain name will be resolved each time an NTP request is sent. Router has to have /ip/dns configured.
+
+Peers
+	
+
+Current parameter values
+[admin@ntp-example_v7] > /system/ntp/monitor-peers
+ type="ucast-client" address=x.x.x.x refid="y.y.y.y" stratum=3 hpoll=10 ppoll=10 root-delay=28.869 ms root-disp=50.994 ms 
+   offset=-0.973 ms delay=0.522 ms disp=15.032 ms jitter=0.521 ms 
+-- [Q quit|D dump|C-z pause]
+
+Keys
+	
+
+NTP symmetric keys, used for authentication between the NTP client and server. Key Identifier (Key ID) - an integer identifying the cryptographic key used to generate the message-authentication code.
+
+Status
+
+    synchronized, stopped, waiting, using-local-clock - Current status of the NTP client
+    Frequency drift - The fractional frequency drift per unit time.
+    synced-server - The IP address of the NTP Server.
+    synced-stratum - The accuracy of each server is defined by a number called the stratum, with the topmost level (primary servers) assigned as one and each level downwards (secondary servers) in the hierarchy assigned as one greater than the preceding level.
+    system-offset - This is a signed, fixed-point number indicating the offset of the NTP server's clock relative to the local clock, in seconds.
+
+NTP Server settings:
+
+Server configuration is located in /system ntp server
+enabled (yes or no; default value: no)	Enable NTP server
+
+broadcast (yes or no; default value: no)
+	Enable certain NTP server mode, for this mode to work you have to set up broadcast-addresses field
+
+multicast (yes or no; default value: no)
+	Enable certain NTP server mode
+
+manycast (yes or no; default value: no)
+	Enable certain NTP server mode
+
+broadcast-addresses (IP address; default value: )
+	Set broadcast address to use for NTP server broadcast mode
+
+vrf (default: main)
+	Virtual Routing and Forwarding
+
+use-local-clock (yes or no; default value: no)
+	The server will supply its local system time as valid if others are not available.
+
+local-clock-stratum
+	Manually set stratum if use-local-clock=yes
+
+auth-key (default value: none)
+	NTP symmetric key, used for authentication between the NTP client and server. Key Identifier (Key ID) - an integer identifying the cryptographic key used to generate the message-authentication code.
+
+If you use use-local-clock, then be aware that the router's internal CPU clock is not a reliable time source for precise timing operations, as its frequency may vary due to power management, thermal conditions, and hardware differences, even between identical models. This variation is expected and does not affect normal router performance. For accurate timekeeping, it is recommended to use network-based time synchronisation, such as NTP (Network Time Protocol).
+Log messages
+
+SNTP client can produce the following log messages. See the article "log" on how to set up logging and how to inspect logs.
+
+    ntp,debug gradually adjust by OFFS
+    ntp,debug instantly adjust by OFFS
+    ntp,debug Wait for N seconds before sending the next message
+    ntp,debug Wait for N seconds before restarting
+    ntp,debug,packet packet receive an error, restarting
+    ntp,debug,packet received PKT
+    ntp,debug,packet ignoring received PKT
+    ntp,debug,packet error sending to IP, restarting
+    ntp,debug,packet sending to IP PKT
+
+Explanation of log message fields
+
+    OFFS - difference of two NTP timestamp values, in hexadecimal.
+    PKT - dump of NTP packet. If the packet is shorter than the minimum 48 bytes, it is dumped as a hexadecimal string. Otherwise, the packet is dumped as a list of field names and values, one per log line. Names of fields follow RFC4330.
+    IP - remote IP address.
+
+NOTE: the above logging rules work only with the built-in SNTP client, the separate NTP package doesn't have any logging facilities.
+
+
+
+    Creado por Normunds R., actualizado por última vez por Serhii T. el jun 13, 2025 2 min de lectura
+
+Summary
+
+Partitioning is supported on ARM, ARM64, MIPS, TILE, and PowerPC RouterBOARD devices that use NAND flash.
+
+RouterOS allows repartitioning of NAND flash, enabling:
+
+    Separate RouterOS installations on each partition.
+
+    The ability to specify primary and fallback partitions.
+
+If one partition fails to boot (due to a failed upgrade, configuration issue, or software error), the next partition will automatically boot, providing a fallback. This feature acts as an interactive backup, allowing you to keep a verified, working installation and perform upgrades only on a secondary partition.
+
+Once you've confirmed the new configuration is stable, you can use the "Save Config To" function to copy it to the other partitions.
+
+Repartitioning of the NAND requires the latest bootloader version
+Requirements and Limits:
+
+    Starting from RouterOS 7.20beta2, the minimum storage size for repartitioning is 128 MiB.
+    Minimum RouterOS partition size during repartitioning: 60 MiB.
+    The maximum number of allowed partitions is 8.
+
+For devices where the Partitions menu is supposed to be hidden, but were previously repartitioned:
+
+    It will be possible to repartition into a single partition.
+
+    The Partitions menu will then be hidden after reboot.
+
+Example:
+
+For a device with 128 MiB NAND, that previously had 4*32 MiB partitions, where RouterOS fits within 32 MiB, the behavior after upgrading, starting from RouterOS 7.20beta2, will be as follows:
+
+    It will continue using all 4 partitions with full partitioning options, as before repartitioning.
+    In case of repartitioning, the only available options will be 1*128 MiB or 2*64 MiB partitions, and full partitioning features will remain available.
+
+[admin@MikroTik] > /partitions/print
+Flags: A - ACTIVE; R - RUNNING
+Columns: NAME, FALLBACK-TO, VERSION, SIZE
+# NAME FALL VERSION SIZE 
+0 AR part0  next         RouterOS v7.18.2 2025-03-11 11:59:04  128MiB
+
+Starting from RouterOS version 7.17, you need to update the device-mode to use the partitions.
+Commands
+activate (<partition>)	
+
+Assigns another partition as Active. This option is available if the "partitions" setting is enabled in device mode (since RouterOS 7.17).
+repartition (integer)	Will reboot the router and reformat the NAND, leaving only active partition.
+copy-to (<partition>)	Clone running OS with the config to specified partition. Previously stored data on the partition will be erased.
+save-config-to (<partition>)	Clone running-config on a specified partition. Everything else is untouched.
+restore-config-from (<partition>)	Copy config from specified partition to running partition
+Properties
+name (string; Default: )	Name of the partition
+fallback-to (etherboot | next | <partition-name>; Default: next)	What to do if an active partition fails to boot:
+
+    etherboot - switch to etherboot
+    next' - try next partition
+    fallback to the specified partition
+
+Read-only
+active (yes | no)	Partition is active
+running (yes | no)	Currently running partition
+size (integer[MiB])	Partition size
+version (string)	Current RouterOS version installed on the partition
 
 
