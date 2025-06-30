@@ -1,1645 +1,823 @@
-jump-target (name; Default: )	If action=jump specified, then specifies the user-defined firewall chain to process the packet.
-limit (integer/time,integer; Default: )	Matches packets up to a limited rate. A rule using this matcher will match until this limit is reached.
 
-    count - maximum average packet rate, measured in packets per second (pps), unless followed by Time option
-    time - specifies the time interval over which the packet rate is measured
-    burst - number of packets to match in a burst
 
-log (yes | no; Default: no)	Add a message to the system log containing the following data: in-interface, out-interface, src-mac, dst-mac, eth-protocol, ip-protocol, src-ip:port->dst-ip:port, and length of the packet.
-log-prefix (text; Default: )	Defines the prefix to be printed before the logging information.
-mac-protocol (802.2 | arp | capsman | dot1x | homeplug-av | ip | ipv6 | ipx | lacp | length | lldp | loop-protect | macsec | mpls-multicast | mpls-unicast | packing-compr | packing-simple | pppoe | pppoe-discovery | rarp | romon | service-vlan | vlan | integer 0..65535 | hex 0x0000-0xffff; Default: )	Ethernet payload type (MAC-level protocol). To match protocol type for VLAN encapsulated frames (0x8100 or 0x88a8), a vlan-encap property should be used.
+    Creado por Māris B., actualizado por última vez por Edgars P. el abr 08, 2025 26 min de lectura
 
-    802.2 - 802.2 Frames (0x0004)
-    arp - Address Resolution Protocol (0x0806)
-    homeplug-av - HomePlug AV MME (0x88E1)
-    ip - Internet Protocol version 4 (0x0800)
-    ipv6 - Internet Protocol Version 6 (0x86DD)
-    ipx - Internetwork Packet Exchange (0x8137)
-    length - Packets with length field (0x0000-0x05DC)
-    lldp - Link Layer Discovery Protocol (0x88CC)
-    loop-protect - Loop Protect Protocol (0x9003)
-    mpls-multicast - MPLS multicast (0x8848)
-    mpls-unicast - MPLS unicast (0x8847)
-    packing-compr - Encapsulated packets with compressed IP packing (0x9001)
-    packing-simple - Encapsulated packets with simple IP packing (0x9000)
-    pppoe - PPPoE Session Stage (0x8864)
-    pppoe-discovery - PPPoE Discovery Stage (0x8863)
-    rarp - Reverse Address Resolution Protocol (0x8035)
-    service-vlan - Provider Bridging (IEEE 802.1ad) & Shortest Path Bridging IEEE 802.1aq (0x88A8)
-    vlan - VLAN-tagged frame (IEEE 802.1Q) and Shortest Path Bridging IEEE 802.1aq with NNI compatibility (0x8100)
+    Introduction
+    Switch Configuration
+        Switch Port Configuration
+        L3HW Settings
+            Basic Settings
+            Advanced Settings
+            Monitor
+            Advanced Monitor
+        Interface Lists
+        MTU
+        Layer 2 Dependency
+        MAC telnet
+        Inter-VLAN Routing
+        L3HW MAC Address Range Limitation (DX2000/DX3000 series only)
+    Route Configuration
+        Suppressing HW Offload
+        Routing Filters
+        Offloading Fasttrack Connections
+        Stateless Hardware Firewall
+        Switch Rules (ACL) vs. Fasttrack HW Offloading
+    Configuration Examples
+        Inter-VLAN Routing with Upstream Port Behind Firewall/NAT
+    Typical Misconfiguration
+        VLAN interface on a switch port or bond
+        Not adding the bridge interface to /interface/bridge/vlan/
+        Creating multiple bridges
+        Using ports that do not belong to the switch
+        Relying on Fasttrack HW Offloading too much
+        Trying to offload slow-path connections
+    L3HW Feature Support
+    L3HW Device Support
+        CRS3xx: Switch DX3000 and DX2000 Series
+            Partial offloading
+        CCR2xxx, CRS3xx, CRS5xx: Switch DX8000 and DX4000 Series
+            Partial offloading
 
-new-packet-mark (string; Default: )	Sets a new packet-mark value.
-new-priority (integer | from-ingress; Default: )	Sets a new priority for a packet. This can be the VLAN, WMM or MPLS EXP priority Read more. This property can also be used to set an internal priori
-out-bridge (name; Default: )	Outgoing bridge interface.
-out-bridge-list (name; Default: )	Set of bridge interfaces defined in interface list. Works the same as out-bridge.
-out-interface (name; Default: )	Interface that the packet is leaving the bridge through.
-out-interface-list (name; Default: )	Set of interfaces defined in interface list. Works the same as out-interface.
-packet-mark (name; Default: )	Match packets with a certain packet mark.
-packet-type (broadcast | host | multicast | other-host; Default: )	MAC frame type:
+Introduction
 
-    broadcast - broadcast MAC packet
-    host - packet is destined to the bridge itself
-    multicast - multicast MAC packet
-    other-host - packet is destined to some other unicast address, not to the bridge itself
+Layer 3 Hardware Offloading (L3HW, otherwise known as IP switching or HW routing) allows to offload some router features onto the switch chip. This allows reaching wire speeds when routing packets, which would simply not be possible with the CPU. 
+Switch Configuration
 
-src-address (IP address; Default: )	Source IP address (only if MAC protocol is set to IPv4).
-src-address6 (IPv6 address; Default: )	Source IPv6 address (only if MAC protocol is set to IPv6).
-src-mac-address (MAC address; Default: )	Source MAC address.
-src-port (integer 0..65535; Default: )	Source port number or range (only for TCP or UDP protocols).
-stp-flags (topology-change | topology-change-ack; Default: )	The BPDU (Bridge Protocol Data Unit) flags. Bridge exchange configuration messages named BPDU periodically for preventing loops
+To enable Layer 3 Hardware Offloading, set l3-hw-offloading=yes for the switch:
+/interface/ethernet/switch set 0 l3-hw-offloading=yes
+Switch Port Configuration
 
-    topology-change - topology change flag is set when a bridge detects port state change, to force all other bridges to drop their host tables and recalculate network topology
-    topology-change-ack - topology change acknowledgment flag is sent in replies to the notification packets
+Layer 3 Hardware Offloading can be configured for each physical switch port. For example:
+/interface/ethernet/switch/port set sfp-sfpplus1 l3-hw-offloading=yes
 
-stp-forward-delay (integer 0..65535; Default: )	Forward delay timer.
-stp-hello-time (integer 0..65535; Default: )	STP hello packets time.
-stp-max-age (integer 0..65535; Default: )	Maximal STP message age.
-stp-msg-age (integer 0..65535; Default: )	STP message age.
-stp-port (integer 0..65535; Default: )	STP port identifier.
-stp-root-address (MAC address; Default: )	Root bridge MAC address.
-stp-root-cost (integer 0..65535; Default: )	Root bridge cost.
-stp-root-priority (integer 0..65535; Default: )	Root bridge priority.
-stp-sender-address (MAC address; Default: )	STP message sender MAC address.
-stp-sender-priority (integer 0..65535; Default: )	STP sender priority.
-stp-type (config | tcn; Default: )	The BPDU type:
+Note that l3hw settings for switch and ports are different:
 
-    config - configuration BPDU
-    tcn - topology change notification
+    Setting l3-hw-offloading=no for the switch completely disables offloading - all packets will be routed by CPU.
+    However, setting l3-hw-offloading=no for a switch port only disables hardware routing from/to this particular port. Moreover, the port can still participate in Fastrack connection offloading. 
 
-tls-host (string; Default: )	Allows matching https traffic based on TLS SNI hostname. Accepts GLOB syntax for wildcard matching. Note that matcher will not be able to match hostname if the TLS handshake frame is fragmented into multiple TCP segments (packets).
-vlan-encap (802.2 | arp | ip | ipv6 | ipx | length | mpls-multicast | mpls-unicast | pppoe | pppoe-discovery | rarp | vlan | integer 0..65535 | hex 0x0000-0xffff; Default: )	Matches the MAC protocol type encapsulated in the VLAN frame.
-vlan-id (integer 0..4095; Default: )	Matches the VLAN identifier field.
-vlan-priority (integer 0..7; Default: )	Matches the VLAN priority (priority code point)
+To enable full hardware routing, enable l3hw on all switch ports:
+/interface/ethernet/switch set 0 l3-hw-offloading=yes
+/interface/ethernet/switch/port set [find] l3-hw-offloading=yes
 
-Footnotes:
+To make all packets go through the CPU first, and offload only the Fasttrack connections, disable l3hw on all ports but keep it enabled on the switch chip itself:
+/interface/ethernet/switch set 0 l3-hw-offloading=yes
+/interface/ethernet/switch/port set [find] l3-hw-offloading=no
 
-    STP matchers are only valid if the destination MAC address is 01:80:C2:00:00:00/FF:FF:FF:FF:FF:FF (Bridge Group address), also STP should be enabled.
+Packets are routed by hardware when both the ingress and egress ports have l3-hw-offloading=yes.
 
-    ARP matchers are only valid if mac-protocol is arp or rarp
+If both ingress and egress ports have l3-hw-offloading=no, packets will go through the CPU/Firewall while offloading only the Fasttrack connections.
 
-    VLAN matchers are only valid for 0x8100 or 0x88a8 ethernet protocols
+It is possible to direct packets to go through the CPU/Firewall by setting l3-hw-offloading=no on just the egress port. However, setting l3-hw-offloading=no only the ingress port may cause unpredictable behavior, for example, packets might still be routed by hardware and completely bypass the CPU/firewall. 
 
-    IP or IPv6 related matchers are only valid if mac-protocol is either set to ip or ipv6
+The next example enables hardware routing on all ports but the upstream port (sfp-sfpplus16). Packets going to/from sfp-sfpplus16 will enter the CPU and, therefore, subject to Firewall/NAT processing.
+/interface/ethernet/switch set 0 l3-hw-offloading=yes
+/interface/ethernet/switch/port set [find] l3-hw-offloading=yes
+/interface/ethernet/switch/port set sfp-sfpplus16 l3-hw-offloading=no
 
-    802.3 matchers are only consulted if the actual frame is compliant with IEEE 802.2 and IEEE 802.3 standards. These matchers are ignored for other packets.
+The existing connections may be unaffected by the l3-hw-offloading setting change.
+L3HW Settings
+Basic Settings
 
-Bridge Packet Filter
+The L3HW Settings menu has been introduced in RouterOS version 7.6.
 
-This section describes specific bridge filter options.
+Sub-menu: /interface ethernet switch l3hw-settings
+autorestart (yes | no; Default: no)	Automatically restarts the l3hw driver in case of an error. Otherwise, if an error occurs, l3-hw-offloading gets disabled, and the error code is displayed in the switch settings and #monitor. Autorestart does not work for system failures, such as OOM (Out Of Memory).
+fasttrack-hw (yes | no; Default: yes (if supported))	Enables or disables FastTrack HW Offloading. Keep it enabled unless HW TCAM memory reservation is required, e.g., for dynamic switch ACL rules creation. Not all switch chips support FastTrack HW Offloading (see hw-supports-fasttrack).
+ipv6-hw (yes | no; Default: no)	Enables or disables IPv6 Hardware Offloading. Since IPv6 routes occupy a lot of HW memory, enable it only if IPv6 traffic speed is significant enough to benefit from hardware routing.
+icmp-reply-on-error (yes | no; Default: yes)	Since the hardware cannot send ICMP messages, the packet must be redirected to the CPU to send an ICMP reply in case of an error (e.g., "Time Exceeded", "Fragmentation required", etc.). Enabling icmp-reply-on-error helps with network diagnostics but may open potential vulnerabilities for DDoS attacks. Disabling icmp-reply-on-error silently drops the packets on the hardware level in case of an error.
 
-Sub-menu: /interface bridge filter
-action (accept | drop | jump | log | mark-packet | passthrough | return | set-priority; Default: accept)	Action to take if the packet is matched by the rule:
+Read-Only Properties
+hw-supports-fasttrack (yes | no)	Indicates if the hardware (switch chip) supports FastTrack HW Offloading.
+Advanced Settings
 
-    accept - accept the packet. No action, i.e., the packet is passed through without undertaking any action, and no more rules are processed in the relevant list/chain
-    drop - silently drop the packet (without sending the ICMP reject message)
-    jump - jump to the chain specified by the value of the jump-target argument
-    log - add a message to the system log containing the following data: in-interface, out-interface, src-mac, dst-mac, eth-proto, protocol, src-ip:port->dst-ip:port and length of the packet. After packet is matched it is passed to the next rule in the list, similar as passthrough
-    mark - mark the packet to use the mark later
-    passthrough - ignore this rule and go on to the next one. Acts the same way as a disabled rule, except for the ability to count packets
-    return - return to the previous chain, from where the jump took place
-    set-priority - set priority specified by the new-priority parameter on the packets sent out through a link that is capable of transporting priority (VLAN or WMM-enabled wireless interface). Read more
+This menu allows tweaking l3hw settings for specific use cases.
 
-Bridge NAT
+It is NOT recommended to change the advanced L3HW settings unless instructed by MikroTik Support or MikroTik Certified Routing Engineer. Applying incorrect settings may break the L3HW operation.
 
-This section describes specific bridge NAT options.
+Sub-menu: /interface ethernet switch l3hw-settings advanced
+route-queue-limit-high (number; Default: 256)	
 
-Sub-menu: /interface bridge nat
-action (accept | drop | jump | mark-packet | redirect | set-priority | arp-reply | dst-nat | log | passthrough | return | src-nat; Default: accept)	Action to take if the packet is matched by the rule:
+The switch driver stops route indexing when route-queue-size (see #monitor) exceeds this value. Lowering this value leads to faster route processing but increases the lag between a route's appearance in RouterOS and hardware memory.
 
-    accept - accept the packet. No action, i.e., the packet is passed through without undertaking any action, and no more rules are processed in the relevant list/chain
-    arp-reply - send a reply to an ARP request (any other packets will be ignored by this rule) with the specified MAC address (only valid in dstnat chain)
-    drop - silently drop the packet (without sending the ICMP reject message)
-    dst-nat - change destination MAC address of a packet (only valid in dstnat chain)
-    jump - jump to the chain specified by the value of the jump-target argument
-    log - log the packet
-    mark - mark the packet to use the mark later
-    passthrough - ignore this rule and go on to the next one. Acts the same way as a disabled rule, except for the ability to count packets
-    redirect - redirect the packet to the bridge itself (only valid in dstnat chain)
-    return - return to the previous chain, from where the jump took place
-    set-priority - set priority specified by the new-priority parameter on the packets sent out through a link that is capable of transporting priority (VLAN or WMM-enabled wireless interface). Read more
-    src-nat - change source MAC address of a packet (only valid in srcnat chain)
+Setting route-queue-limit-high=0 disables route indexing when there are any routes in the processing queue -  the most efficient CPU usage but the longest delay before hardware offloading. Useful when there are static routes only. Not recommended together with routing protocols (such as BGP or OSPF) when there are frequent routing table changes.
+route-queue-limit-low (number; Default: 0)	
 
-to-arp-reply-mac-address (MAC address; Default: )	Source MAC address to put in Ethernet frame and ARP payload, when action=arp-reply is selected
-to-dst-mac-address (MAC address; Default: )	Destination MAC address to put in Ethernet frames, when action=dst-nat is selected
-to-src-mac-address (MAC address; Default: )	Source MAC address to put in Ethernet frames, when action=src-nat is selected
-See also
+Re-enable route indexing when route-queue-size drops down to this value. Must not exceed the high limit.
 
-    CRS1xx/2xx series switches
-    CRS3xx, CRS5xx series switches, and CCR2116, CCR2216 routers
-    Switch chip features
-    MTU on RouterBOARD
-    Layer2 misconfiguration
-    Bridge VLAN Table
-    Wireless VLAN Trunk
-    VLANs on Wireless
+Setting route-queue-limit-low=0 tells the switch driver to process all pending routes before the next hw-offloading attempt. While this is the desired behavior, it may completely block the hw-offloading under a constant BGP feed.
+shwp-reset-counter  (number; Default: 128)	
+
+Reset the Shortest HW Prefix (see ipv4-shortest-hw-prefix / ipv6-shortest-hw-prefix in #monitor) and try the full route table offloading after this amount of changes in the routing table. At a partial offload, when the entire routing table does not fit into the hardware memory and shorter prefixes are redirected to the CPU, there is no need to try offloading route prefixes shorter than SHWP since those will get redirected to the CPU anyway, theoretically. However, significant changes to the routing table may lead to a different index layout and, therefore, a different amount of routes that can be hw-offloaded. That's why it is recommended to do the full table re-indexing occasionally.
+
+Lowering this value may allow more routes to be hw-offloaded but increases CPU usage and vice-versa. Setting shwp-reset-counter=0 always does full re-indexing after each routing table change.
+
+This setting is used only during Partial Offloading and has no effect when ipv4-shortest-hw-prefix=0 (and ipv6, respectively).
+partial-offload-chunk (number; Default: 1024, min: 16)	
+
+The minimum number of routes for incremental adding in Partial Offloading. Depending on the switch chip model, routes are offloaded either as-is (each routing entry in RouterOS corresponds to an entry in the hardware memory) or getting indexed, and the index entries are the ones that are written into the hardware memory. This setting is used only for the latter during Partial Offloading.
+
+Depending on index fragmentation, a single IPv4 route addition can occupy from -3 to +6 LPM blocks of HW memory (some route addition may lower the amount of required HW memory thanks to index defragmentation). Hence, it is impossible to predict the exact number of routes that may fit in the hardware memory. The switch driver uses a binary split algorithm to find the maximum number of routes that fit in the hardware.
+
+Let's imagine 128k routes, all of them not fitting into the hardware memory. The algorithm halves the number and tries offloading 64k routes. Let's say offloading succeeded. In the next iteration, the algorithm picks 96k, let's say it fails; then 80k - fails again, 72k - succeeds, 76k, etc. until the difference between succeeded and failed numbers drops below the partial-offload-chunk value.
+
+Lowering the partial-offload-chunk value increases the number of hw-offloaded routes but also raises CPU usage and vice-versa.
+route-index-delay-min (time; Default: 1s)	
+
+The minimum delay between route processing and its offloading. The delay allows processing more routes together and offloading them at once, saving CPU usage. It also makes offloading the entire routing table faster by reducing the per-route processing work. On the other hand, it slows down the offloading of an individual route.
+
+If an additional route is received during the delay, the latter resets to the route-index-delay-min value. Adding more and more routes within the delay keeps resetting the timer until the route-index-delay-max is reached.
+route-index-delay-max (time; Default: 10s)	
+
+The maximum delay between route processing and its offloading. When the maximum delay is reached, the processed routes get offloaded despite more routes pending. However, route-queue-limit-high has higher priority than this, meaning that the indexing/offloading gets paused anyway when a certain queue size is reached.
+neigh-keepalive-interval (time; Default: 15s, min: 5s)	
+
+Neighbor (host) keepalive interval. When a host (IP neighbor) gets hw-offloaded, all traffic from/to it is routed by the switch chip, and RouterOS may think the neighbor is inactive and delete it. To prevent that, the switch driver must keep the offloaded neighbors alive by sending periodical refreshes to RouterOS.
+neigh-discovery-interval (time; Default: 1m37s, min: 30s)	
+
+Unfortunately, switch chips do not provide per-neighbor stats. Hence, the only way to check if the offloaded host is still active is by sending occasional ARP (IPv4) / Neighbor Discovery (IPv6) requests to the connected network. Increasing the value lowers the broadcast traffic but may leave inactive hosts in hardware memory for longer.
+
+Neighbor discovery is triggered within the neighbor keepalive work. Hence, the discovery time is rounded up to the next keepalive session. Choose a value for neigh-discovery-interval not dividable by neigh-keepalive-interval to send ARP/ND requests in various sessions, preventing broadcast bursts.
+neigh-discovery-burst-limit (number; Default: 64)	
+
+The maximum number of ARP/ND requests that can be sent at once.
+neigh-discovery-burst-delay (time; Default: 300ms, min: 10ms)	
+
+The delay between ARP/ND subsequent bursts if the number of requests exceeds neigh-discovery-burst-limit.
+
+
+Some settings only apply to certain switch models.
+Monitor
+
+The L3HW Monitor feature has been introduced in RouterOS version 7.10. It allows monitoring of switch chip and driver stats related to L3HW. 
+/interface/ethernet/switch/l3hw-settings/monitor
+        ipv4-routes-total: 99363
+           ipv4-routes-hw: 61250
+          ipv4-routes-cpu: 38112
+  ipv4-shortest-hw-prefix: 24
+               ipv4-hosts: 87
+        ipv6-routes-total: 15
+           ipv6-routes-hw: 11
+          ipv6-routes-cpu: 4
+  ipv6-shortest-hw-prefix: 0
+               ipv6-hosts: 7
+         route-queue-size: 118
+     fasttrack-ipv4-conns: 2031
+   fasttrack-hw-min-speed: 0
+              nexthop-cap: 8192
+            nexthop-usage: 93
+    vxlan-mtu-packet-drop: 0
+
+Stats
+ipv4-routes-total	The total number of IPv4 routes handled by the switch driver.
+ipv4-routes-hw	The number of hardware-offloaded IPv4 routes (a.k.a. hardware routes)
+ipv4-routes-cpu	The number of IPv4 routes redirected to the CPU (a.k.a. software routes)
+ipv4-shortest-hw-prefix	Shortest Hardware Prefix (SHWP) for IPv4. If the entire IPv4 routing table does not fit into the hardware memory, partial offloading is applied, where the longest prefixes are hw-offloaded while the shorter ones are redirected to the CPU. This field shows the shortest route prefix (/x) that is offloaded to the hardware memory. All prefixes shorter than this are processed by the CPU. "ipv4-shortest-hw-prefix=0" means the entire IPv4 routing table is offloaded to the hardware memory.
+ipv4-hosts	The number of hardware-offloaded IPv4 hosts (/32 routes)
+ipv6-routes-total 1	The total number of IPv6 routes handled by the switch driver.
+ipv6-routes-hw 1	The number of hardware-offloaded IPv6 routes (a.k.a. hardware routes)
+ipv6-routes-cpu 1	The number of IPv6 routes redirected to the CPU (a.k.a. software routes)
+ipv6-shortest-hw-prefix 1	Shortest Hardware Prefix (SHWP) for IPv6. If the entire IPv6 routing table does not fit into the hardware memory, partial offloading is applied, where the longest prefixes are hw-offloaded while the shorter ones are redirected to the CPU. This field shows the shortest route prefix (/x) that is offloaded to the hardware memory. All prefixes shorter than this are processed by the CPU. "ipv6-shortest-hw-prefix=0" means the entire IPv6 routing table is offloaded to the hardware memory.
+ipv6-hosts 1	The number of hardware-offloaded IPv6 hosts (/128 routes)
+route-queue-size	The number of routes in the queue for processing by the switch chip driver. Under normal working conditions, this field is 0, meaning that all routes are processed by the driver.
+nexthop-cap	The nexthop capacity.
+nexthop-usage	The number of currently used nexthops.
+vxlan-mtu-packet-drop	The number of dropped VXLAN packets due to exceeded interface MTU settings.
+fasttrack-ipv4-conns 2	The number of hardware-offloaded FastTrack connections.
+fasttrack-hw-min-speed 2	When the hardware memory for storing FastTrack is full, this field shows the minimum speed (in bytes per second) of a hw-offloaded FastTrack connection. Slower connections are routed by the CPU.
+
+1 IPv6 stats appear only when IPv6 hardware routing is enabled (ipv6-hw=yes)
+
+2 FastTrack stats appear only when hardware offloading of FastTrack connections is enabled (fasttrack-hw=yes)
+Advanced Monitor
+
+An enhanced version of Monitor with extra telemetry data for advanced users. Advanced Monitor contains all data from the basic monitor plus the fields listed below.
+/interface/ethernet/switch/l3hw-settings/advanced> monitor once
+        ipv4-routes-total: 29968
+           ipv4-routes-hw: 29957
+          ipv4-routes-cpu: 11
+  ipv4-shortest-hw-prefix: 0
+               ipv4-hosts: 3
+        ipv6-routes-total: 4
+           ipv6-routes-hw: 0
+          ipv6-routes-cpu: 4
+  ipv6-shortest-hw-prefix: 0
+               ipv6-hosts: 0
+         route-queue-size: 0
+         route-queue-rate: 0
+       route-process-rate: 0
+     fasttrack-ipv4-conns: 0
+     fasttrack-queue-size: 0
+     fasttrack-queue-rate: 0
+   fasttrack-process-rate: 0
+   fasttrack-hw-min-speed: 0
+   fasttrack-hw-offloaded: 0
+    fasttrack-hw-unloaded: 0
+                  lpm-cap: 54560
+                lpm-usage: 31931
+             lpm-bank-cap: 2728
+           lpm-bank-usage: 46,0,0,0,2589,2591,1983,0,2728,2728,2728,2728,2728,2728,2728,2728,2728,170,0,0
+                  pbr-cap: 8192
+                pbr-usage: 0
+             pbr-lpm-bank: 3
+                nat-usage: 0
+              nexthop-cap: 8192
+            nexthop-usage: 85
+
+Stats
+route-queue-rate	The rate at which routes are added to the queue for the switch driver processing. In other words, the growth rate of route-queue-size (routes per second)
+route-process-rate	The rate at which previously queued routes are processed by the switch driver. In other words, the shrink rate of route-queue-size (routes per second)
+fasttrack-queue-size	The number of FastTrack connections in the queue for processing by the switch chip driver.
+fasttrack-queue-rate	The rate at which FastTrack connections are added to the queue for the switch driver processing. In other words, the growth rate of fasttrack-queue-size (connections per second)
+fasttrack-process-rate	The rate at which previously queued FastTrack connections are processed by the switch driver. In other words, the shrink rate of fasttrack-queue-size (connections per second)
+fasttrack-hw-offloaded	The number of FastTrack connections offloaded to the hardware. The counter resets every second (or every monitor interval).
+fasttrack-hw-unloaded	The number of FastTrack connections unloaded from the hardware (redirected to software routing). The counter resets every second (or every monitor interval).
+lpm-cap	The size of the LPM hardware table (LPM = Longest Prefix Match). LPM stores route indexes for hardware routing. Not every switch chip model uses LPM. Others use TCAM.
+lpm-usage	The number of used LPM blocks. lpm-usage / lpm-cap = usage percentage.
+lpm-bank-cap	LPM memory is organized in banks - special memory units. The bank size depends on the switch chip model. This value shows the size of a single bank (in LPM blocks). lpm-cap / lpm-bank-cap = the number of banks (usually, 20).
+lpm-bank-usage	Per-bank LPM usage (in LPM blocks)
+pbr-cap	The size of the Policy-Based Routing (PBR) hardware table. PBR is used for NAT offloading of FastTrack connections.
+pbr-usage	The number of used PBR entries. pbr-usage / pbr-cap = usage percentage.
+pbr-lpm-bank	PBR shares LPM memory banks with routing tables. This value shows the LPM bank index shared with PBR (0 = the first bank).
+nat-usage	The number of used NAT hardware entries (for FastTrack connections).
+Interface Lists
+
+It is impossible to use interface lists directly to control l3-hw-offloading because an interface list may contain virtual interfaces (such as VLAN) while the l3-hw-offloading setting must be applied to physical switch ports only. For example, if there are two VLAN interfaces (vlan20 and vlan30) running on the same switch port (trunk port), it is impossible to enable hardware routing on vlan20 but keep it disabled on vlan30.
+
+However, an interface list may be used as a port selector. The following example demonstrates how to enable hardware routing on LAN ports (ports that belong to the "LAN" interface list) and disable it on WAN ports:
+:foreach i in=[/interface/list/member/find where list=LAN] do={
+    /interface/ethernet/switch/port set [/interface/list/member/get $i interface] l3-hw-offloading=yes
+}
+
+:foreach i in=[/interface/list/member/find where list=WAN] do={
+    /interface/ethernet/switch/port set [/interface/list/member/get $i interface] l3-hw-offloading=no
+}
+
+Please take into account that since interface lists are not directly used in hardware routing control., modifying the interface list also does not automatically reflect in l3hw changes. For instance, adding a switch port to the "LAN" interface list does not automatically enable l3-hw-offloading on it. The user has to rerun the above script to apply the changes.
+MTU
+
+The hardware supports up to 8 MTU profiles, meaning that the user can set up to 8 different MTU values for interfaces: the default 1500 + seven custom ones.
+It is recommended to disable l3-hw-offloading while changing the MTU/L2MTU values on the interfaces.
+MTU Change Example
+/interface/ethernet/switch set 0 l3-hw-offloading=no
+/interface set sfp-sfpplus1 mtu=9000 l2mtu=9022
+/interface set sfp-sfpplus2 mtu=9000 l2mtu=9022
+/interface set sfp-sfpplus3 mtu=10000 l2mtu=10022
+/interface/ethernet/switch set 0 l3-hw-offloading=yes
+Layer 2 Dependency
+
+Layer 3 hardware processing lies on top of Layer 2 hardware processing. Therefore, L3HW offloading requires L2HW offloading on the underlying interfaces. The latter is enabled by default, but there are some exceptions. For example, CRS3xx devices support only one hardware bridge. If there are multiple bridges, others are processed by the CPU and are not subject to L3HW. 
+
+Another example is ACL rules. If a rule redirects traffic to the CPU for software processing, then hardware routing (L3HW) is not triggered:
+ACL rule to disable hardware processing on a specific port
+/interface/ethernet/switch/rule/add switch=switch1 ports=ether1 redirect-to-cpu=yes
+It is recommended to turn off L3HW offloading during L2 configuration.
+
+To make sure that Layer 3 is in sync with Layer 2 on both the software and hardware sides, we recommend disabling L3HW while configuring Layer 2 features. The recommendation applies to the following configuration:
+
+    adding/removing/enabling/disabling bridge;
+    adding/removing switch ports to/from the bridge;
+    bonding switch ports / removing bond;
+    changing VLAN settings;
+    changing MTU/L2MTU on switch ports;
+    changing ethernet (MAC) addresses.
+
+In short, disable l3-hw-offloading while making changes under /interface/bridge/ and /interface/vlan/:
+Layer 2 Configuration Template
+/interface/ethernet/switch set 0 l3-hw-offloading=no
+
+/interface/bridge
+# put bridge configuration changes here
+
+/interface/vlan
+# define/change VLAN interfaces
+
+/interface/ethernet/switch set 0 l3-hw-offloading=yes
+MAC telnet
+
+There is a limitation for MAC telnet when L3HW offloading is enabled on 98DX8xxx, 98DX4xxx, or 98DX325x switch chips. Packets from MAC Telnet are dropped and do not reach the CPU, thus access to the device will fail.
+
+If MAC telnet is desired in combination with L3HW, certain ACL rule can be created to force these packets to the CPU.
+
+For example, if MAC telnet access on sfp-sfpplus1 and sfp-sfpplus2 is needed, you will need to add this ACL rule. It is possible to select even more interfaces with the ports setting.
+/interface ethernet switch rule
+add dst-port=20561 ports=sfp-sfpplus1,sfp-sfpplus2 protocol=udp redirect-to-cpu=yes switch=switch1
+Inter-VLAN Routing
+
+Since L3HW depends on L2HW, and L2HW is the one that does VLAN processing, Inter-VLAN hardware routing requires a hardware bridge underneath. Even if a particular VLAN has only one tagged port member, the latter must be a bridge member. Do not assign a VLAN interface directly on a switch port! Otherwise, L3HW offloading fails and the traffic will get processed by the CPU:
+
+/interface/vlan add interface=ether2 name=vlan20 vlan-id=20
+
+Assign the VLAN interface to the bridge instead. This way, VLAN configuration gets offloaded to the hardware, and, with L3HW enabled, the traffic is subject to inter-VLAN hardware routing.
+VLAN Configuration Example
+/interface/ethernet/switch set 0 l3-hw-offloading=no
+/interface/bridge/port add bridge=bridge interface=ether2
+/interface/bridge/vlan add bridge=bridge tagged=bridge,ether2 vlan-ids=20
+/interface/vlan add interface=bridge name=vlan20 vlan-id=20
+/ip/address add address=192.0.2.1/24 interface=vlan20
+/interface/bridge set bridge vlan-filtering=yes
+/interface/ethernet/switch set 0 l3-hw-offloading=yes
+For Inter-VLAN routing, the bridge interface must be a tagged member of every routable /interface/bridge/vlan/ entry.
+L3HW MAC Address Range Limitation (DX2000/DX3000 series only)
+
+Marvell Prestera DX2000 and DX3000 switch chips have a hardware limitation that allows configuring only the last (least significant) octet of the MAC address for each interface. The other five (most significant) octets are configured globally and, therefore, must be equal for all interfaces (switch ports, bridge, VLANs). In other words, the MAC addresses must be in the format "XX:XX:XX:XX:XX:??", where:
+
+    "XX:XX:XX:XX:XX" part is common for all interfaces.
+    "??" is a variable part.
+
+This requirement applies only to Layer 3 (routing). Layer 2 (bridging) does not use the switch's ethernet addresses. Moreover, it does not apply to bridge ports because they use the bridge's MAC address.
+
+The requirement for common five octets applies to:
+
+    Standalone switch ports (not bridge members) with hardware routing enabled (l3-hw-offloading=yes).
+    Bridge itself.
+    VLAN interfaces (those that use the bridge's MAC address by default).
+
+Route Configuration
+Suppressing HW Offload
+
+By default, all the routes are participating to be hardware candidate routes. To further fine-tune which traffic to offload, there is an option for each route to disable/enable suppress-hw-offload. 
+
+For example, if we know that the majority of traffic flows to the network where servers are located, we can enable offloading only to that specific destination:
+/ip/route set [find where static && dst-address!="192.168.3.0/24"] suppress-hw-offload=yes
+
+Now only the route to 192.168.3.0/24 has H-flag, indicating that it will be the only one eligible to be selected for HW offloading:
+[admin@MikroTik] > /ip/route print where static
+Flags: A - ACTIVE; s - STATIC, y - COPY; H - HW-OFFLOADED
+Columns: DST-ADDRESS, GATEWAY, DISTANCE
+#     DST-ADDRESS       GATEWAY         D
+0 As  0.0.0.0/0         172.16.2.1      1
+1 As  10.0.0.0/8        10.155.121.254  1
+2 AsH 192.168.3.0/24    172.16.2.1      1
+
+H-flag does not indicate that the route is actually HW offloaded, it indicates only that the route can be selected to be HW offloaded.
+Routing Filters
+
+For dynamic routing protocols like OSFP and BGP, it is possible to suppress HW offloading using routing filters. For example, to suppress HW offloading on all OSFP instance routes, use "suppress-hw-offload yes" property:
+/routing/ospf/instance
+set [find name=instance1] in-filter-chain=ospf-input
+/routing/filter/rule
+add chain="ospf-input" rule="set suppress-hw-offload yes; accept"
+Offloading Fasttrack Connections
+
+Firewall filter rules have hw-offload option for Fasttrack, allowing fine-tuning connection offloading. Since the hardware memory for Fasttrack connections is very limited, we can choose what type of connections to offload and, therefore, benefit from near-the-wire-speed traffic. The next example offloads only TCP connections while UDP packets are routed via the CPU and do not occupy HW memory:
+/ip/firewall/filter
+add action=fasttrack-connection chain=forward connection-state=established,related hw-offload=yes protocol=tcp
+add action=fasttrack-connection chain=forward connection-state=established,related hw-offload=no
+add action=accept chain=forward connection-state=established,related
+Stateless Hardware Firewall
+
+While connection tracking and stateful firewalling can be performed only by the CPU, the hardware can perform stateless firewalling via switch rules (ACL). The next example prevents (on a hardware level) accessing a MySQL server from the ether1, and redirects to the CPU/Firewall packets from ether2 and ether3:
+/interface ethernet switch rule
+add switch=switch1 dst-address=10.0.1.2/32 dst-port=3306 ports=ether1 new-dst-ports=""
+add switch=switch1 dst-address=10.0.1.2/32 dst-port=3306 ports=ether2,ether3 redirect-to-cpu=yes
+Switch Rules (ACL) vs. Fasttrack HW Offloading
+
+Some firewall rules may be implemented both via switch rules (ACL) and CPU Firewall Filter + Fasttrack HW Offloading. Both options grant near-the-wire-speed performance. So the question is which one to use?
+
+First, not all devices support Fasttrack HW Offloading, and without HW offloading, Firewall Filter uses only software routing, which is dramatically slower than its hardware counterpart. Second, even if Fasttrack HW Offloading is an option, a rule of thumb is:
+
+Always use Switch Rules (ACL), if possible.
+
+Switch rules share the hardware memory with Fastrack connections. However, hardware resources are allocated for each Fasttrack connection while a single ACL rule can match multiple connections. For example, if you have a guest WiFi network connected to sfp-sfpplus1 VLAN 10 and you don't want it to access your internal network, simply create an ACL rule:
+/interface/ethernet/switch/rule
+add switch=switch1 ports=sfp-sfpplus1 vlan-id=10 dst-address=10.0.0.0/8 new-dst-ports=""
+
+The matched packets will be dropped on the hardware level. It is much better than letting all guest packets to the CPU for Firewall filtering.
+
+Of course, ACL rules cannot match everything. For instance, ACL rules cannot filter connection states: accept established, drop others. That is where Fasttrack HW Offloading gets into action - redirect the packets to the CPU by default for firewall filtering, then offload the established Fasttrack connections. However, disabling l3-hw-offloading for the entire switch, port is not the only option.
+
+Define ACL rules with redirect-to-cpu=yes instead of setting l3-hw-offloading=no of the switch port for narrowing down the traffic that goes to the CPU.
+Configuration Examples
+Inter-VLAN Routing with Upstream Port Behind Firewall/NAT
+
+This example demonstrates how to benefit from near-to-wire-speed inter-VLAN routing while keeping Firewall and NAT running on the upstream port. Moreover, Fasttrack connections to the upstream port get offloaded to hardware as well, boosting the traffic speed close to wire-level. Inter-VLAN traffic is fully routed by the hardware, not entering the CPU/Firewall, and, therefore, not occupying the hardware memory of Fasttrack connections.
+
+We use the CRS317-1G-16S+ model with the following setup:
+
+    sfp1-sfp4 - bridged ports, VLAN ID 20, untagged
+    sfp5-sfp8 - bridged ports, VLAN ID 30, untagged
+    sfp16 - the upstream port
+    ether1 - management port
+
+
+Setup interface lists for easy access:
+Interface Lists
+/interface list
+add name=LAN
+add name=WAN
+add name=MGMT 
+
+/interface list member
+add interface=sfp-sfpplus1 list=LAN
+add interface=sfp-sfpplus2 list=LAN
+add interface=sfp-sfpplus3 list=LAN
+add interface=sfp-sfpplus4 list=LAN
+add interface=sfp-sfpplus5 list=LAN
+add interface=sfp-sfpplus6 list=LAN
+add interface=sfp-sfpplus7 list=LAN
+add interface=sfp-sfpplus8 list=LAN
+add interface=sfp-sfpplus16 list=WAN
+add interface=ether1 list=MGMT 
+Bridge Setup
+/interface bridge
+add name=bridge vlan-filtering=yes
+
+/interface bridge port
+add bridge=bridge interface=sfp-sfpplus1 pvid=20
+add bridge=bridge interface=sfp-sfpplus2 pvid=20
+add bridge=bridge interface=sfp-sfpplus3 pvid=20
+add bridge=bridge interface=sfp-sfpplus4 pvid=20
+add bridge=bridge interface=sfp-sfpplus5 pvid=30
+add bridge=bridge interface=sfp-sfpplus6 pvid=30
+add bridge=bridge interface=sfp-sfpplus7 pvid=30
+add bridge=bridge interface=sfp-sfpplus8 pvid=30
+
+/interface bridge vlan
+add bridge=bridge tagged=bridge untagged=sfp-sfpplus1,sfp-sfpplus2,sfp-sfpplus3,sfp-sfpplus4 vlan-ids=20
+add bridge=bridge tagged=bridge untagged=sfp-sfpplus5,sfp-sfpplus6,sfp-sfpplus7,sfp-sfpplus8 vlan-ids=30
+
+Routing requires dedicated VLAN interfaces. For standard L2 VLAN bridging (without inter-VLAN routing), the next step can be omitted.
+VLAN Interface Setup for Routing
+/interface vlan
+add interface=bridge name=vlan20 vlan-id=20
+add interface=bridge name=vlan30 vlan-id=30
+
+/ip address
+add address=192.168.20.17/24 interface=vlan20 network=192.168.20.0
+add address=192.168.30.17/24 interface=vlan30 network=192.168.30.0
+
+Configure management and upstream ports, a basic firewall, NAT, and enable hardware offloading of Fasttrack connections:
+Firewall Setup
+/ip address
+add address=192.168.88.1/24 interface=ether1
+add address=10.0.0.17/24 interface=sfp-sfpplus16
+
+/ip route
+add gateway=10.0.0.1
+
+/ip firewall filter
+add action=fasttrack-connection chain=forward connection-state=established,related hw-offload=yes
+add action=accept chain=forward connection-state=established,related
+
+/ip firewall nat
+add action=masquerade chain=srcnat out-interface-list=WAN
+
+At this moment, all routing still is performed by the CPU. Enable hardware routing on the switch chip:
+Enable Layer 3 Hardware Offloading
+# Enable full hardware routing on LAN ports
+:foreach i in=[/interface/list/member/find where list=LAN] do={ 
+    /interface/ethernet/switch/port set [/interface/list/member/get $i interface] l3-hw-offloading=yes 
+} 
+
+# Disable full hardware routing on WAN or Management ports
+:foreach i in=[/interface/list/member/find where list=WAN or list=MGMT] do={ 
+    /interface/ethernet/switch/port set [/interface/list/member/get $i interface] l3-hw-offloading=no 
+}
+
+# Activate Layer 3 Hardware Offloading on the switch chip
+/interface/ethernet/switch/set 0 l3-hw-offloading=yes
+
+Results:
+
+    Within the same VLAN (e.g., sfp1-sfp4), traffic is forwarded by the hardware on Layer 2 (L2HW).
+    Inter-VLAN traffic (e.g. sfp1-sfp5) is routed by the hardware on Layer 3 (L3HW).
+    Traffic from/to the WAN port gets processed by the CPU/Firewall first. Then Fasttrack connections get offloaded to the hardware (Hardware-Accelerated L4 Stateful Firewall). NAT applies both on CPU- and HW-processed packets.
+    Traffic to the management port is protected by the Firewall.
+
+Typical Misconfiguration
+
+Below are typical user errors in configuring Layer 3 Hardware Offloading.
+VLAN interface on a switch port or bond
+/interface/vlan
+add name=vlan10 vlan-id=10 interface=sfp-sfpplus1
+add name=vlan20 vlan-id=20 interface=bond1
+
+VLAN interface must be set on the bridge due to Layer 2 Dependency. Otherwise, L3HW will not work. The correct configuration is:
+/interface/bridge/port
+add bridge=bridge1 interface=sfp-sfpplus1 frame-types=admit-only-vlan-tagged
+add bridge=bridge1 interface=bond1 frame-types=admit-only-vlan-tagged
+ 
+/interface/bridge/vlan
+add bridge=bridge1 tagged=bridge1,sfp-sfpplus1 vlan-ids=10
+add bridge=bridge1 tagged=bridge1,bond1 vlan-ids=20
+ 
+/interface/vlan
+add name=vlan10 vlan-id=10 interface=bridge1
+add name=vlan20 vlan-id=20 interface=bridge1
+Not adding the bridge interface to /interface/bridge/vlan/
+
+For Inter-VLAN routing, the bridge interface itself needs to be added to the tagged members of the given VLANs. In the next example, Inter-VLAN routing works between VLAN 10 and 11, but packets are NOT routed to VLAN 20. 
+/interface bridge vlan
+add bridge=bridge1 vlan-ids=10 tagged=bridge1,sfp-sfpplus1
+add bridge=bridge1 vlan-ids=11 tagged=bridge1 untagged=sfp-sfpplus2,sfp-sfpplus3 
+add bridge=bridge1 vlan-ids=20 tagged=sfp-sfpplus1 untagged=sfp-sfpplus4,sfp-sfpplus5
+
+The above example does not always mean an error. Sometimes, you may want the device to act as a simple L2 switch in some/all VLANs. Just make sure you set such behavior on purpose, not due to a mistake.
+Creating multiple bridges
+
+The devices support only one hardware bridge. If there are multiple bridges created, only one gets hardware offloading. While for L2 that means software forwarding for other bridges, in the case of L3HW, multiple bridges may lead to undefined behavior.
+
+Instead of creating multiple bridges, create one and segregate L2 networks with VLAN filtering.
+Using ports that do not belong to the switch
+
+Some devices have two switch chips or the management port directly connected to the CPU. For example, CRS312-4C+8XG has an ether9 port connected to a separate switch chip. Trying to add this port to a bridge or involve it in the L3HW setup leads to unexpected results. Leave the management port for management!
+[admin@crs312] /interface/ethernet/switch> print
+Columns: NAME, TYPE, L3-HW-OFFLOADING
+# NAME     TYPE              L3-HW-OFFLOADING
+0 switch1  Marvell-98DX8212  yes            
+1 switch2  Atheros-8227      no   
+           
+[admin@crs312] /interface/ethernet/switch> port print
+Columns: NAME, SWITCH, L3-HW-OFFLOADING, STORM-RATE
+ # NAME         SWITCH   L3-HW-OFFLOADING  STORM-RATE
+ 0 ether9       switch2                             
+ 1 ether1       switch1  yes                      100
+ 2 ether2       switch1  yes                      100
+ 3 ether3       switch1  yes                      100
+ 4 ether4       switch1  yes                      100
+ 5 ether5       switch1  yes                      100
+ 6 ether6       switch1  yes                      100
+ 7 ether7       switch1  yes                      100
+ 8 ether8       switch1  yes                      100
+ 9 combo1       switch1  yes                      100
+10 combo2       switch1  yes                      100
+11 combo3       switch1  yes                      100
+12 combo4       switch1  yes                      100
+13 switch1-cpu  switch1                           100
+14 switch2-cpu  switch2
+Relying on Fasttrack HW Offloading too much
+
+Since Fasttrack HW Offloading offers near-the-wire-speed performance at zero configuration overhead, the users are tempted to use it as the default solution. However, the number of HW Fasttrack connections is very limited, leaving the other traffic for the CPU. Try using the hardware routing as much as possible, reduce the CPU traffic to the minimum via switch ACL rules, and then fine-tune which Fasttrack connections to offload with firewall filter rules.
+Trying to offload slow-path connections
+
+Using certain configurations (e.g. enabling bridge "use-ip-firewall" setting, creating bridge nat/filter rules) or running specific features like sniffer or torch can disable RouterOS FastPath, which will affect the ability to properly FastTrack and HW offload connections. If HW offloaded Fasttrack is required, make sure that there are no settings that disable the FastPath and verify that connections are getting the "H" flag or use the L3HW monitor command to see the amount of HW offloaded connections.
+L3HW Feature Support
+
+    HW - the feature is supported and offloaded to the hardware.
+    CPU - the feature is supported but performed by software (CPU)
+    N/A - the feature is not available together with L3HW. Layer 3 hardware offloading must be completely disabled (switch l3-hw-offloading=no) to make this feature work.
+    FW - the feature requires l3-hw-offloading=no for a given switch port. On the switch level, l3-hw-offloading=yes.
+
+
+IPv4 Unicast Routing	HW	
+	7.1
+IPv6 Unicast Routing	HW	
+
+/interface/ethernet/switch/l3hw-settings/set ipv6-hw=yes
+
+	7.6
+IPv4 Multicast Routing	CPU	
 	
+IPv6 Multicast Routing	CPU	
 	
+ECMP	HW	Multipath routing	7.1
+Blackholes	HW	
 
-    Creado por Edgars P., actualizado por última vez el may 13, 2025 21 min de lectura
-
-    Summary
-        Features
-        Models
-        Abbreviations
-    Port switching
-    VLAN
-        VLAN Filtering
-            Port-Based VLAN
-            MAC Based VLAN
-            Protocol Based VLAN
-            VLAN Tunneling (Q-in-Q)
-        Ingress VLAN translation
-    (R/M)STP
-    Bonding
-    Multi-chassis Link Aggregation Group
-    L3 Hardware Offloading
-    Port isolation
-    IGMP/MLD Snooping
-    DHCP Snooping and DHCP Option 82
-    Controller Bridge and Port Extender
-    Mirroring
-        Configuration examples
-            Port Based Mirroring
-            VLAN Based Mirroring
-            MAC Based Mirroring
-            IP Based Mirroring
-            Remote Switch Port Analyzer
-        Property Reference
-    Traffic Shaping
-    Traffic Storm Control
-    MPLS hardware offloading
-    Switch Rules (ACL)
-    Port Security
-    Dual Boot
-    Configuring SwOS using RouterOS
-    See also
+/ip/route add dst-address=10.0.99.0/24 blackhole
 
-Summary
+	7.1
+gateway=<interface_name>	CPU/HW	
 
-The CCR3xx, CRS5xx series switches and CCR2116, CCR2216 routers have highly integrated switches with high-performance CPU and feature-rich packet processors. These devices can be designed into various Ethernet applications including unmanaged switch, Layer 2 managed switch, carrier switch, inter-VLAN router, and wired unified packet processor.
+/ip/route add dst-address=10.0.0.0/24 gateway=ether1 
 
-This article applies to CRS3xx, CRS5xx series switches, CCR2116, CCR2216 routers, and not to CRS1xx/CRS2xx series switches.
-Features
-Forwarding	
+This works only for directly connected networks. Since HW does not know how to send ARP requests,
+CPU sends an ARP request and waits for a reply to find out the DST MAC address on the first received packet of the connection that matches a DST IP address.
+After DST MAC is determined, HW entry is added and all further packets will be processed by the switch chip.
+	7.1
+Bridge	HW	Routing from/to hardware-offloaded bridge interface.	7.1
+VLAN	HW	
 
-    Configurable ports for switching or routing
-    Full non-blocking wire-speed switching
-    Large Unicast FDB for Layer 2 unicast forwarding
-    Forwarding Databases works based on IVL
-    Jumbo frame support
-    IGMP Snooping support
-    DHCP Snooping with Option 82 
-
-Routing	
-
-    Layer 3 Hardware Offloading:
-        IPv4, IPv6 Unicast Routing
-        Supported on Ethernet, Bridge, Bonding, and VLAN interfaces
-        ECMP
-        Blackholes
-        Offloaded Fasttrack connections 1
-        Offloaded NAT for Fasttrack connections 1
-        Multiple MTU profiles
+Routing between VLAN interfaces that are created on hardware-offloaded bridge interface with vlan-filtering.
 
-1. Applies only to certain switch models
-Spanning Tree Protocol	
-
-    STP
-    RSTP
-    MSTP
-    Edge port, BPDU Guard, Root Guard
-
-Mirroring	
-
-    Various types of mirroring:
-        Port based mirroring
-        VLAN based mirroring
-        MAC based mirroring
-        Remote Switch Port Analyzer (RSPAN)
-
-VLAN	
-
-    Fully compatible with IEEE802.1Q and IEEE802.1ad VLAN
-    4k active VLANs
-    Flexible VLAN assignment:
-        Port based VLAN
-        Protocol based VLAN
-        MAC based VLAN
-    VLAN filtering
-    Ingress VLAN translation
-    Multiple VLAN Registration protocol (MVRP)
-
-Bonding	
-
-    Supports 802.3ad (LACP), balance-xor and active-backup modes
-    Up to 8 member ports per bonding interface
-    Hardware automatic failover and load balancing
-    MLAG
+/interface/vlan
 
-Quality of Service (QoS)	
+	7.1
+Bonding	HW	
 
-    Eight output queues per port
-
-    DSCP and 802.1p PCP mapping
-
-    Port based Layer2 and Layer3 trust settings
-
-    Port and Queue based egress rate limiter
-
-    Policy based QoS via ACL rules
-
-    Strict Priority (SP) and Shaped Deficit Weighted Round Robin (SDWRR) queuing
-
-    Enhanced Transmission Selection (ETS) scheduling
-
-    Weighted Random Early Detection (WRED) 1
-
-    Explicit Congestion Notification (ECN) 1
-
-    Priority-based Flow Control (PFC) 1
+Routing between bonding interfaces.
 
-    Resource allocation control (queue, shared-pool and multicast based) with extensive monitoring capabilities
+/interface/bonding
 
-    Compatible with Dante enviroments
+ Only 802.3ad and balance-xor bonding modes are hardware offloaded.
+	7.1
+IPv4 Firewall	FW	Users must choose either HW-accelerated routing or firewall.
+Firewall rules get processed by the CPU. Fasttrack connections get offloaded to HW.	7.1
+IPv4 NAT	FW	NAT rules applied to the offloaded Fasttrack connections get processed by HW too.	7.1
+MLAG	N/A	
+	 
+VRF	N/A	Only the main routing table gets offloaded. If VRF is used together with L3HW and packets arrive on a switch port with l3-hw-offloading=yes, packets can be incorrectly routed through the main routing table. To avoid this, disable L3HW on needed switch ports or use ACL rules to redirect specific traffic to the CPU.	
+VRRP	N/A	
+	
+Controller Bridge and Port Extender	N/A	
+	
+VXLAN	HW	
 
-    Compatible with RDMA over Converged Ethernet (RoCE) enviroment 1
+Support for hardware-offloaded VXLAN data plane, VXLAN encapsulation and decapsulation. This allows for static one-to-one VLAN-to-VXLAN mappings within a vlan-filtering bridge.
 
-    Ingress traffic limiting (port based or via ACL rules)
+At this point, some known features are not yet implemented.
 
-    Traffic storm control
+Underlay (routing encapsulated VXLAN packets):
 
-1. Applies only to certain switch models
-Port isolation	
+1. VTEPs are not supported over ECMP
 
-    Applicable for Private VLAN implementation
+2. VTEPs are not supported over bond, VLAN interface
 
-Access Control List	
+3. VTEPs are not supported over multicast
 
-    Ingress ACL tables
-    Classification based on ports, L2, L3, L4 protocol header fields
-    ACL actions include filtering, forwarding and modifying of the protocol header fields
+4. VTEPs cannot operate within VRFs
 
-PTP	
+5. VTEPs are not supported with IPv6
 
-    Two-step Ordinary Clock and Boundary Clock.
-    Hardware timestamping, ensuring clock syncronization in nanosecond(ns) range.
-    IPv4 and Layer 2 (L2) multicast transport modes.
-    End-to-End (E2E) and Peer-to-Peer (P2P) delay mechanisms.
-    IEEE 1588-2008 (PTPv2)
-    Profile Support for:
-        802.1AS: Audio Video Bridging (AVB) and Time-Sensitive Networking (TSN).
-        AES67: High-performance audio-over-IP interoperability.
-        G.8275.1: Frequency and phase synchronization in PTP-aware networks.
-        SMPTE: Audio/video synchronization in professional broadcast environments
+Overlay (forwarding between Ethernet and VXLAN):
 
-PTP support is hardware-dependent, please refer to the list of supported devices.
+1. VLAN tagging over VXLAN is not supported
 
-For L3 hardware offloading feature support and hardware limits, please refer to Feature Support and Device Support user manuals.
+2. Routing between different VXLAN VNIs is not supported
 
-For QoS hardware offloading feature support and hardware limits, please refer to Quality of Service (QoS) user manuals.
-Models
+3. VTEPs are isolated, and there is no mechanism to control "horizon" between them.
 
-This table clarifies the main differences between Cloud Router Switch models and CCR routers.
-Model	Switch Chip	CPU	Cores	10G SFP+	10G Ethernet	25G SFP28	40G QSFP+	100G QSFP28	ACL rules	Unicast FDB entries	Jumbo Frame (Bytes)
-netPower 15FR (CRS318-1Fi-15Fr-2S)	Marvell-98DX224S	800MHz	1	-	-	-	-	-	128	16,000	10218
-netPower 16P (CRS318-16P-2S+)	Marvell-98DX226S	800MHz	1	2	-	-	-	-	128	16,000	10218
-CRS310-1G-5S-4S+ (netFiber 9/IN)	Marvell-98DX226S	800MHz	1	4	-	-	-	-	128	16,000	10218
-CRS320-8P-8B-4S+RM	Marvell-98DX226S	800MHz	2	4	-
-	-
-	-
-	-
-	128
-	16,000	10218
-CRS304-4XG-IN	Marvell-98DX2528	1200 MHz	2	-	4	-	-	-	128	16,000	10218
-CRS326-24G-2S+ (RM/IN)	Marvell-98DX3236	800MHz	1	2	-	-	-	-	128	16,000	10218
-CRS328-24P-4S+	Marvell-98DX3236	800MHz	1	4	-	-	-	-	128	16,000	10218
-CRS328-4C-20S-4S+	Marvell-98DX3236	800MHz	1	4	-	-	-	-	128	16,000	10218
-CRS305-1G-4S+	Marvell-98DX3236	800MHz	1	4	-	-	-	-	128	16,000	10218
-CRS309-1G-8S+	Marvell-98DX8208	800MHz	2	8	-	-	-	-	1024	32,000	10218
-CRS317-1G-16S+	Marvell-98DX8216	800MHz	2	16	-	-	-	-	1024	128,000	10218
-CRS312-4C+8XG	Marvell-98DX8212	650MHz	1	4 (combo ports)	8 + 4 (combo ports)	-	-	-	512	32,000	10218
-CRS326-24S+2Q+	Marvell-98DX8332	650MHz	1	24	-	-	2	-	256	32,000	10218
-CRS326-4C+20G+2Q+RM	Marvell-98DX8332	650MHz	1
-	4 (combo ports)	-
-	-
-	2	-
-	256	32,000	10218
-CRS354-48G-4S+2Q+	Marvell-98DX3257	650MHz	1	4	-	-	2	-	170	32,000	10218
-CRS354-48P-4S+2Q+	Marvell-98DX3257	650MHz	1	4	-	-	2	-	170	32,000	10218
-CRS504-4XQ (IN/OUT)	Marvell-98DX4310	650MHz	1	-	-	-	-	4	1024	128,000	10218
-CRS510-8XS-2XQ-IN	Marvell-98DX4310	650MHz	1	-	-	8	-	2	1024	128,000	10218
-CRS518-16XS-2XQ	Marvell-98DX8525	650MHz	1	-	-	16	-	2	1024	128,000	10218
-CRS520-4XS-16XQ-RM	Marvell-98CX8410	2000MHz	4
-	-
-	2
-	4
-	-
-	16
-	682
-	256,000
-	9570
-CCR2116-12G-4S+	Marvell-98DX3255	2000MHz	16	4	-	-	-	-	512	32,000	9570
-CCR2216-1G-12XS-2XQ	Marvell-98DX8525	2000MHz	16	-	-	12	-	2	1024	128,000	9570
-Abbreviations
-
-    FDB - Forwarding Database
-    MDB - Multicast Database
-    SVL - Shared VLAN Learning
-    IVL - Independent VLAN Learning
-    PVID - Port VLAN ID
-    ACL - Access Control List
-    CVID - Customer VLAN ID
-    SVID - Service VLAN ID
-
-Port switching
-
-In order to set up a port switching, check the Bridge Hardware Offloading page.
+4. Bridged VXLAN interfaces do not support IGMP snooping. When snooping is enabled, MDB entries on VXLAN are not offloaded, and multicast traffic gets restricted between Ethernet and VXLAN.
 
-Currently, it is possible to create only one bridge with hardware offloading. Use the hw=yes/no parameter to select which bridge will use hardware offloading.
-
+5. Bridged VXLAN interfaces are not supported by MLAG.  
 
-Bridge STP/RSTP/MSTP, IGMP Snooping and VLAN filtering settings don't affect hardware offloading, since RouterOS v6.42 Bonding interfaces are also hardware offloaded.
-VLAN
+/interface/vxlan
 
-Since RouterOS version 6.41, a bridge provides VLAN aware Layer2 forwarding and VLAN tag modifications within the bridge. This set of features makes bridge operation more like a traditional Ethernet switch and allows to overcome Spanning Tree compatibility issues compared to the configuration when tunnel-like VLAN interfaces are bridged. Bridge VLAN Filtering configuration is highly recommended to comply with STP (802.1D), RSTP (802.1w) standards and it is mandatory to enable MSTP (802.1s) support in RouterOS.
-VLAN Filtering
+	7.18
+MTU	HW	The hardware supports up to 8 MTU profiles.	7.1
+QinQ Routing	CPU	Stacked routable VLAN interfaces will lose L3HW offloading, while routable VLAN interfaces created directly on the bridge interface can still use HW offloading.	 
 
-VLAN filtering is described on the Bridge VLAN Filtering section.
+Only the devices listed in the table below support L3 HW Offloading.
+L3HW Device Support
 
-VLAN setup examples
-
-Below are describes some of the most common ways how to utilize VLAN forwarding.
-Port-Based VLAN
-
-The configuration is described on the Bridge VLAN FIltering section.
-MAC Based VLAN
+Only the devices listed in the table below support L3 HW Offloading.
+CRS3xx: Switch DX3000 and DX2000 Series
 
-    The Switch Rule table is used for MAC Based VLAN functionality, see this table on how many rules each device supports.
-    MAC-based VLANs will only work properly between switch ports and not between switch ports and CPU. When a packet is being forwarded to the CPU, the pvid property for the bridge port will be always used instead of new-vlan-id from ACL rules.
-    MAC-based VLANs will not work for DHCP packets when DHCP snooping is enabled.
-
-Enable switching on ports by creating a bridge with enabled hw-offloading:
-/interface bridge
-add name=bridge1 vlan-filtering=yes
-/interface bridge port
-add bridge=bridge1 interface=ether2 hw=yes
-add bridge=bridge1 interface=ether7 hw=yes
-
-Add VLANs in the Bridge VLAN table and specify ports:
-/interface bridge vlan
-add bridge=bridge1 tagged=ether2 untagged=ether7 vlan-ids=200,300,400
-
-Add Switch rules which assign VLAN id based on MAC address:
-/interface ethernet switch rule
-add switch=switch1 ports=ether7 src-mac-address=A4:12:6D:77:94:43/FF:FF:FF:FF:FF:FF new-vlan-id=200
-add switch=switch1 ports=ether7 src-mac-address=84:37:62:DF:04:20/FF:FF:FF:FF:FF:FF new-vlan-id=300
-add switch=switch1 ports=ether7 src-mac-address=E7:16:34:A1:CD:18/FF:FF:FF:FF:FF:FF new-vlan-id=400
-Protocol Based VLAN
+The devices below are based on Marvell 98DX224S, 98DX226S, or 98DX3236 switch chip models.
 
-    The Switch Rule table is used for Protocol Based VLAN functionality, see this table on how many rules each device supports.
-    Protocol-based VLANs will only work properly between switch ports and not between switch ports and CPU. When a packet is being forwarded to the CPU, the pvid property for the bridge port will be always used instead of new-vlan-id from ACL rules.
-    Protocol-based VLANs will not work for DHCP packets when DHCP snooping is enabled.
+Below are some important features that these devices are missing when compared to other switch models:
 
-Enable switching on ports by creating a bridge with enabled hw-offloading:
-/interface bridge
-add name=bridge1 vlan-filtering=yes
-/interface bridge port
-add bridge=bridge1 interface=ether2 hw=yes
-add bridge=bridge1 interface=ether6 hw=yes
-add bridge=bridge1 interface=ether7 hw=yes
-add bridge=bridge1 interface=ether8 hw=yes
+    Fasttrack and NAT connection offloading;
+    per-VLAN packet and byte counters.
 
-Add VLANs in the Bridge VLAN table and specify ports:
-/interface bridge vlan
-add bridge=bridge1 tagged=ether2 untagged=ether6 vlan-ids=200
-add bridge=bridge1 tagged=ether2 untagged=ether7 vlan-ids=300
-add bridge=bridge1 tagged=ether2 untagged=ether8 vlan-ids=400
+The 98DX3255 and 98DX3257 models are exceptions, which have a feature set of the DX8000 rather than the DX3000 series.
+CRS305-1G-4S+	98DX3236	7.1	13312	3328	4K	8
+CRS310-1G-5S-4S+	98DX226S	7.1	13312	3328	4K	8
+CRS310-8G+2S+	98DX226S	7.1	13312	3328	4K	8
+CRS318-1Fi-15Fr-2S	98DX224S	7.1	13312	3328	4K	8
+CRS318-16P-2S+	98DX226S	7.1	13312	3328	4K	8
+CRS320-8P-8B-4S+RM	98DX226S	7.1	13312	3328	4K	8
+CRS326-24G-2S+	98DX3236	7.1	13312	3328	4K	8
+CRS304-4XG-IN	98DX2528	7.1	13312	3328	4K	8
+CRS328-24P-4S+	98DX3236	7.1	13312	3328	4K	8
+CRS328-4C-20S-4S+	98DX3236	7.1	13312	3328	4K	8
+
+1 Since the total amount of routes that can be offloaded is limited, prefixes with higher netmask are preferred to be forwarded by hardware (e.g., /32, /30, /29, etc.), any other prefixes that do not fit in the HW table will be processed by the CPU. Directly connected hosts are offloaded as /32 (IPv4) or /128 (IPv6) route prefixes. The number of hosts is also limited by max-neighbor-entries in IP Settings / IPv6 Settings.
+
+2 IPv4 and IPv6 routing tables share the same hardware memory.
+
+3 If a route has more paths than the hardware ECMP limit (X), only the first X paths get offloaded.
+Partial offloading
+
+In the case of DX3000/DX2000 switch chip serries, it is quite simple: one RouterOS route entry (/ip/route/) reflects into one HW IPv4 route prefix entry. Connected hosts (/32 routes) also occupy the same table. As long as the total number of routes ("ip/route print count-only") + connected host count ("/ip/arp print count-only where status=reachable or status=stale") , 13312 (13k), everything gets offloaded. Exceeding the number, routes with shorter prefixes stay on the CPU.
+CCR2xxx, CRS3xx, CRS5xx: Switch DX8000 and DX4000 Series
+
+The devices below are based on Marvell 98DX8xxx, 98DX4xxx switch chips, or 98DX325x model.
+CRS309-1G-8S+	98DX8208	7.1	16K - 36K	16K	4K - 6K	8K	8K	4.5K	3.9K	+
+CRS312-4C+8XG	98DX8212	7.1	16K - 36K	16K	4K - 6K	8K	8K	2.25K	2.25K	+
+CRS317-1G-16S+	98DX8216	7.1	120K - 240K	64K	30K - 40K	32K	8K	4.5K	4K	+
+CRS326-24S+2Q+	98DX8332	7.1	16K - 36K	16K	4K - 6K	8K	8K	2.25K	2.25K	+
+CRS326-4C+20G+2Q+	98DX8332	7.1	16K - 36K	16K	4K - 6K	8K	8K	2.25K	2.25K	+
+CRS354-48G-4S+2Q+, CRS354-48P-4S+2Q+	98DX3257 6	7.1	16K - 36K	16K	4K - 6K	8K	8K	2.25K	2.25K	+
+CRS504-4XQ	98DX4310	7.1	60K - 120K	64K	15K - 20K	32K	8K	4.5K	4K	+
+CRS510-8XS-2XQ	98DX4310	7.3	60K - 120K	64K	15K - 20K	32K	8K	4.5K	4K	+
+CRS518-16XS-2XQ	98DX8525	7.3	60K - 120K	64K	15K - 20K	32K	8K	4.5K	4K	+
+CRS520-4XS-16XQ-RM	98CX8410	7.3	120K - 240K	64K	30K - 40K	32K	8K	4.5K	4K	+
+CCR2116-12G-4S+	98DX32556	7.1	16K - 36K	16K	4K - 6K	8K	8K	2.25K	2.25K	+
+CCR2216-1G-12XS-2XQ	98DX8525	7.1	60K - 120K	64K	15K - 20K	32K	8k	4.5K	4K	+
+RDS2216-2XG-4S+4XS-2XQ	98DX4310	7.17	60K - 120K	64K	15K - 20K	32K	8K	4.5K	4K	+
+
+1 Depends on the complexity of the routing table. Whole-byte IP prefixes (/8, /16, /24, etc.) occupy less HW space than others (e.g., /22). Starting with RouterOS v7.3, when the Routing HW table gets full, only routes with longer subnet prefixes are offloaded (/30, /29, /28, etc.) while the CPU processes the shorter prefixes. In RouterOS v7.2 and before, Routing HW memory overflow led to undefined behavior. Users can fine-tune what routes to offload via routing filters (for dynamic routes) or suppressing hardware offload of static routes. IPv4 and IPv6 routing tables share the same hardware memory.
+
+2 When the HW limit of Fasttrack or NAT entries is reached, other connections will fall back to the CPU. MikroTik's smart connection offload algorithm ensures that the connections with the most traffic are offloaded to the hardware.
+
+3 Fasttrack connections share the same HW memory with ACL rules. Depending on the complexity, one ACL rule may occupy the memory of 3-6 Fasttrack connections.
+
+4 MPLS shares the HW memory with Fasttrack connections. Moreover, enabling MPLS requires the allocation of the entire memory region, which could otherwise store up to 768 (0.75K) Fasttrack connections. The same applies to the Bridge Port Extender. However, MPLS and BPE may use the same memory region, so enabling them both doesn't double the limitation of Fasttrack connections.
+
+5 If a Fasttrack connection requires Network Address Translation, a hardware NAT entry is created. The hardware supports both SRCNAT and DSTNAT.
+
+6 The switch chip has a feature set of the DX8000 series.
+
+7 DX4000/DX8000 switch chips store directly connected hosts, IPv4 /32, and IPv6 /128 route entries in the FDB table rather than the routing table. The HW memory is shared between regular FDB L2 entries (MAC), IPv4, and IPv6 addresses. The number of hosts is also limited by max-neighbor-entries in IP Settings / IPv6 Settings.
+
+8 IPv4 and IPv6 routing tables share the same hardware memory.
+Partial offloading
+
+The DX8000/DX4000 have entirely different routing tables. Instead of prefixes, we have to offload route indexes. The entire IPv4 address range (same for IPv6) must be indexed, i.e., 0.0.0.0 - 255.255.255.255. Adding new route entries causes index rebuild, increasing hardware memory by 0-5 entries depending on the complexity of the routing table. That's why no exact numbers are given. For example, some routing tables containing 240K entries can be fully offloaded to CRS317 HW, while others with 160K entries barely fit. And you will never know until you try.
+
+When indexing the entire IP address range (0.0.0.0 - 255.255.255.255), you can offload as many routes as needed, as long as you also have a default route (0.0.0.0/0) using the same next-hop.
+
+For example, on a CCR2216 router around 950k routes with a /30 prefix are created, all using the same next-hop along with a default route. As a result, all routes were offloaded, while the lmp-usage remained minimal.
+[admin@MikroTik] > interface/ethernet/switch/l3hw-settings/advanced/monitor 
+        ipv4-routes-total: 942338
+           ipv4-routes-hw: 942326
+          ipv4-routes-cpu:     11
+  ipv4-shortest-hw-prefix:      0
+               ipv4-hosts:      1
+         route-queue-size:      0
+         route-queue-rate:      0
+       route-process-rate:      0
+              nexthop-cap:   8192
+            nexthop-usage:     85
+    vxlan-mtu-packet-drop:      0
+     fasttrack-ipv4-conns:      0
+     fasttrack-queue-size:      0
+     fasttrack-queue-rate:      0
+   fasttrack-process-rate:      0
+   fasttrack-hw-min-speed:      0
+   fasttrack-hw-offloaded:      0
+    fasttrack-hw-unloaded:      0
+                  lpm-cap:  27200
+                lpm-usage:     11
+             lpm-bank-cap:   1360
+           lpm-bank-usage:      1
+                                0
+                                0
+                                0
+                                1
+                                0
+                                0
+                                0
+                                4
+                                0
+                                0
+                                0
+                                5
+                                0
+                                0
+                                0
+                                0
+                                0
+                                0
+                                0
+                  pbr-cap:   8192
+                pbr-usage:      0
+             pbr-lpm-bank:      2
+                nat-usage:      0
+
+However, if there are "gaps" in the address range, such as not using a default route or having multiple next-hops, this consumes HW table. When the routing HW table gets full, only routes with longer subnet prefixes are offloaded (/30, /29, /28, etc.) while the CPU processes the shorter prefixes. Here is what happens when the default route gets disabled or different next-hops are used: only 37k routes with a /30 prefix fit in the HW table. This is the worst-case scenario for the CCR2216.
+[admin@MikroTik] > interface/ethernet/switch/l3hw-settings/advanced/monitor 
+        ipv4-routes-total: 942337
+           ipv4-routes-hw:  37729
+          ipv4-routes-cpu: 904608
+  ipv4-shortest-hw-prefix:     30
+               ipv4-hosts:      1
+         route-queue-size:      0
+         route-queue-rate:      0
+       route-process-rate:      0
+              nexthop-cap:   8192
+            nexthop-usage:     85
+    vxlan-mtu-packet-drop:      0
+     fasttrack-ipv4-conns:      0
+     fasttrack-queue-size:      0
+     fasttrack-queue-rate:      0
+   fasttrack-process-rate:      0
+   fasttrack-hw-min-speed:      0
+   fasttrack-hw-offloaded:      0
+    fasttrack-hw-unloaded:      0
+                  lpm-cap:  27200
+                lpm-usage:  22392
+             lpm-bank-cap:   1360
+           lpm-bank-usage:   1022
+                             1033
+                             1027
+                             1028
+                             1221
+                             1033
+                             1040
+                              678
+                             1358
+                             1245
+                             1254
+                             1242
+                             1246
+                             1249
+                             1273
+                             1260
+                             1101
+                             1024
+                             1031
+                             1027
+                  pbr-cap:   8192
+                pbr-usage:      0
+             pbr-lpm-bank:      2
+                nat-usage:      0
+
+In many cases, the default behavior "offloading only routes with longer subnet prefixes" is not optimal, especially if the ratio of CPU-handled routes to HW-offloaded routes is too high. When this happens, the chances of a packet being hardware-forwarded drop significantly.
+
+If HW memory is insufficient and partial offloading occurs, a better approach for you as a network administrator would be to offload only the routes that carry the most traffic while keeping less demanding routes on the CPU, and not letting the partial offloading to happen.
+
+Fortunately, there are several ways to manage this. There is per-switch-port and static route suppression, and filtering dynamic routes using a wide range of attributes. One example is to use as-path to filter most demanding prefixes (Google, Meta), while all other routes gets L3HW suppressed.
+
+    Sin etiquetas 
 
-Add Switch rules which assign VLAN id based on MAC protocol:
-/interface ethernet switch rule
-add mac-protocol=ip new-vlan-id=200 ports=ether6 switch=switch1
-add mac-protocol=ipx new-vlan-id=300 ports=ether7 switch=switch1
-add mac-protocol=0x80F3 new-vlan-id=400 ports=ether8 switch=switch1
-VLAN Tunneling (Q-in-Q)
-
-Since RouterOS v6.43 it is possible to use a provider bridge (IEEE 802.1ad) and Tag Stacking VLAN filtering, and hardware offloading at the same time. The configuration is described in the Bridge VLAN Tunneling (Q-in-Q) section.
-
-Devices with switch chip Marvell-98DX3257 (e.g. CRS354 series) do not support VLAN filtering on 1Gbps Ethernet interfaces for other VLAN types (0x88a8 and 0x9100).
-Ingress VLAN translation
-
-It is possible to translate a certain VLAN ID to a different VLAN ID using ACL rules on an ingress port. In this example we create two ACL rules, allowing bidirectional communication. This can be done by doing the following.
-
-Create a new bridge and add ports to it with hardware offloading:
-/interface bridge
-add name=bridge1 vlan-filtering=no
-/interface bridge port
-add interface=ether1 bridge=bridge1 hw=yes
-add interface=ether2 bridge=bridge1 hw=yes
-
-Add ACL rules to translate a VLAN ID in each direction:
-/interface ethernet switch rule
-add new-dst-ports=ether2 new-vlan-id=20 ports=ether1 switch=switch1 vlan-id=10
-add new-dst-ports=ether1 new-vlan-id=10 ports=ether2 switch=switch1 vlan-id=20
-
-Add both VLAN IDs to the bridge VLAN table:
-/interface bridge vlan
-add bridge=bridge1 tagged=ether1 vlan-ids=10
-add bridge=bridge1 tagged=ether2 vlan-ids=20
-
-Enable bridge VLAN filtering:
-/interface bridge set bridge1 vlan-filtering=yes
-
-Bidirectional communication is limited only between two switch ports. Translating VLAN ID between more ports can cause traffic flooding or incorrect forwarding between the same VLAN ports.
-
-By enabling vlan-filtering you will be filtering out traffic destined to the CPU, before enabling VLAN filtering you should make sure that you set up a Management port.
-(R/M)STP
-
-CRS3xx, CRS5xx series switches, and CCR2116, CCR2216 routers are capable of running STP, RSTP, and MSTP on a hardware level. For more detailed information you should check out the Spanning Tree Protocol manual page.
-Bonding
-
-CRS3xx, CRS5xx series switches and CCR2116, CCR2216 routers support hardware offloading with bonding interfaces. Only 802.3ad (LACP), balance-xor (static LAG) and active-backup bonding modes are hardware offloaded, other bonding modes will use the CPU's resources. You can find more information about the bonding interfaces in the Bonding Interface section.
-
-To create a hardware offloaded bonding interface, you must create a bonding interface with a supported bonding mode:
-/interface bonding
-add mode=802.3ad name=bond1 slaves=ether1,ether2
-
-This interface can be added to a bridge alongside other interfaces:
-/interface bridge
-add name=bridge
-/interface bridge port
-add bridge=bridge interface=bond1 hw=yes
-add bridge=bridge interface=ether3 hw=yes
-add bridge=bridge interface=ether4 hw=yes
-
-Do not add interfaces to a bridge that are already in a bond, RouterOS will not allow you to add an interface to bridge that is already a slave port for bonding.
-
-Make sure that the bonding interface is hardware offloaded by checking the "H" flag:
-/interface bridge port print 
-Flags: X - disabled, I - inactive, D - dynamic, H - hw-offload 
- #     INTERFACE                                 BRIDGE                                 HW
- 0   H bond1                                     bridge                                 yes
- 1   H ether3                                    bridge                                 yes
- 2   H ether4                                    bridge                                 yes
-
-With HW-offloaded bonding interfaces, the built-in switch chip will always use Layer2+Layer3+Layer4 for a transmit hash policy, changing the transmit hash policy manually will have no effect.
-Multi-chassis Link Aggregation Group
-
-MLAG (Multi-chassis Link Aggregation Group) implementation in RouterOS allows configuring LACP bonds on two separate devices, while the client device believes to be connected on the same machine. This provides a physical redundancy in case of switch failure. All CRS3xx, CRS5xx series and CCR2116, CCR2216 devices can be configured with MLAG. Read here for more information.
-L3 Hardware Offloading
-
-Layer3 hardware offloading (otherwise known as IP switching or HW routing) will allow to offload some of the router features onto the switch chip. This allows reaching wire speeds when routing packets, which simply would not be possible with the CPU. 
-
-Offloaded feature set depends on the used chipset. Read here for more info.
-Port isolation
-
-Since RouterOS v6.43 is it possible to create a Private VLAN setup, an example can be found in the Switch chip port isolation manual page. Hardware offloaded bonding interfaces are not included in the switch port-isolation menu, but it is still possible to configure port-isolation individually on each secondary interface of the bonding.
-
-Port isolation can be used with vlan-filtering bridge and it is possible to isolate ports that are members of the same VLAN. The isolation works per-port, it is not possible to isolate ports per-VLAN.
-
-
-IGMP/MLD Snooping
-
-CRS3xx, CRS5xx series switches and CCR2116, CCR2216 routers are capable of using IGMP/MLD Snooping on a hardware level. To see more detailed information, you should check out the IGMP/MLD snooping manual page.
-DHCP Snooping and DHCP Option 82
-
-CRS3xx, CRS5xx series switches and CCR2116, CCR2216 routers are capable of using DHCP Snooping with Option 82 on a hardware level. The switch will create a dynamic ACL rule to capture the DHCP packets and redirect them to the main CPU for further processing. To see more detailed information, please visit the DHCP Snooping and DHCP Option 82 manual page.
-
-Starting from RouterOS v7.17, DHCP snooping is supported with hardware offloading bonding interfaces.
-Controller Bridge and Port Extender
-
-Controller Bridge (CB) and Port Extender (PE) is an IEEE 802.1BR standard implementation in RouterOS. It allows virtually extending the CB ports with a PE device and managing these extended interfaces from a single controlling device. Such configuration provides a simplified network topology, flexibility, increased port density, and ease of manageability. See more details on Controller Bridge and Port Extender manual.
-Mirroring
-
-Mirroring is a function that allows a network switch to duplicate all the data passing through it and send a copy to another specified port, known as the mirror-target. This feature is useful for setting up a tap device, which allows for analyzing network traffic using a separate device. You can set up mirroring in a simple way by designating source ports (see mirror-egress and mirror-ingress in /interface/ethernet/switch/port), or you can configure more advanced mirroring based on different criteria (see mirror in /interface/ethernet/switch/rule).
-
-It is important to note that the mirror-target port must be on the same switch. You can check the device block diagram or navigate to the /interface/ethernet menu to identify which interfaces are connected where. When setting up the configration, it is not mandatory to add the mirror-target interface to the same hardware offloaded bridge where the source ports are set up. The mirror-target port can be a standalone interface (not configured as a bridge port), or it can be within a bridge setup. When using the mirror-target with a bridge, note that data and mirrored traffic may both travel on the same LAN. In such cases, consider employing RSPAN (Remote Switch Port Analyzer), where mirrored traffic is encapsulated into a separate VLAN before being transmitted over the network.
-
-Additionally, you can set the mirror-target port to a special value "cpu", which means that the copied packets will be sent to the switch chip's CPU port.
-Configuration examples
-Port Based Mirroring
-
-Starting from RouterOS version 7.15, it is possible to configure multiple source ports and selectively choose whether to mirror incoming traffic, outgoing traffic, or both. In this example, both incoming and outgoing traffic from the ether2 interface will be copied and sent to the ether3 interface for monitoring or analysis.
-# Since RouterOS v7.15
-/interface ethernet switch port
-set ether2 mirror-egress=yes mirror-ingress=yes
-/interface ethernet switch
-set switch1 mirror-target=ether3
-
-# Older RouterOS:
-/interface ethernet switch
-set switch1 mirror-source=ether2 mirror-target=ether3
-VLAN Based Mirroring
-
-Using ACL rules, it is possible to mirror packets from multiple interfaces using the ports setting. Additionally, you can specify more detailed criteria such as VLAN ID, MAC/IP address or TCP/UDP port. Only ingress packets are mirrored to mirror-target interface. This example will mirror incoming VLAN 11 traffic from the ether2 interface, and send copies to the ether3 interface. To use an ACL rule with a vlan-id matcher, you need to have bridge vlan-filtering enabled.
-/interface bridge
-set bridge1 vlan-filtering=yes
-/interface ethernet switch
-set switch1 mirror-target=ether3
-/interface ethernet switch rule
-add mirror=yes ports=ether1 switch=switch1 vlan-id=11
-MAC Based Mirroring
-
-This example will mirror incoming traffic with 64:D1:54:D9:27:E6 MAC destination or source address from the ether1 interface, and send copies to the ether3 interface.
-/interface ethernet switch
-set switch1 mirror-target=ether3
-/interface ethernet switch rule
-add mirror=yes ports=ether1 switch=switch1 dst-mac-address=64:D1:54:D9:27:E6/FF:FF:FF:FF:FF:FF
-add mirror=yes ports=ether1 switch=switch1 src-mac-address=64:D1:54:D9:27:E6/FF:FF:FF:FF:FF:FF
-IP Based Mirroring
-
-This example will mirror incoming traffic with 192.168.88.0/24 IP destination or source address from the ether1 interface, and send copies to the ether3 interface.
-/interface ethernet switch
-set switch1 mirror-target=ether3 mirror-source=none
-/interface ethernet switch rule
-add mirror=yes ports=ether1 switch=switch1 src-address=192.168.88.0/24
-add mirror=yes ports=ether1 switch=switch1 dst-address=192.168.88.0/24
-
-There are other options as well, check the ACL section to find out all possible parameters that can be used to match packets.
-Remote Switch Port Analyzer
-
-This example will mirror incomming and outgoing traffic from the ether2 interface, copies will be encapsulated in 802.1Q VLAN using the 999 as VLAN ID, and packets will be sent to the ether3 interface. If the original traffic is already VLAN tagged, RSPAN will add another layer of VLAN tagging as an outer tag. This results in the mirrored traffic being tagged twice. If the mirror-target port is included in vlan-filtering bridge, it is not required to make the interface as tagged VLAN member under the /interface/bridge/vlan menu for the RSPAN.
-/interface ethernet switch port
-set ether2 mirror-egress=yes mirror-ingress=yes
-/interface ethernet switch
-set switch1 mirror-target=ether3 rspan=yes rspan-egress-vlan-id=999 rspan-ingress-vlan-id=999
-Property Reference
-
-Sub-menu: /interface/ethernet/switch
-mirror-target (cpu | name | none; Default: none)	
-
-Selects a single mirroring target port. Packets from mirror-egress and mirror-ingress (/interface/ethernet/switch/port) and mirror (/interface/ethernet/switch/rule) will be sent to the selected port.
-rspan (no | yes; Default: no)	Enables Remote Switch Port Analyzer (RSPAN) feature on mirror-target. Traffic marked for ingress or egress mirroring is carried over a specified remote analyzer VLAN - rspan-egress-vlan-id and rspan-ingress-vlan-id.
-rspan-egress-vlan-id (integer: 1..4095; Default: 1)	Selects the VLAN ID for marked egress traffic. Only applies when rspan is enabled.
-rspan-ingress-vlan-id (integer: 1..4095; Default: 1)	Selects the VLAN ID for marked ingress traffic. Only applies when rspan is enabled.
-
-Sub-menu: /interface/ethernet/switch/port
-mirror-egress (no | yes; Default: no)	
-
-Whether to send egress packet copy to the mirror-target port.
-mirror-ingress (no | yes; Default: no)	
-
-Whether to send ingress packet copy to the mirror-target port.
-
-Sub-menu: /interface/ethernet/switch/rule
-mirror (no | yes; Default: no)	Whether to send a packet copy to mirror-target port.
-Traffic Shaping
-
-It is possible to limit ingress traffic that matches certain parameters with ACL rules and it is possible to limit ingress/egress traffic per port basis. The policer is used for ingress traffic, the shaper is used for egress traffic. The ingress policer controls the received traffic with packet drops. Everything that exceeds the defined limit will get dropped. This can affect the TCP congestion control mechanism on end hosts and achieved bandwidth can be actually less than defined. The egress shaper tries to queue packets that exceed the limit instead of dropping them. Eventually, it will also drop packets when the output queue gets full, however, it should allow utilizing the defined throughput better.
-
-Port-based traffic police and shaper:
-/interface ethernet switch port
-set ether1 ingress-rate=10M egress-rate=5M
-
-MAC-based traffic policer:
-/interface ethernet switch rule
-add ports=ether1 switch=switch1 src-mac-address=64:D1:54:D9:27:E6/FF:FF:FF:FF:FF:FF rate=10M
-
-VLAN-based traffic policer:
-/interface bridge
-set bridge1 vlan-filtering=yes
-/interface ethernet switch rule
-add ports=ether1 switch=switch1 vlan-id=11 rate=10M
-
-By enabling vlan-filtering you will be filtering out traffic destined to the CPU, before enabling VLAN filtering you should make sure that you set up a Management port.
-
-Protocol-based traffic policer:
-/interface ethernet switch rule
-add ports=ether1 switch=switch1 mac-protocol=ipx rate=10M
-
-There are other options as well, check the ACL section to find out all possible parameters that can be used to match packets.
-
-The Switch Rule table is used for QoS functionality, see this table on how many rules each device supports.
-
-Due to hardware limitations, the egress-rate and storm-rate settings do not work correctly on 10Gbps switch ports when they are linked at 10/100Mbps, 1/2.5/5Gbps. This applies to 98DX224S, 98DX226S, 98DX2528, 98DX3236 switch chips.
-Traffic Storm Control
-
-Since RouterOS v6.42 it is possible to enable traffic storm control. A traffic storm can emerge when certain frames are continuously flooded on the network. Storm control settings is generally configured on non-uplink ports to restrict incoming storm traffic on those specific ports. This helps safeguard the entire switch and its connected ports by minimizing the impact of traffic storms across the network. 
-
-For example, if a network loop has been created and no loop avoidance mechanisms are used (e.g. Spanning Tree Protocol), broadcast or multicast frames can quickly overwhelm the network, causing degraded network performance or even complete network breakdown. With CRS3xx, CRS5xx series switches and CCR2116, CCR2216 routers it is possible to limit broadcast, unknown multicast and unknown unicast traffic. Unknown unicast traffic is considered when a switch does not contain a host entry for the destined MAC address. Unknown multicast traffic is considered when a switch does not contain a multicast group entry in the /interface bridge mdb menu. Storm control settings should be applied to ingress ports, the egress traffic will be limited.
-
-The storm control parameter is specified in percentage (%) of the link speed. If your link speed is 1Gbps, then specifying storm-rate as 10 will allow only 100Mbps of broadcast, unknown multicast and/or unknown unicast traffic to be forwarded.
-
-Sub-menu: /interface ethernet switch port
-limit-broadcasts (yes | no; Default: yes)	Limit broadcast traffic on a switch port.
-limit-unknown-multicasts (yes | no; Default: no)	Limit unknown multicast traffic on a switch port.
-limit-unknown-unicasts (yes | no; Default: no)	Limit unknown unicast traffic on a switch port.
-storm-rate (integer 0..100; Default: 100)	Amount of broadcast, unknown multicast and/or unknown unicast traffic is limited to in percentage of the link speed.
-
-Devices with 98DX224S, 98DX226S, 98DX2528, 98DX3236 switch chip cannot distinguish unknown multicast traffic from all multicast traffic. For example, CRS326-24G-2S+ will limit all multicast traffic when limit-unknown-multicasts and storm-rate is used. For other devices, for example, CRS317-1G-16S+ the limit-unknown-multicasts parameter will limit only unknown multicast traffic (addresses that are not present in /interface bridge mdb).
-
-For example, to limit 1% (10Mbps) of broadcast and unknown unicast traffic on ether1 (1Gbps), use the following commands:
-/interface ethernet switch port
-set ether1 storm-rate=1 limit-broadcasts=yes limit-unknown-unicasts=yes
-
-Due to hardware limitations, the egress-rate and storm-rate settings do not work correctly on 10Gbps switch ports when they are linked at 10/100Mbps, 1/2.5/5Gbps. This applies to 98DX224S, 98DX226S, 98DX2528, 98DX3236 switch chips.
-MPLS hardware offloading
-
-Since RouterOS v6.41 it is possible to offload certain MPLS functions to the switch chip, the switch must be a (P)rovider router in a PE-P-PE setup in order to achieve hardware offloading. A setup example can be found in the Basic MPLS setup example manual page. The hardware offloading will only take place when LDP interfaces are configured as physical switch interfaces (e.g. Ethernet, SFP, SFP+).
-
-Currently only CRS317-1G-16S+ and CRS309-1G-8S+ using RouterOS v6.41 and newer are capable of hardware offloading certain MPLS functions. CRS317-1G-16S+ and CRS309-1G-8S+ built-in switch chip is not capable of popping MPLS labels from packets, in a PE-P-PE setup you either have to use explicit null or disable TTL propagation in MPLS network to achieve hardware offloading.
-
-The MPLS hardware offloading has been removed since RouterOS v7.
-Switch Rules (ACL)
-
-Access Control List contains ingress policy and egress policy engines. See this table on how many rules each device supports. It is an advanced tool for wire-speed packet filtering, forwarding and modifying based on Layer2, Layer3 and Layer4 protocol header field conditions.
-
-ACL rules are checked for each received packet until a match has been found. If there are multiple rules that can match, then only the first rule will be triggered. A rule without any action parameters is a rule to accept the packet.
-
-It is not required to set mac-protocol to certain IP version when using L3 or L4 matchers, however, it is recommended to set the mac-protocol=ip or mac-protocol=ipv6  when filtering any IP packets.
-
-When switch ACL rules are modified (e.g. added, removed, disabled, enabled, or moved), the existing switch rules will be inactive for a short time. This can cause some packet leakage during the ACL rule modifications.
-
-
-Sub-menu: /interface ethernet switch rule
-copy-to-cpu (no | yes; Default: no)	Clones the matching packet and sends it to the CPU.
-disabled (yes | no; Default: no)	Enables or disables ACL entry.
-dscp (0..63)	Matching the DSCP field of the packet (only applies to IPv4 packets).
-dst-address (IP address/Mask)	Matching destination IPv4 address and mask, also matches the destination IP in ARP packets. 
-dst-address6 (IPv6 address/Mask)	Matching destination IPv6 address and mask.
-dst-mac-address (MAC address/Mask)	Matching destination MAC address and mask.
-dst-port (0..65535)	Matching destination protocol port number (applies to IPv4 and IPv6 packets if mac-protocol is not specified).
-flow-label (0..1048575)	Matching IPv6 flow label.
-mac-protocol (802.2 | arp | capsman | dot1x | homeplug-av | ip | ipv6 | ipx | lacp | lldp | loop-protect | macsec | mpls-multicast | mpls-unicast | packing-compr | packing-simple | pppoe | pppoe-discovery | rarp | romon | service-vlan | vlan | or 0..65535 | or 0x0000-0xffff)	Matching particular MAC protocol specified by protocol name or number
-mirror (no | yes)	Clones the matching packet and sends it to the mirror-target port.
-new-dst-ports (ports | bond | all)	
-
-Changes the destination port to the specified value:
-
-    If the setting is left empty (e.g. new-dst-ports=""), the packet will be dropped;
-    If a port or  hardware-offloaded bonding interface is specified, the packet will be redirected to that port. Only single port or bond interface is supported;
-    if you use the all argument, packet will be allowed to pass through to the egress processing without being dropped;
-    If this parameter is not used, the packet will be accepted as is.
-
-new-vlan-id (0..4095)	Changes the VLAN ID to the specified value. Requires vlan-filtering=yes.
-new-vlan-priority (0..7)	Changes the VLAN priority (priority code point). Requires vlan-filtering=yes.
-ports (ports | bond)	Matching switch interfaces where the rule will apply to incoming traffic. Multiple ports and hardware-offloaded bonding interfaces can be selected. Note that the switch1-cpu port cannot be selected. If ports property is left empty, the rule will apply to all switch interfaces.
-protocol (dccp | ddp | egp | encap | etherip | ggp | gre | hmp | icmp | icmpv6 | idpr-cmtp | igmp | ipencap | ipip | ipsec-ah | ipsec-esp | ipv6 | ipv6-frag | ipv6-nonxt | ipv6-opts | ipv6-route | iso-tp4 | l2tp | ospf | pim | pup | rdp | rspf | rsvp | sctp | st | tcp | udp | udp-lite | vmtp | vrrp | xns-idp | xtp | or 0..255)	Matching particular IP protocol specified by protocol name or number. Only applies to IPv4 packets if mac-protocol is not specified. To match certain IPv6 protocols, use the mac-protocol=ipv6 setting.
-rate (0..4294967295)	Sets ingress traffic limitation (bits per second) for matched traffic.
-redirect-to-cpu (no | yes)	Changes the destination port of a matching packet to the CPU.
-src-address (IP address/Mask)	Matching source IPv4 address and mask, also matches the source IP in ARP packets. 
-src-address6 (IPv6 address/Mask)	Matching source IPv6 address and mask.
-src-mac-address (MAC address/Mask)	Matching source MAC address and mask.
-src-port (0..65535)	Matching source protocol port number (applies to IPv4 and IPv6 packets if mac-protocol is not specified).
-switch (switch group)	Matching switch group on which will the rule apply.
-traffic-class (0..255)	Matching IPv6 traffic class.
-vlan-id (0..4095)	Matching VLAN ID. Requires vlan-filtering=yes.
-vlan-header (not-present | present)	Matching VLAN header, whether the VLAN header is present or not. Requires vlan-filtering=yes.
-vlan-priority (0..7)	Matching VLAN priority (priority code point).
-
-Action parameters:
-
-    copy-to-cpu
-    redirect-to-cpu
-    mirror
-    new-dst-ports (can be used to drop packets)
-    new-vlan-id
-    new-vlan-priority
-    rate
-
-Layer2 condition parameters:
-
-    dst-mac-address
-    mac-protocol
-    src-mac-address
-    vlan-id
-    vlan-header
-    vlan-priority
-
-Layer3 condition parameters:
-
-    dscp
-    protocol
-    IPv4 conditions:
-        dst-address
-        src-address
-    IPv6 conditions:
-        dst-address6
-        flow-label
-        src-address6
-        traffic-class
-
-Layer4 condition parameters:
-
-    dst-port
-    src-port
-
-
-For VLAN related matchers or VLAN related action parameters to work, you need to enable vlan-filtering on the bridge interface and make sure that hardware offloading is enabled on those ports, otherwise, these parameters will not have any effect.
-
-When bridge interface ether-type is set to 0x8100, then VLAN related ACL rules are relevant to frames tagged using regular/customer VLAN (TPID 0x8100), this includes vlan-id and new-vlan-id. When bridge interface ether-type is set to 0x88a8, then ACL rules are relevant to frames tagged with 802.1ad service tag (TPID 0x88a8).
-Port Security
-
-It is possible to limit allowed MAC addresses on a single switch port. For example, to allow 64:D1:54:81:EF:8E MAC address on a switch port, start by switching multiple ports together, in this example 64:D1:54:81:EF:8E is going to be located behind ether1. 
-
-Create an ACL rule to allow the given MAC address and drop all other traffic on ether1 (for ingress traffic):
-/interface ethernet switch rule
-add ports=ether1 src-mac-address=64:D1:54:81:EF:8E/FF:FF:FF:FF:FF:FF switch=switch1
-add new-dst-ports="" ports=ether1 switch=switch1
-
-Switch all required ports together, disable MAC learning and disable unknown unicast flooding on ether1:
-/interface bridge
-add name=bridge1
-/interface bridge port
-add bridge=bridge1 interface=ether1 hw=yes learn=no unknown-unicast-flood=no
-add bridge=bridge1 interface=ether2 hw=yes
-
-Add a static hosts entry for 64:D1:54:81:EF:8E (for egress traffic):
-/interface bridge host
-add bridge=bridge1 interface=ether1 mac-address=64:D1:54:81:EF:8E
-
-Broadcast traffic will still be sent out from ether1. To limit broadcast traffic flood on a bridge port, you can use the broadcast-flood parameter to toggle it. Do note that some protocols depend on broadcast traffic, such as streaming protocols and DHCP.
-Dual Boot
-
-The “dual boot” feature allows you to choose which operating system you prefer to use on CRS3xx series switches, RouterOS or SwOS. Device operating system could be changed using:
-
-    Command-line (/system routerboard settings set boot-os=swos)
-    Winbox
-    Webfig
-    Serial Console
-
-More details about SwOS are described here: SwOS manual
-Configuring SwOS using RouterOS
-
-Since RouterOS 6.43 it is possible to load, save and reset SwOS configuration, as well as upgrade SwOS and set an IP address for the CRS3xx series switches by using RouterOS.
-
-    Save configuration with /system swos save-config
-
-The configuration will be saved on the same device with swos.config as a filename, make sure you download the file from your device since the configuration file will be removed after a reboot.
-
-    Load configuration with /system swos load-config
-    Change password with /system swos password
-    Reset configuration with /system swos reset-config
-    Upgrade SwOS from RouterOS using /system swos upgrade
-
-The upgrade command will automatically install the latest available SwOS primary backup version, make sure that your device has access to the Internet in order for the upgrade process to work properly. When the device is booted into SwOS, the version number will include the letter "p", indicating a primary backup version. You can then install the latest available SwOS secondary main version from the SwOS "Upgrade" menu.
-
-Starting from RouterOS version 7.17 device-mode restricts SwOS/RouterOS transition for dual-boot; in order to enable: system/device-mode/update routerboard=yes
-address-acquisition-mode (dhcp-only | dhcp-with-fallback | static; Default: dhcp-with-fallback)	Changes address acquisition method:
-
-dhcp-only - uses only a DHCP client to acquire address
-
-dhcp-with-fallback - for the first 10 seconds will try to acquire address using a DHCP client. If the request is unsuccessful, then address falls back to static as defined by static-ip-address property
-
-static - address is set as defined by static-ip-address property
-allow-from (IP/Mask; Default: 0.0.0.0/0)	IP address or a network from which the switch is accessible. By default, the switch is accessible by any IP address.
-allow-from-ports (name; Default: )	List of switch ports from which the device is accessible. By default, all ports are allowed to access the switch
-allow-from-vlan (integer: 0..4094; Default: 0)	VLAN ID from which the device is accessible. By default, all VLANs are allowed
-identity (name; Default: Mikrotik)	Name of the switch (used for Mikrotik Neighbor Discovery protocol)
-static-ip-address (IP; Default: 192.168.88.1)	IP address of the switch in case address-acquisition-mode is either set to dhcp-with-fallback or static. By setting a static IP address, the address acquisition process does not change, which is DHCP with fallback by default. This means that the configured static IP address will become active only when there is going to be no DHCP servers in the same broadcast domain
-See also
-
-CRS Router
-
-CRS3xx VLANs with Bonds
-
-Basic VLAN switching
-
-Bridge Hardware Offloading
-
-Route Hardware Offloading
-
-Spanning Tree Protocol
-
-MTU on RouterBOARD
-
-Layer2 misconfiguration
-
-Bridge VLAN Table
-
-Bridge IGMP/MLD snooping
-
-Multi-chassis Link Aggregation Group
-
-
-
-    Creado por Edgars P., actualizado por última vez el oct 04, 2024 28 min de lectura
-
-    Summary
-    Cloud Router Switch models
-    Abbreviations and Explanations
-    Port Switching
-        Multiple switch groups
-    Global Settings
-    Port Settings
-    Forwarding Databases
-        Unicast FDB
-        Multicast FDB
-        Reserved FDB
-    VLAN
-        VLAN Table
-        Egress VLAN Tag
-        Ingress/Egress VLAN Translation
-        Protocol Based VLAN
-        MAC Based VLAN
-        1:1 VLAN Switching
-    Port Isolation/Leakage
-    Trunking
-    Quality of Service
-        Shaper
-        Ingress Port Policer
-        QoS Group
-        DSCP QoS Map
-        DSCP To DSCP Map
-        Policer QoS Map
-    Access Control List
-        ACL Policer
-    See also
-
-Summary
-
-The Cloud Router Switch series are highly integrated switches with high-performance MIPS CPU and feature-rich packet processors. The CRS switches can be designed into various Ethernet applications including unmanaged switch, Layer 2 managed switch, carrier switch, and wireless/wired unified packet processing. See Cloud Router Switch configuration examples
-
-This article applies to CRS1xx and CRS2xx series switches and not to CRS3xx series switches. For CRS3xx series devices, read the CRS3xx, CRS5xx series switches and CCR2116, CCR2216 routers manual.
-
-
-Forwarding	
-
-    Configurable ports for switching or routing
-    Full non-blocking wire-speed switching
-    Up to 16k MAC entries in Unicast FDB for Layer 2 unicast forwarding
-    Up to 1k MAC entries in Multicast FDB for multicast forwarding
-    Up to 256 MAC entries in Reserved FDB for control and management purposes
-    All Forwarding Databases support IVL and SVL
-    Configurable Port-based MAC learning limit
-    Jumbo frame support (CRS1xx: 4064 Bytes; CRS2xx: 9204 Bytes)
-    IGMP Snooping support
-
-Mirroring	
-
-    Various types of mirroring:
-        Port-based mirroring
-        VLAN-based mirroring
-        MAC-based mirroring
-    2 independent mirroring analyzer ports
-
-VLAN	
-
-    Fully compatible with IEEE802.1Q and IEEE802.1ad VLAN
-    4k active VLANs
-    Flexible VLAN assignment:
-        Port-based VLAN
-        Protocol-based VLAN
-        MAC-based VLAN
-    From any to any VLAN translation and swapping
-    1:1 VLAN switching - VLAN to port mapping
-    VLAN filtering
-
-Port Isolation and Leakage	
-
-    Applicable for Private VLAN implementation
-    3 port profile types: Promiscuous, Isolated, and Community
-    Up to 28 Community profiles
-    Leakage profiles allow bypassing egress VLAN filtering
-
-Trunking	
-
-    Supports static link aggregation groups
-    Up to 8 Port Trunk groups
-    Up to 8 member ports per Port Trunk group
-    Hardware automatic failover and load balancing
-
-Quality of Service (QoS)	
-
-    Flexible QoS classification and assignment:
-        Port-based
-        MAC-based
-        VLAN-based
-        Protocol-based
-        PCP/DEI based
-        DSCP based
-        ACL based
-    QoS remarking and remapping for QoS domain translation between a service provider and client networks
-    Overriding of each QoS assignment according to the configured priority
-
-Shaping and Scheduling	
-
-    8 queues on each physical port
-    Shaping per port, per queue, per queue group
-
-Access Control List	
-
-    Ingress and Egress ACL tables
-    Up to 128 ACL rules (limited by RouterOS)
-    Classification based on ports, L2, L3, L4 protocol header fields
-    ACL actions include filtering, forwarding, and modifying the protocol header fields
-
-Cloud Router Switch models
-
-This table clarifies the main differences between Cloud Router Switch models.
-Model	Switch Chip	CPU	Wireless	SFP+ port	Access Control List	Jumbo Frame (Bytes)
-CRS105-5S-FB	QCA-8511	400MHz	-	-	+	9204
-CRS106-1C-5S	QCA-8511	400MHz	-	-	+	9204
-CRS112-8G-4S	QCA-8511	400MHz	-	-	+	9204
-CRS210-8G-2S+	QCA-8519	400MHz	-	+	+	9204
-CRS212-1G-10S-1S+	QCA-8519	400MHz	-	+	+	9204
-CRS226-24G-2S+	QCA-8519	400MHz	-	+	+	9204
-CRS125-24G-1S	QCA-8513L	600MHz	-	-	-	4064
-CRS125-24G-1S-2HnD	QCA-8513L	600MHz	+	-	-	4064
-CRS109-8G-1S-2HnD	QCA-8513L	600MHz	+	-	-	4064
-Abbreviations and Explanations
-
-CVID - Customer VLAN id: inner VLAN tag id of the IEEE 802.1ad frame
-
-SVID - Service VLAN id: outer VLAN tag id of the IEEE 802.1ad frame
-
-IVL - Independent VLAN learning - learning/lookup is based on both MAC addresses and VLAN IDs.
-
-SVL - Shared VLAN learning - learning/lookup is based on MAC addresses - not on VLAN IDs.
-
-TPID - Tag Protocol Identifier
-
-PCP - Priority Code Point: a 3-bit field which refers to the IEEE 802.1p priority
-
-DEI - Drop Eligible Indicator
-
-DSCP - Differentiated services Code Point
-
-Drop precedence - internal CRS switch QoS attribute used for packet enqueuing or dropping.
-Port Switching
-
-To set up port switching on CRS1xx/2xx series switches, check the Bridge Hardware Offloading page.
-
-Dynamic reserved VLAN entries (VLAN4091; VLAN4090; VLAN4089; etc.) are created in the CRS switch when switched port groups are added when a hardware offloaded bridge is created. These VLANs are necessary for internal operation and have lower precedence than user-configured VLANs.
-Multiple switch groups
-
-The CRS1xx/2xx series switches allow you to use multiple bridges with hardware offloading, this allows you to easily isolate multiple switch groups. This can be done by simply creating multiple bridges and enabling hardware offloading.
-
-Multiple hardware offloaded bridge configuration is designed as a fast and simple port isolation solution, but it limits a part of the VLAN functionality supported by the CRS switch chip. For advanced configurations use one bridge within the CRS switch chip for all ports, configure VLANs, and isolate port groups with port isolation profile configuration.
-
-
-CRS1xx/2xx series switches can run multiple hardware offloaded bridges with (R)STP enabled, but it is not recommended since the device is not designed to run multiple (R)STP instances on a hardware level. To isolate multiple switch groups and have (R)STP enabled you should isolate port groups with port isolation profile configuration.
-Global Settings
-
-The CRS switch chip is configurable from the /interface ethernet switch console menu.
-
-Sub-menu: /interface ethernet switch
-name (string value; Default: switch1)	Name of the switch.
-bridge-type (customer-vid-used-as-lookup-vid | service-vid-used-as-lookup-vid; Default: customer-vid-used-as-lookup-vid)	The bridge type defines which VLAN tag is used as Lookup-VID. Lookup-VID serves as the VLAN key for all VLAN-based lookups.
-mac-level-isolation (yes | no; Default: yes)	Globally enables or disables MAC level isolation. Once enabled, the switch will check the source and destination MAC address entries and their isolation-profile from the unicast forwarding table. By default, the switch will learn MAC addresses and place them into a promiscuous isolation profile. Other isolation profiles can be used when creating static unicast entries. If the source or destination MAC address is located on a promiscuous isolation profile, the packet is forwarded. If both source and destination MAC addresses are located on the same community1 or community2 isolation profile, the packet is forwarded. The packet is dropped when the source and destination MAC address isolation profile is isolated, or when the source and destination MAC address isolation profiles are from different communities (e.g. source MAC address is community1 and destination MAC address is community2). When MAC level isolation is globally disabled, the isolation is bypassed.
-use-svid-in-one2one-vlan-lookup (yes | no; Default: no)	Whether to use service VLAN ID for 1:1 VLAN switching lookup.
-use-cvid-in-one2one-vlan-lookup (yes | no; Default: yes)	Whether to use customer VLAN ID for 1:1 VLAN switching lookup.
-multicast-lookup-mode
-
-(dst-ip-and-vid-for-ipv4 | dst-mac-and-vid-always;
-Default:dst-ip-and-vid-for-ipv4)	Lookup mode for IPv4 multicast bridging.
-
-    dst-mac-and-vid-always - For all packet types lookup key is the destination MAC and VLAN ID.
-    dst-ip-and-vid-for-ipv4 - For IPv4 packets lookup key is the destination IP and VLAN ID. For other packet types, the lookup key is the destination MAC and VLAN ID.
-
-unicast-fdb-timeout (time interval; Default: 5m)	Timeout for Unicast FDB entries.
-override-existing-when-ufdb-full (yes | no; Default: no)	Enable or disable to override existing entry which has the lowest aging value when UFDB is full.
-
-
-drop-if-no-vlan-assignment-on-ports (ports; Default: none)	Ports which drop frames if no MAC-based, Protocol-based VLAN assignment or Ingress VLAN Translation is applied.
-drop-if-invalid-or-src-port-
--not-member-of-vlan-on-ports
-(ports; Default: none)	Ports that drop invalid and other port VLAN ID frames.
-unknown-vlan-lookup-mode (ivl | svl; Default: svl)	Lookup and learning mode for packets with invalid VLAN.
-forward-unknown-vlan (yes | no; Default: yes)	Whether to allow forwarding VLANs that are not members of the VLAN table.
-
-
-bypass-vlan-ingress-filter-for (protocols; Default: none)	Protocols that are excluded from Ingress VLAN filtering. These protocols are not dropped if they have invalid VLAN. (arp, dhcpv4, dhcpv6,
-eapol, igmp, mld, nd, pppoe-discovery, ripv1)
-bypass-ingress-port-policing-for (protocols; Default: none)	Protocols that are excluded from Ingress Port Policing. (arp, dhcpv4, dhcpv6, eapol, igmp, mld, nd, pppoe-discovery, ripv1)
-bypass-l2-security-check-filter-for (protocols; Default: none)	Protocols that are excluded from Policy rule security check. (arp, dhcpv4, dhcpv6, eapol, igmp, mld, nd, pppoe-discovery, ripv1)
-
-
-ingress-mirror0 (port | trunk,format; Default: none,modified)	The first ingress mirroring analyzer port or trunk and mirroring format:
-
-    analyzer-configured - The packet is the same as the packet to the destination. VLAN format is modified based on the VLAN configurations of the analyzer port.
-    modified - The packet is the same as the packet to the destination. VLAN format is modified based on the VLAN configurations of the egress port.
-    original - Traffic is mirrored without any change to the original incoming packet format. But the service VLAN tag is stripped in the edge port.
-
-ingress-mirror1 (port | trunk,format; Default: none,modified)	The second ingress mirroring analyzer port or trunk and mirroring format:
-
-    analyzer-configured - The packet is the same as the packet to the destination. VLAN format is modified based on the VLAN configurations of the analyzer port.
-    modified - The packet is the same as the packet to the destination. VLAN format is modified based on the VLAN configurations of the egress port.
-    original - Traffic is mirrored without any change to the original incoming packet format. But the service VLAN tag is stripped in the edge port.
-
-ingress-mirror-ratio (1/32768..1/1; Default: 1/1)	The proportion of ingress mirrored packets compared to all packets.
-egress-mirror0 (port | trunk,format; Default: none,modified)	The first egress mirroring analyzer port or trunk and mirroring format:
-
-    analyzer-configured - The packet is the same as the packet to the destination. VLAN format is modified based on the VLAN configurations of the analyzer port.
-    modified - The packet is the same as the packet to the destination. VLAN format is modified based on the VLAN configurations of the egress port.
-    original - Traffic is mirrored without any change to the original incoming packet format. But the service VLAN tag is stripped in the edge port.
-
-egress-mirror1 (port | trunk,format; Default: none,modified)	The second egress mirroring analyzer port or trunk and mirroring format:
-
-    analyzer-configured - The packet is the same as the packet to the destination. VLAN format is modified based on the VLAN configurations of the analyzer port.
-    modified - The packet is the same as the packet to the destination. VLAN format is modified based on the VLAN configurations of the egress port.
-    original - Traffic is mirrored without any change to the original incoming packet format. But the service VLAN tag is stripped in the edge port.
-
-egress-mirror-ratio (1/32768..1/1; Default: 1/1)	Proportion of egress mirrored packets compared to all packets.
-mirror-egress-if-ingress-mirrored (yes | no; Default: no)	When a packet is applied to both ingress and egress mirroring, only ingress mirroring is performed on the packet, if this setting is disabled. If this
-setting is enabled both mirroring types are applied.
-mirror-tx-on-mirror-port (yes | no; Default: no)	
-mirrored-packet-qos-priority (0..7; Default: 0)	Remarked priority in mirrored packets.
-mirrored-packet-drop-precedence (drop | green | red | yellow; Default: green)	Remarked drop precedence in mirrored packets. This QoS attribute is used for mirrored packet enqueuing or dropping.
-fdb-uses (mirror0 | mirror1; Default: mirror0)	Analyzer port used for FDB-based mirroring.
-vlan-uses (mirror0 | mirror1; Default: mirror0)	Analyzer port used for VLAN-based mirroring.
-Port Settings
-
-Sub-menu: /interface ethernet switch port
-vlan-type (edge-port | network-port; Default: network-port)	Port VLAN type specifies whether VLAN ID is used in UFDB learning. The network port learns VLAN ID in UFDB, edge port does not - VLAN 0. It can be observed only in IVL learning mode.
-isolation-leakage-profile-override (yes | no; Default:
-
-!isolation-leakage-profile-override)
-isolation-leakage-profile (0..31;)	Custom port profile for port isolation/leakage configurations.
-
-    Port-level isolation profile 0. Uplink port - allows the port to communicate with all ports in the device.
-    Port-level isolation profile 1. Isolated port - allows the port to communicate only with uplink ports.
-    Port-level isolation profile 2 - 31. Community port - allows communication among the same community ports and uplink ports.
-
-learn-override (yes | no; Default: !learn-override)
-learn-limit (1..1023; Default: !learn-limit)	Enable or disable MAC address learning and set the MAC limit on the port. MAC learning limit is disabled by default when !learn-override and !learn-limit are set. Property learn-override is replaced with learn under /interface bridge port menu since RouterOS v6.42.
-drop-when-ufdb-entry-src-drop (yes | no; Default: yes)	Enable or disable to drop packets when UFDB entry has action src-drop.
-allow-unicast-loopback (yes | no; Default: no)	Unicast loopback on port. When enabled, it permits sending back when the source port and destination port are the same for known unicast packets.
-allow-multicast-loopback (yes | no; Default: no)	Multicast loopback on port. When enabled, it permits sending back when the source port and destination port are the same for registered multicast or broadcast packets.
-action-on-static-station-move (copy-to-cpu | drop | forward | redirect-to-cpu; Default: forward)	Action for packets when UFDB already contains a static entry with such MAC but with a different port.
-drop-dynamic-mac-move (yes | no; Default: no)	Prevents MAC relearning until UFDB timeout if MAC is already learned on another port.
-
-
-allow-fdb-based-vlan-translate (yes | no; Default: no)	Enable or disable MAC-based VLAN translation on the port.
-allow-mac-based-service-vlan-assignment-for (all-frames | none |
-
-tagged-frame-only | untagged-and-priority-tagged-frame-only; Default:
-none)	Frame type for which applies MAC-based service VLAN translation.
-allow-mac-based-customer-vlan-assignment-for (all-frames | none |
-
-tagged-frame-only | untagged-and-priority-tagged-frame-only; Default:
-none)	Frame type for which applies MAC-based customer VLAN translation.
-default-customer-pcp (0..7; Default: 0)	Default customer PCP of the port.
-default-service-pcp (0..7; Default: 0)	Default service PCP of the port.
-pcp-propagation-for-initial-pcp (yes | no; Default: no)	Enables or disables PCP propagation for initial PCP assignment on ingress.
-
-    If the port vlan-type is Edge port, the service PCP is copied from the customer PCP.
-    If the port vlan-type is a Network port, the customer PCP is copied from the service PCP.
-
-filter-untagged-frame (yes | no; Default: no)	Whether to filter untagged frames on the port.
-filter-priority-tagged-frame (yes | no; Default: no)	Whether to filter tagged frames with priority on the port.
-filter-tagged-frame (yes | no; Default: no)	Whether to filter tagged frames on the port.
-
-
-egress-vlan-tag-table-lookup-key (according-to-bridge-type | egress-vid; Default: egress-vid)	Egress VLAN table (VLAN Tagging) lookup:
-
-    egress-vid - Lookup VLAN ID is CVID when Edge port is configured, SVID when Network port is configured.
-    according-to-bridge-type - Lookup VLAN ID is CVID when customer VLAN bridge is configured, SVID when service VLAN bridge is configured. The Customer tag is unmodified for Edge port in service VLAN bridge.
-
-egress-vlan-mode (tagged | unmodified | untagged; Default: unmodified)	Egress VLAN tagging action on the port.
-egress-pcp-propagation (yes | no; Default: no)	Enables or disables egress PCP propagation.
-
-    If the port vlan-type is Edge port, the service PCP is copied from the customer PCP.
-    If the port vlan-type is Network port, the customer PCP is copied from the service PCP.
-
-
-ingress-mirror-to (mirror0 | mirror1 | none; Default: none)	Analyzer port for port-based ingress mirroring.
-ingress-mirroring-according-to-vlan (yes | no; Default: no)	
-egress-mirror-to (mirror0 | mirror1 | none; Default: none)	Analyzer port for port-based egress mirroring.
-
-
-qos-scheme-precedence (da-based | dscp-based | ingress-acl-based | pcp-based | protocol-based | sa-based | vlan-based; Default: pcp-based, sa-based, da-based, dscp-based, protocol-based, vlan-based)	Specifies applied QoS assignment schemes on the ingress of the port.
-
-    da-based
-    dscp-based
-    ingress-acl-based
-    pcp-based
-    protocol-based
-    sa-based
-    vlan-based
-
-pcp-or-dscp-based-qos-change-dei (yes | no; Default: no)	Enable or disable PCP or DSCP based DEI change on port.
-pcp-or-dscp-based-qos-change-pcp (yes | no; Default: no)	Enable or disable PCP or DSCP based PCP change on port.
-pcp-or-dscp-based-qos-change-dscp (yes | no; Default: no)	Enable or disable PCP or DSCP based DSCP change on port.
-dscp-based-qos-dscp-to-dscp-mapping (yes | no; Default: yes)	Enable or disable DSCP to internal DSCP mapping on port.
-pcp-based-qos-drop-precedence-mapping (PCP/DEI-range:drop-precedence; Default: 0-15:green)	The new value of drop precedence for the PCP/DEI to drop precedence (drop | green | red | yellow) mapping. Multiple mappings are allowed separated by a comma e.g. "0-7:yellow,8-15:red".
-pcp-based-qos-dscp-mapping (PCP/DEI-range:DEI; Default: 0-15:0)	The new value of DSCP for the PCP/DEI to DSCP (0..63) mapping. Multiple mappings are allowed separated by a comma e.g. "0-7:25,8-15:50".
-pcp-based-qos-dei-mapping (PCP/DEI-range:DEI; Default: 0-15:0)	The new value of DEI for the PCP/DEI to DEI (0..1) mapping. Multiple mappings are allowed separated by a comma e.g. "0-7:0,8-15:1".
-pcp-based-qos-pcp-mapping (PCP/DEI-range:DEI; Default: 0-15:0)	The new value of PCP for the PCP/DEI to PCP (0..7) mapping. Multiple mappings are allowed separated by a comma e.g. "0-7:3,8-15:4".
-pcp-based-qos-priority-mapping (PCP/DEI-range:DEI; Default: 0-15:0)	The new value of internal priority for the PCP/DEI to priority (0..15) mapping. Multiple mappings are allowed separated by a comma e.g. "0-7:5,8-15:15".
-
-
-priority-to-queue (priority-range:queue; Default: 0-15:0,1:1,2:2,3:3)	Internal priority (0..15) mapping to queue (0..7) per port.
-per-queue-scheduling (Scheduling-type:Weight;
-
-Default: wrr-group0:1,wrr-group0:2,wrr-group0:4,wrr-group0:8,wrr-group0:16,wrr-group0:32,
-wrr-group0:64,wrr-group0:128)	Set port to use either strict or weighted round robin policy for traffic shaping for each queue group, each queue is separated by a comma.
-
-
-ingress-customer-tpid-override (yes | no;
-
-Default:!ingress-customer-tpid-override)
-ingress-customer-tpid (0..10000; Default: 0x8100)	Ingress customer TPID override allows accepting specific frames with a custom customer tag TPID. The default value is for the tag of 802.1Q frames.
-egress-customer-tpid-override (yes | no; Default:
-
-!egress-customer-tpid-override)
-egress-customer-tpid (0..10000; Default:
-0x8100)	Egress customer TPID override allows custom identification for egress frames with a customer tag. The default value is for the tag of 802.1Q frames.
-ingress-service-tpid-override (yes | no; Default:
-
-!ingress-service-tpid-override)
-ingress-service-tpid (0..10000; Default: 0x88A8)	Ingress service TPID override allows accepting specific frames with a custom service tag TPID. The default value is for the service tag of 802.1AD frames.
-egress-service-tpid-override (yes | no; Default:
-
-!egress-service-tpid-override)
-egress-service-tpid (0..10000; Default:
-0x88A8)	Egress service TPID override allows custom identification for egress frames with a service tag. The default value is for the service tag of 802.1AD frames.
-
-
-custom-drop-counter-includes (counters; Default: none)	Custom include to count dropped packets for switch port custom-drop-packet counter.
-
-    device-loopback
-    fdb-hash-violation
-    exceeded-port-learn-limitation
-    dynamic-station-move
-    static-station-move
-    ufdb-source-drop
-    host-source-drop
-    unknown-host
-    ingress-vlan-filtered
-
-queue-custom-drop-counter0-includes (counters; Default: none)	Custom include to count dropped packets for switch port tx-queue-custom0-drop-packet
-
-and bytes for tx-queue-custom0-drop-byte counters.
-
-    red
-    yellow
-    green
-    queue0
-    ...
-    queue7
-
-queue-custom-drop-counter1-includes (counters; Default: none)	Custom include to count dropped packets for switch port tx-queue-custom1-drop-packet
-
-and bytes for tx-queue-custom1-drop-byte counters.
-
-    red
-    yellow
-    green
-    queue0
-    ...
-    queue7
-
-policy-drop-counter-includes (counters; Default: none)	Custom include to count dropped packets for switch port policy-drop-packet counter.
-
-    ingress-policing
-    ingress-acl
-    egress-policing
-    egress-acl
-
-Forwarding Databases
-Unicast FDB
-
-The unicast forwarding database supports up to 16318 MAC entries.
-
-Sub-menu: /interface ethernet switch unicast-fdb
-action (action; Default: forward)	Action for UFDB entry:
-
-    dst-drop - Packets are dropped when their destination MAC matches the entry.
-    dst-redirect-to-cpu - Packets are redirected to the CPU when their destination MAC matches the entry.
-    forward - Packets are forwarded.
-    src-and-dst-drop - Packets are dropped when their source MAC or destination MAC matches the entry.
-    src-and-dst-redirect-to-cpu - Packets are redirected to CPU when their source MAC or destination MAC matches the entry.
-    src-drop - Packets are dropped when their source MAC matches the entry.
-    src-redirect-to-cpu - Packets are redirected to the CPU when their source MAC matches the entry.
-
-disabled (yes | no; Default: no)	Enables or disables Unicast FDB entry.
-isolation-profile (community1 | community2 | isolated | promiscuous; Default: promiscuous)	MAC level isolation profile.
-mac-address (MAC address)	The action command applies to the packet when the destination MAC or source MAC matches the entry.
-mirror (yes | no; Default: no)	Enables or disables mirroring based on source MAC or destination MAC.
-port (port)	Matching port for the Unicast FDB entry.
-qos-group (none; Default: none)	Defined QoS group from QoS group menu.
-svl (yes | no; Default: no)	Unicast FDB learning mode:
-
-    Shared VLAN Learning (svl) - learning/lookup is based on MAC addresses - not on VLAN IDs.
-    Independent VLAN Learning (ivl) - learning/lookup is based on both MAC addresses and VLAN IDs.
-
-vlan-id (0..4095)	Unicast FDB lookup/learning VLAN id.
-Multicast FDB
-
-CRS125 switch-chip supports up to 1024 entries in MFDB for multicast forwarding. For each multicast packet, destination MAC or destination IP lookup is performed in MFDB. MFDB entries are not automatically learned and can only be configured.
-
-Sub-menu: /interface ethernet switch multicast-fdb
-address (X.X.X.X | XX:XX:XX:XX:XX:XX)	Matching IP address or MAC address for multicast packets.
-bypass-vlan-filter (yes | no; Default: no)	Allow to bypass VLAN filtering for matching multicast packets.
-disabled (yes | no; Default: no)	Enables or disables Multicast FDB entry.
-ports (ports)	Member ports for multicast traffic.
-qos-group (none; Default: none)	Defined QoS group from QoS group menu.
-svl (yes | no; Default: no)	Multicast FDB learning mode:
-
-    Shared VLAN Learning (svl) - learning/lookup is based on MAC addresses - not on VLAN IDs.
-    Independent VLAN Learning (ivl) - learning/lookup is based on both MAC addresses and VLAN IDs.
-
-vlan-id (0..4095; Default: 0)	Multicast FDB lookup VLAN ID. If the VLAN learning mode is IVL, VLAN id is lookup id, otherwise VLAN id = 0.
-Reserved FDB
-
-Cloud Router Switch supports 256 RFDB entries. Each RFDB entry can store either Layer2 unicast or multicast MAC address with specific commands.
-
-Sub-menu: /interface ethernet switch reserved-fdb
-action (copy-to-cpu | drop | forward | redirect-to-cpu; Default: forward)	Action for RFDB entry:
-
-    copy-to-cpu - Packets are copied to the CPU when their destination MAC matches the entry.
-    drop - Packets are dropped when their destination MAC matches the entry.
-    forward - Packets are forwarded when their destination MAC matches the entry.
-    redirect-to-cpu - Packets are redirected to CPU when their destination MAC matches the entry.
-
-bypass-ingress-port-policing (yes | no; Default: no)	Allow to bypass Ingress Port Policer for matching packets.
-bypass-ingress-vlan-filter (yes | no; Default: no)	Allow to bypass VLAN filtering for matching packets.
-disabled (yes | no; Default: no)	Enables or disables Reserved FDB entry.
-mac-address (MAC address; Default: 00:00:00:00:00:00)	Matching MAC address for Reserved FDB entry.
-qos-group (none; Default: none)	Defined QoS group from QoS group menu.
-VLAN
-VLAN Table
-
-The VLAN table supports 4096 VLAN entries for storing VLAN member information as well as other VLAN information such as QoS, isolation, forced VLAN, learning, and mirroring.
-
-Sub-menu: /interface ethernet switch vlan
-disabled (yes | no; Default: no)	Indicate whether the VLAN entry is disabled. Only enabled entry is applied to the lookup process and forwarding decision.
-flood (yes | no; Default: no)	Enables or disables forced VLAN flooding per VLAN. If the feature is
-
-enabled, the result of the destination MAC lookup in the UFDB or MFDB is ignored,
-and the packet is forced to flood in the VLAN.
-ingress-mirror (yes | no; Default: no)	Enable the ingress mirror per VLAN to support the VLAN-based mirror function.
-learn (yes | no; Default: yes)	Enables or disables source MAC learning for VLAN.
-ports (ports)	Member ports of the VLAN.
-qos-group (none; Default: none)	Defined QoS group from QoS group menu.
-svl (yes | no; Default: no)	FDB lookup mode for lookup in UFDB and MFDB.
-
-    Shared VLAN Learning (svl) - learning/lookup is based on MAC addresses - not on VLAN IDs.
-    Independent VLAN Learning (ivl) - learning/lookup is based on both MAC addresses and VLAN IDs.
-
-vlan-id (0..4095)	VLAN ID of the VLAN member entry.
-Egress VLAN Tag
-
-Egress packets can be assigned different VLAN tag formats. The VLAN tags can be removed, added, or remained as is when the packet is sent to the egress port (destination port). Each port has dedicated control of the egress VLAN tag format. The tag formats include:
-
-    Untagged
-    Tagged
-    Unmodified
-
-The Egress VLAN Tag table includes 4096 entries for VLAN tagging selection.
-
-Sub-menu: /interface ethernet switch egress-vlan-tag
-disabled (yes | no; Default: no)	Enables or disables Egress VLAN Tag table entry.
-tagged-ports (ports)	Ports that are tagged in egress.
-vlan-id (0..4095)	VLAN ID which is tagged in egress.
-Ingress/Egress VLAN Translation
-
-The Ingress VLAN Translation table allows for up to 15 entries for each port. One or multiple fields can be selected from the packet header for lookup in the Ingress VLAN Translation table. The S-VLAN or C-VLAN or both configured in the first matched entry are assigned to the packet.
-
-Sub-menu: /interface ethernet switch ingress-vlan-translation
-
-Sub-menu: /interface ethernet switch egress-vlan-translation
-customer-dei (0..1; Default: none)	Matching DEI of the customer tag.
-customer-pcp (0..7; Default: none)	Matching PCP of the customer tag.
-customer-vid (0..4095; Default: none)	Matching the VLAN ID of the customer tag.
-customer-vlan-format (any | priority-tagged-or-tagged | tagged | untagged-or-tagged; Default:any)	Type of frames with customer tag for which VLAN translation rule is valid.
-disabled (yes | no; Default: no)	Enables or disables VLAN translation entry.
-new-customer-vid (0..4095; Default: none)	The new customer VLAN ID replaces the matching customer VLAN ID. If set to 4095 and ingress VLAN translation is used, then traffic is dropped.
-new-service-vid (0..4095; Default: none)	The new service VLAN ID replaces the matching service VLAN ID.
-pcp-propagation (yes | no; Default: no)	Enables or disables PCP propagation.
-
-    If the port type is Edge, the customer PCP is copied from the service PCP.
-    If the port type is Network, the service PCP is copied from the customer PCP.
-
-ports (ports)	Matching switch ports for VLAN translation rule.
-protocol (protocols; Default: none)	Matching Ethernet protocol. (only for Ingress VLAN Translation)
-sa-learning (yes | no; Default: no)	Enables or disables source MAC learning after VLAN translation. (only for Ingress VLAN Translation)
-service-dei (0..1; Default: none)	Matching DEI of the service tag.
-service-pcp (0..7; Default: none)	Matching PCP of the service tag.
-service-vid (0..4095; Default: none)	Matching VLAN ID of the service tag.
-service-vlan-format (any | priority-tagged-or-tagged | tagged | untagged-or-tagged; Default:any)	Type of frames with service tag for which VLAN translation rule is valid.
-
-Below is a table of traffic that triggers a rule that has a certain VLAN format set, note that traffic that is tagged with VLAN ID 0 is a special case that is also taken into account.
-any	Accepts:
-
-    Untagged traffic
-    Tagged traffic
-    Tagged traffic with priority set
-    VLAN 0 traffic
-    VLAN 0 traffic with priority set
-
-priority-tagged-or-tagged	Accepts:
-
-    Tagged traffic
-    Tagged traffic with priority set
-    VLAN 0 traffic
-    VLAN 0 traffic with priority set
-
-tagged	Accepts:
-
-    Tagged traffic
-    Tagged traffic with priority set
-
-untagged-or-tagged	Accepts:
-
-    Untagged traffic
-    Tagged traffic
-    Tagged traffic with priority set
-
-If VLAN-format is set to any, then customer-vid/service-vid set to 0 will trigger the switch rule with VLAN 0 traffic. In this case, the switch rule will be looking for untagged traffic or traffic with a VLAN 0 tag, and only untagged-or-tagged will filter out VLAN 0 traffic in this case.
-Protocol Based VLAN
-
-Protocol Based VLAN table is used to assign VID and QoS attributes to related protocol packets per port.
-
-Sub-menu: /interface ethernet switch protocol-based-vlan
-disabled (yes | no; Default: no)	Enables or disables Protocol Based VLAN entry.
-frame-type (ethernet | llc | rfc-1042; Default: ethernet)	Encapsulation type of the matching frames.
-new-customer-vid (0..4095; Default: 0)	The new customer VLAN ID replaces the original customer VLAN ID for the specified protocol. If set to 4095, then traffic is dropped.
-new-service-vid (0..4095; Default: 0)	The new service VLAN ID replaces the original service VLAN ID for the specified protocol.
-ports (ports)	Matching switch ports for Protocol-based VLAN rule.
-protocol (protocol; Default: 0)	Matching protocol for Protocol-based VLAN rule.
-qos-group (none; Default: none)	Defined QoS group from QoS group menu.
-set-customer-vid-for (all | none | tagged | untagged-or-priority-tagged; Default: all)	Customer VLAN ID assignment command for different packet types.
-set-qos-for (all | none | tagged | untagged-or-priority-tagged; Default: none)	Frame type for which QoS assignment command applies.
-set-service-vid-for (all | none | tagged | untagged-or-priority-tagged; Default: all)	Service VLAN ID assignment command for different packet types.
-MAC Based VLAN
-
-MAC Based VLAN table is used to assign VLAN based on the source MAC.
-
-Sub-menu: /interface ethernet switch mac-based-vlan
-disabled (yes | no; Default: no)	Enables or disables MAC Based VLAN entry.
-new-customer-vid (0..4095; Default: 0)	The new customer VLAN ID replaces the original service VLAN ID for matched packets. If set to 4095, then traffic is dropped.
-new-service-vid (0..4095; Default: 0)	The new service VLAN ID replaces the original service VLAN ID for matched packets.
-src-mac-address (MAC address)	Matching source MAC address for MAC based VLAN rule.
-
-
-All CRS1xx/2xx series switches support up to 1024 MAC Based VLAN table entries.
-1:1 VLAN Switching
-
-1:1 VLAN switching can be used to replace the regular L2 bridging for matched packets. When a packet hits a 1:1 VLAN switching table entry, the destination port information in the entry is assigned to the packet. The matched destination information in the UFDB and MFDB entry no longer applies to the packet.
-
-Sub-menu: /interface ethernet switch one2one-vlan-switching
-customer-vid (0..4095; Default: 0)	Matching customer VLAN id for 1:1 VLAN switching.
-disabled (yes | no; Default: no)	Enables or disables 1:1 VLAN switching table entry.
-dst-port (port)	Destination port for matched 1:1 VLAN switching packets.
-service-vid (0..4095; Default: 0)	Matching customer VLAN id for 1:1 VLAN switching.
-Port Isolation/Leakage
-
-The CRS switches support flexible multi-level isolation features, which can be used for user access control, traffic engineering and advanced security and network management. The isolation features provide an organized fabric structure allowing user to easily program and control the access by port, MAC address, VLAN, protocol, flow, and frame type. The following isolation and leakage features are supported:
-
-    Port-level isolation
-    MAC-level isolation
-    VLAN-level isolation
-    Protocol-level isolation
-    Flow-level isolation
-    Free combination of the above
-
-Port-level isolation supports different control schemes on the source port and destination port. Each entry can be programmed with access control for either the source port or the destination port.
-
-    When the entry is programmed with source port access control, the entry is
-
-applied to the ingress packets.
-
-    When the entry is programmed with destination port access control, the entry
-
-is applied to the egress packets.
-
-Port leakage allows bypassing egress VLAN filtering on the port. A leaky port is allowed to access other ports for various applications such as security, network control, and management. Note: When both isolation and leakage are applied to the same port, the port is isolated.
-
-Sub-menu: /interface ethernet switch port-isolation
-
-Sub-menu: /interface ethernet switch port-leakage
-disabled (yes | no; Default: no)	Enables or disables port isolation/leakage entry.
-flow-id (0..63; Default: none)	
-forwarding-type (bridged; routed; Default: bridged,routed)	Matching traffic forwarding type on Cloud Router Switch.
-mac-profile (community1 | community2 | isolated | promiscuous; Default: none)	Matching MAC isolation/leakage profile.
-port-profile (0..31; Default: none)	Matching Port isolation/leakage profile.
-ports (ports; Default: none)	Isolated/leaked ports.
-protocol-type (arp; nd; dhcpv4; dhcpv6; ripv1; Default: arp,nd,dhcpv4,dhcpv6,ripv1)	Included protocols for isolation/leakage.
-registration-status (known; unknown; Default: known,unknown)	Registration status for matching packets. Known are present in UFDB and MFDB, and unknown are not.
-traffic-type (unicast; multicast; broadcast; Default: unicast,multicast,broadcast)	Matching traffic type.
-type (dst | src; Default: src)	Lookup type of the isolation/leakage entry:
-
-    src - Entry applies to ingress packets of the ports.
-    dst - Entry applies to egress packets of the ports.
-
-vlan-profile (community1 | community2 | isolated | promiscuous; Default: none)	Matching VLAN isolation/leakage profile.
-Trunking
-
-The Trunking in the Cloud Router Switches provides static link aggregation groups with hardware automatic failover and load balancing. IEEE802.3ad and IEEE802.1ax compatible Link Aggregation Control Protocol is not supported. Up to 8 Trunk groups are supported with up to 8 Trunk member ports per Trunk group. CRS Port Trunking calculates transmit-hash based on all following parameters: L2 src-dst MAC + L3 src-dst IP + L4 src-dst Port.
-
-Sub-menu: /interface ethernet switch trunk
-disabled (yes | no; Default: no)	Enables or disables port trunking entry.
-member-ports (ports)	Member ports of the Trunk group.
-name (string value; Default: trunkX)	Name of the Trunk group.
-Quality of Service
-Shaper
-
-Traffic shaping restricts the rate and burst size of the flow which is transmitted out from the interface. The shaper is implemented by a token bucket. If the packet exceeds the maximum rate or the burst size, which means not enough token for the packet, the packet is stored to buffer until there is enough token to transmit it.
-
-Sub-menu: /interface ethernet switch shaper
-burst (integer; Default: 100k)	Maximum data rate which can be transmitted while the burst is allowed.
-disabled (yes | no; Default: no)	Enables or disables traffic shaper entry.
-meter-unit (bit | packet; Default: bit)	Measuring units for traffic shaper rate.
-port (port)	Physical port for traffic shaper.
-rate (integer; Default: 1M)	Maximum data rate limit.
-target (port | queueX | wrr-groupX; Default: port)	Three levels of shapers are supported on each port (including CPU port):
-
-    Port level - Entry applies to the port of the switch-chip.
-    WRR group level - Entry applies to one of the 2 Weighted Round Robin queue groups (wrr-group0, wrr-group1) on the port.
-    Queue level - Entry applies to one of the 8 queues (queue0 - queue7) on the port.
-
-Ingress Port Policer
-
-Sub-menu: /interface ethernet switch ingress-port-policer
-burst (integer; Default: 100k)	Maximum data rate which can be transmitted while the burst is allowed.
-disabled (yes | no; Default: no)	Enables or disables ingress port policer entry.
-meter-len (layer-1 | layer-2 | layer-3; Default: layer-1)	Packet classification which sets the packet byte length for metering.
-
-    layer-1 - includes entire layer-2 frame + FCS + inter-packet gap + preamble.
-    layer-2 - includes layer-2 frame + FCS.
-    layer-3 - includes only layer-3 + ethernet padding without layer-2 header and FCS.
-
-meter-unit (bit | packet; Default: bit)	Measuring units for traffic ingress port policer rate.
-new-dei-for-yellow (0..1 | remap; Default: none)	Remarked DEI for exceeded traffic if yellow-action is remark.
-new-dscp-for-yellow (0..63 | remap; Default: none)	Remarked DSCP for exceeded traffic if yellow-action is remark.
-new-pcp-for-yellow (0..7 | remap; Default: none)	Remarked PCP for exceeded traffic if yellow-action is remark.
-packet-types (packet-types; Default: all types from description)	Matching packet types for which ingress port policer entry is valid.
-port (port)	Physical port or trunk for ingress port policer entry.
-rate (integer)	Maximum data rate limit.
-yellow-action (drop | forward | remark; Default: drop)	Performed action for exceeded traffic.
-QoS Group
-
-The global QoS group table is used for VLAN-based, Protocol-based, and MAC-based QoS group assignment configuration.
-
-Sub-menu: /interface ethernet switch qos-group
-dei (0..1; Default: none)	The new value of DEI for the QoS group.
-disabled (yes | no; Default: no)	Enables or disables protocol QoS group entry.
-drop-precedence (drop | green | red | yellow; Default: green)	Drop precedence is an internal QoS attribute used for packet enqueuing or dropping.
-dscp (0..63; Default: none)	The new value of DSCP for the QoS group.
-name (string value; Default: groupX)	Name of the QoS group.
-pcp (0..7; Default: none)	The new value of PCP for the QoS group.
-priority (0..15; Default: 0)	Internal priority is a local significance of priority for classifying traffic to different egress queues on a port. (1 is highest, 15 is lowest)
-DSCP QoS Map
-
-The global DSCP to QOS mapping table is used for mapping from the DSCP of the packet to new QoS attributes configured in the table.
-
-Sub-menu: /interface ethernet switch dscp-qos-map
-dei (0..1)	The new value of DEI for the DSCP to QOS mapping entry.
-drop-precedence (drop | green | red | yellow)	The new value of Drop precedence for the DSCP to QOS mapping entry.
-pcp (0..7)	The new value of PCP for the DSCP to QOS mapping entry.
-priority (0..15)	The new value of internal priority for the DSCP to QOS mapping entry.
-DSCP To DSCP Map
-
-The global DSCP to DSCP mapping table is used for mapping from the packet's original DSCP to the new DSCP value configured in the table.
-
-Sub-menu: /interface ethernet switch dscp-to-dscp
-new-dscp (0..63)	The new value of DSCP for the DSCP to DSCP mapping entry.
-Policer QoS Map
-
-Sub-menu: /interface ethernet switch policer-qos-map
-dei-for-red (0..1; Default: 0)	Policer DEI remapping value for red packets.
-dei-for-yellow (0..1; Default: 0)	Policer DEI remapping value for yellow packets.
-dscp-for-red (0..63; Default: 0)	Policer DSCP remapping value for red packets.
-dscp-for-yellow (0..63; Default: 0)	Policer DSCP remapping value for yellow packets.
-pcp-for-red (0..7; Default: 0)	Policer PCP remapping value for red packets.
-pcp-for-yellow (0..7; Default: 0)	Policer PCP remapping value for yellow packets.
-Access Control List
-
-Access Control List contains of ingress policy and egress policy engines and allows configuration of up to 128 policy rules (limited by RouterOS). It is an advanced tool for wire-speed packet filtering, forwarding, shaping, and modifying based on Layer2, Layer3, and Layer4 protocol header field conditions.
-
-See the Summary section for Access Control List supported Cloud Router Switch devices.
-
-Due to hardware limitations, it is not possible to match broadcast/multicast traffic on specific ports. You should use port isolation, drop traffic on ingress ports, or use VLAN filtering to prevent certain broadcast/multicast traffic from being forwarded.
-
-Sub-menu: /interface ethernet switch acl
-
-ACL condition part for MAC-related fields of packets.
-disabled (yes | no; Default: no)	Enables or disables ACL entry.
-table (egress | ingress; Default: ingress)	Selects the policy table for incoming or outgoing packets.
-invert-match (yes | no; Default: no)	Inverts the whole ACL rule matching.
-src-ports (ports,trunks)	Matching physical source ports or trunks.
-dst-ports (ports,trunks)	Matching physical destination ports or trunks. It is not possible to match broadcast/multicast traffic on the egress port due to a hardware limitation.
-mac-src-address (MAC address/Mask)	Source MAC address and mask.
-mac-dst-address (MAC address/Mask)	Destination MAC address and mask.
-dst-addr-registered (yes | no)	Defines whether to match packets with registered state - packets whose destination MAC address is in UFDB/MFDB/RFDB. Valid only in the egress table.
-mac-protocol (802.2 | arp | homeplug-av | ip | ip-or-ipv6 | ipv6 | ipx | lldp | loop-protect | mpls-multicast | mpls-unicast | non-ip | packing-compr | packing-simple | pppoe | pppoe-discovery | rarp | service-vlan | vlan or integer: 0..65535 decimal format or 0x0000-0xffff hex format)	Ethernet payload type (MAC-level protocol)
-
-    802.2 - 802.2 Frames (0x0004)
-    arp - Address Resolution Protocol (0x0806)
-    capsman - CAPsMAN to CAP MAC layer connection (0x88BB)
-    dot1x - EAPoL IEEE 802.1X (0x888E)
-    homeplug-av - HomePlug AV MME (0x88E1)
-    ip - Internet Protocol version 4 (0x0800)
-    ip-or-ipv6 - IPv4 or IPv6 (0x0800 or 0x86DD)
-    ipv6 - Internet Protocol Version 6 (0x86DD)
-    ipx - Internetwork Packet Exchange (0x8137)
-    lacp - Link Aggregation Control Protocol (0x8809)
-    lldp - Link Layer Discovery Protocol (0x88CC)
-    loop-protect - Loop Protect Protocol (0x9003)
-    macsec - MAC security IEEE 802.1AE (0x88E5)
-    mpls-multicast - MPLS multicast (0x8848)
-    mpls-unicast - MPLS unicast (0x8847)
-    non-ip - Not Internet Protocol version 4 (not 0x0800)
-    packing-compr - Encapsulated packets with compressed IP packing (0x9001)
-    packing-simple - Encapsulated packets with simple IP packing (0x9000)
-    pppoe - PPPoE Session Stage (0x8864)
-    pppoe-discovery - PPPoE Discovery Stage (0x8863)
-    rarp - Reverse Address Resolution Protocol (0x8035)
-    romon - Router Management Overlay Network RoMON (0x88BF)
-    service-vlan - Provider Bridging (IEEE 802.1ad) & Shortest Path Bridging IEEE 802.1aq (0x88A8)
-    vlan - VLAN-tagged frame (IEEE 802.1Q) and Shortest Path Bridging IEEE 802.1aq with NNI compatibility (0x8100)
-
-drop-precedence (drop | green | red | yellow)	Matching internal drop precedence. Valid only in the egress table.
-custom-fields	
-
-ACL condition part for VLAN-related fields of packets.
-lookup-vid (0..4095)	VLAN id used in lookup. It can be changed before reaching the egress table.
-service-vid (0-4095)	Matching service VLAN id.
-service-pcp (0..7)	Matching service PCP.
-service-dei (0..1)	Matching service DEI.
-service-tag (priority-tagged | tagged | tagged-or-priority-tagged | untagged)	Format of the service tag.
-customer-vid (0-4095)	Matching customer VLAN ID.
-customer-pcp (0..7)	Matching customer PCP.
-customer-dei (0..1)	Matching customer DEI.
-customer-tag (priority-tagged | tagged | tagged-or-priority-tagged | untagged)	Format of the customer tag.
-priority (0..15)	Matching internal priority. Valid only in the egress table.
-
-ACL condition part for IPv4 and IPv6 related fields of packets.
-ip-src (IPv4/0..32)	Matching source IPv4 address.
-ip-dst (IPv4/0..32)	Matching destination IPv4 address.
-ip-protocol (tcp | udp | udp-lite | other)	IP protocol type.
-src-l3-port (0-65535)	Matching Layer3 source port.
-dst-l3-port (0-65535)	Matching Layer3 destination port.
-ttl (0 | 1 | max | other)	Matching TTL field of the packet.
-dscp (0..63)	Matching DSCP field of the packet.
-ecn (0..3)	Matching ECN field of the packet.
-fragmented (yes | no)	Whether to match fragmented packets.
-first-fragment (yes | no)	YES matches not fragmented and the first fragments, NO matches other fragments.
-ipv6-src (IPv6/0..128)	Matching source IPv6 address.
-ipv6-dst (IPv6/0..128)	Matching destination IPv6 address.
-mac-isolation-profile (community1 | community2 | isolated | promiscuous)	Matches isolation profile based on UFDB. Valid only in the egress policy table.
-src-mac-addr-state (dynamic-station-move | sa-found | sa-not-found | static-station-move)	Defines whether to match packets with registered state - packets whose destination MAC address is in UFDB/MFDB/RFDB. Valid only in the egress policy table.
-flow-id (0..63)	
-
-ACL rule action part.
-action (copy-to-cpu | drop | forward |
-
-redirect-to-cpu | send-to-new-dst-ports; Default:
-forward)	
-
-    copy-to-cpu - Packets are copied to the CPU if they match the ACL conditions.
-    drop - Packets are dropped if they match the ACL conditions.
-    forward - Packets are forwarded if they match the ACL conditions.
-    redirect-to-cpu - Packets are redirected to the CPU if they match the ACL conditions.
-    send-to-new-dst-ports - Packets are sent to new destination ports if they match the ACL conditions.
-
-new-dst-ports (ports,trunks)	If the action is "send-to-new-dst-ports", then this property sets which ports/trunks are the new destinations.
-mirror-to (mirror0 | mirror1)	Mirroring destination for ACL packets.
-policer (policer)	Applied ACL Policer for ACL packets.
-src-mac-learn (yes | no)	Whether to learn the source MAC of the matched ACL packets. Valid only in the ingress policy table.
-new-service-vid (0..4095)	New service VLAN ID for ACL packets.
-new-service-pcp (0..7)	New service PCP for ACL packets.
-new-service-dei (0..1)	New service DEI for ACL packets.
-new-customer-vid (0..4095)	New customer VLAN ID for ACL packets. If set to 4095, then traffic is dropped.
-new-customer-pcp (0..7)	New customer PCP for ACL packets.
-new-customer-dei (0..1)	New customer DEI for ACL packets.
-new-dscp (0..63)	New DSCP for ACL packets.
-new-priority (0..15)	New internal priority for ACL packets.
-new-drop-precedence (drop | green | red | yellow)	New internal drop precedence for ACL packets.
-new-registered-state (yes | no)	Whether to modify packet status. YES sets packet status to registered, NO - unregistered. Valid only in the ingress policy table.
-new-flow-id (0..63)	
-
-Filter bypassing part for ACL packets.
-attack-filter-bypass (yes | no; Default: no)	
-ingress-vlan-filter-bypass (yes | no; Default: no)	Allows bypassing ingress VLAN filtering in the VLAN table for matching packets. This applies only to the ingress policy table.
-egress-vlan-filter-bypass (yes | no; Default: no)	Allows bypassing egress VLAN filtering in the VLAN table for matching packets. This applies only to the ingress policy table.
-isolation-filter-bypass (yes | no; Default: no)	Allows bypassing the Isolation table for matching packets. This applies only to the ingress policy table.
-egress-vlan-translate-bypass (yes | no; Default: no)	Allows bypassing egress VLAN translation table for matching packets.
-ACL Policer
-
-Sub-menu: /interface ethernet switch acl policer
-name (string; Default: policerX)	Name of the Policer used in ACL.
-yellow-rate (integer)	Maximum data rate limit for packets with yellow drop precedence.
-yellow-burst (integer; Default: 0)	Maximum data rate which can be transmitted while the burst is allowed for packets with yellow drop precedence.
-red-rate (integer); Default: 0)	Maximum data rate limit for packets with red drop precedence.
-red-burst (integer; Default: 0)	Maximum data rate which can be transmitted while the burst is allowed for packets with red drop precedence.
-meter-unit (bit | packet; Default: bit)	Measuring units for ACL traffic rate.
-meter-len (layer-1 | layer-2 | layer-3; Default: layer-1)	Packet classification which sets the packet byte length for metering.
-
-    layer-1 - includes entire layer-2 frame + FCS + inter-packet gap + preamble.
-    layer-2 - includes layer-2 frame + FCS.
-    layer-3 - includes only layer-3 + ethernet padding without layer-2 header and FCS.
-
-color-awareness (yes | no; Default: no)	YES makes the policer to take into account pre-colored drop precedence, NO - ignores drop precedence.
-bucket-coupling (yes | no; Default: no)	
-yellow-action (drop | forward | remark; Default: drop)	Performed action for exceeded traffic with yellow drop precedence.
-new-dei-for-yellow (0..1 | remap)	New DEI for yellow drop precedence packets.
-new-pcp-for-yellow (0..7 | remap)	New PCP for yellow drop precedence packets.
-new-dscp-for-yellow (0..63 | remap)	New DSCP for yellow drop precedence packets.
-red-action (drop | forward | remark; Default: drop)	Performed action for exceeded traffic with red drop precedence.
-new-dei-for-red (0..1 | remap)	New DEI for red drop precedence packets.
-new-pcp-for-red (0..7 | remap)	New PCP for red drop precedence packets.
-new-dscp-for-red (0..63 | remap)	New DSCP for red drop precedence packets.
-See also
-
-    CRS1xx/2xx series switches examples
-    CRS Router
-    CRS1xx/2xx VLANs with Trunks
-    Basic VLAN switching
-    Bridge Hardware Offloading
-    Spanning Tree Protocol
-    IGMP Snooping
-    DHCP Snooping and Option 82
-    MTU on RouterBOARD
-    Layer2 misconfiguration
