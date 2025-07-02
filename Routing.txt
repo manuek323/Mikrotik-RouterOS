@@ -1,0 +1,25 @@
+
+Routing
+
+    Creado por Māris B., actualizado por última vez por Usuario desconocido (emils) el may 31, 2022 1 min de lectura
+
+In This Section:
+
+        Routing Protocol Overview
+        Moving from ROSv6 to v7 with examples
+        Routing Protocol Multi-core Support
+        Policy Routing
+        Virtual Routing and Forwarding - VRF
+        OSPF
+        RIP
+        BGP
+        RPKI
+        Route Selection and Filters
+        Multicast
+        Routing Debugging Tools
+        Routing Reference
+        BFD
+        IS-IS
+        EVPN
+
+
