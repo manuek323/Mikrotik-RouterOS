@@ -1,6 +1,6 @@
 
 
-    Creado por Usuario desconocido (0testing) el may 08, 2023 5 min de lectura
+    Creado por Krists Dūčis, actualizado por última vez por Usuario desconocido (0testing) el may 08, 2023 4 min de lectura
 
 Summary
 
@@ -44,49 +44,47 @@ Set up 60Ghz wireless connection
 
 All previously explained steps are identical to Bridge and Station devices. When configuring wireless interface different modes needs to be used.
 
-For ap-bridge device -
+For bridge device -
 
-    Choose SSID, Password, frequency and choose bridge mode option that will act as ap-bridge for the setup, please see the example.
+    Choose SSID, Password, frequency and choose bridge mode option that will act as a bridge for the setup, please see the example.
 
     Enable W60G interface after required parameters have been set.
 
-    [admin@MikroTik] > /interface w60g set wlan60-1 mode=ap-bridge frequency=auto ssid=MySSID password=choosepassword isolate-stations=no
+    [admin@MikroTik] > /interface w60g set wlan60-1 mode=bridge frequency=auto ssid=MySSID password=choosepassword isolate-stations=yes
     [admin@MikroTik] > /interface w60g print
     Flags: X - disabled, R - running 
-    0 X name="wlan60-1" mtu=1500 l2mtu=1600 mac-address=C4:AD:34:84:EE:5E arp=enabled arp-timeout=auto region=no-region-set mode=ap-bridge ssid="MySSID" 
-    frequency=auto default-scan-list=58320,60480,62640,64800 password="choosepassword" tx-sector=auto put-stations-in-bridge=none isolate-stations=no
+    0 X name="wlan60-1" mtu=1500 l2mtu=1600 mac-address=C4:AD:34:84:EE:5E arp=enabled arp-timeout=auto region=no-region-set mode=bridge ssid="MySSID" 
+    frequency=auto default-scan-list=58320,60480,62640,64800 password="choosepassword" tx-sector=auto put-stations-in-bridge=bridge isolate-stations=yes
     [admin@MikroTik] > /interface w60g enable wlan60-1
 
-For Station devices -
+For Station device -
 
     Choose the same SSID, Password, frequency as the bridge device and choose station-bridge mode option that will act as a station for the setup, please see the example.
-    It is possible to connect up to 8 station devices to a single AP to act as a fail-over.
 
     Enable W60G interface after required parameters have been set.
 
-    [admin@MikroTik] > /interface w60g set wlan60-1 mode=station-bridge frequency=auto ssid=MySSID password=choosepassword isolate-stations=no               
+    [admin@MikroTik] > /interface w60g set wlan60-1 mode=station-bridge frequency=auto ssid=MySSID password=choosepassword                              
     [admin@MikroTik] > /interface w60g print
     Flags: X - disabled, R - running 
     0 X name="wlan60-1" mtu=1500 l2mtu=1600 mac-address=C4:AD:34:84:EE:5E arp=enabled arp-timeout=auto region=no-region-set mode=station-bridge ssid="MySSID"
-    frequency=auto default-scan-list=58320,60480,62640,64800password="choosepassword" tx-sector=auto put-stations-in-bridge=bridge isolate-stations=no
+    frequency=auto default-scan-list=58320,60480,62640,64800password="choosepassword" tx-sector=auto put-stations-in-bridge=bridge isolate-stations=yes
     [admin@MikroTik] > /interface w60g enable wlan60-1
 
 Set up 5Ghz wireless connection
 
-For ap-bridge device -
+For bridge device -
 
     Choose SSID, Password, frequency and choose bridge mode option that will act as a bridge for the setup, please see the example.
 
     Enable 5Ghz interface after required parameters have been set.
 
     [admin@MikroTik] > /interface wireless security-profiles set [ find default=yes ] supplicant-identity=MikroTik authentication-types=wpa2-psk mode=dynamic-keys wpa2-pre-shared-key=choosepassword
-    [admin@MikroTik] > /interface wireless set wlan1 frequency=auto scan-list=default installation=outdoor mode=ap-bridge ssid=MikroTik1 channel-width=20/40/80mhz-Ceee wireless-protocol=any security-profile=default band=5ghz-a/n/ac 
+    [admin@MikroTik] > /interface wireless set wlan1 frequency=auto scan-list=default installation=outdoor mode=bridge ssid=MikroTik1 channel-width=20/40/80mhz-Ceee wireless-protocol=any security-profile=default band=5ghz-a/n/ac 
     [admin@MikroTik] > /interface wireless enable wlan1
 
-For Station devices -
+For Station device -
 
     Choose the same SSID, Password, frequency as the bridge device and choose station-bridge mode option that will act as a station for the setup, please see the example.
-    It is possible to connect up to 8 station devices to a single AP to act as a fail-over.
 
     Enable W60G interface after required parameters have been set.
 
@@ -94,32 +92,17 @@ For Station devices -
     [admin@MikroTik] > /interface wireless set wlan1 frequency=auto scan-list=default installation=outdoor mode=station-bridge ssid=MikroTik1 channel-width=20/40/80mhz-Ceee wireless-protocol=any security-profile=default band=5ghz-a/n/ac
     [admin@MikroTik] > /interface wireless enable wlan1
 
-Configure bridge for Access Point
-
-    Configure bridge for AP to ensure that 5ghz is working as fail-over. It is required to bridge wlan1, ether1, and all 60ghz station interfaces.
-    In the example it shows only 2 station devices but it is possible to add up to 8 devices.
-
-    For ap-bridge device please set configuration as follows:
-
-    [admin@MikroTik] >/interface bridge port
-    add bridge=bridge hw=no interface=ether1
-    add bridge=bridge interface=wlan1
-    add bridge=bridge interface=wlan60-station-1
-    add bridge=bridge interface=wlan60-station-2
-    [admin@MikroTik] > interface/bridge/port/pr
-    # INTERFACE         BRIDGE  HW  PVID  PRIORITY  PATH-COST  INTERNAL-PATH-COST  HORIZON
-    0 ether1            bridge      no     1  0x80             10                  10  none   
-    1 wlan1             bridge             1  0x80             10                  10  none   
-    2 wlan60-station-1  bridge             1  0x80             10                  10  none   
-    3 wlan60-station-2  bridge             1  0x80             10                  10  none
-
-Configure bridge and bonding for station devices
+Configure bridge and bonding
 
     Configure bonding and assign slave interfaces in this setup it is selected as built in wlan1 interface, but it can be also ether interface in other kind of setups.
 
-    For station-bridge devices please set bonding as:
+    For bridge device please set bonding as:
 
-    [admin@MikroTik] > /interface bonding add mode=active-backup name=bond1 primary=wlan60-1 slaves=wlan60-1,wlan1
+    [admin@MikroTik] > /interface bonding add comment=bondingbackup mode=active-backup name=bond1 primary=wlan60-station-1 slaves=wlan60-station-1,wlan1
+
+    For station-bridge device please set bonding as:
+
+    [admin@MikroTik] > /interface bonding add comment=defconf mode=active-backup name=bond1 primary=wlan60-1 slaves=wlan60-1,wlan1
 
     Add interface members (ether1 and bond1) to newly created bridge. 
 
@@ -144,3 +127,5 @@ Ensure connection is established to the correct device by checking the device se
 If bridge wlan60-1 interface in bridge settings is inactive and configuration is done properly  to enable the interface on a device - issue a command:
 
 [admin@MikroTik] > /interface w60g enable wlan60-1
+
+
