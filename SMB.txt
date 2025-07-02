@@ -1,0 +1,99 @@
+
+
+    Creado por Deniss M., actualizado por última vez por Normunds R. el jun 25, 2025 3 min de lectura
+
+Summary
+
+Sub-menu: /ip smb
+Packages required: system
+
+SMB server provides file sharing access to configured folders of the router.
+
+RouterOS only supports SMB2.1 SMB3.0, SMB3.1.1. SMB1 is not supported due to security vulnerabilities.
+
+SMB is not supported on SMIPS devices
+Server settings
+comment (string; Default: MikrotikSMB)	Set comment for the server
+domain (string; Default: MSHOME)	Name of Windows Workgroup
+enabled (yes | no | auto Default: auto)	The default value is 'auto.' This means that the SMB server will automatically be enabled when the first non-disabled SMB share is configured under '/ip smb share'
+interface (string; Default: all)	List of interfaces on which SMB service will be running. all - SMB will be available on all interfaces.
+Starting from version 7.14, the 'allow-guest' option has been replaced by a default guest user located in 'ip/smb/users'. This default guest user can now be disabled or enabled in this section.
+Share settings
+
+Sub-menu: /ip smb shares
+
+Allows configuring share names and directories that will be accessible by SMB.
+
+If the directory provided in the configuration does not exist it will be created automatically.
+comment (string; Default: default share)	Set a comment for the share
+disabled (yes | no; Default: no)	If disabled, the share will not be accessible.
+
+valid-users (list of strings; | Default:)
+	Specifies which users are allowed to access the Samba share. If it is left empty, all users will be able to access the share, once user or users are defined here, only they will be able to access the share
+
+invalid-users (list of strings; | Default: )
+	Used to specify users who are explicitly denied access to the Samba share.
+
+require-encryption (yes | no; Default: no)
+	Enforces the use of encryption for all connections to a particular Samba share. It is recommended to change this to "Yes" to ensure better stability with macOS clients. 
+name (string; Default: )	Name of the SMB share
+directory (string; Default: )	Directory on router assigned to SMB share. If left empty value of the name argument will be used from the root folder.
+User setup
+
+Sub-menu: /ip smb user
+
+Set up users that can access SMB shares of the router. 
+comment (string; Default: )	Set a description for the user
+disabled (yes | no; Default: no)	Defines whether the user is enabled or disabled
+name (string; Default: )	Login name of the SMB service user
+password (string; Default: )	Password for SMB user to connect to SMB service
+read-only (yes | no; Default: yes)	Sets if the user has only read-only rights when accessing shares or full access rights.
+Example
+
+To make RouterOS folder available through SMB service follow these steps: 
+
+    create user:
+
+/ip/smb/users/add read-only=no name=mtuser password=mtpasswd
+
+    add shared folder:
+
+/ip/smb/shares/add directory=backup name=backup
+
+    enable SMB service:
+
+#this step is optional, as the default is "enabled=auto"
+/ip/smb/set enabled=yes
+
+Now check for results: 
+
+    Check general service settings:
+
+/ip/smb/print
+      enabled: yes
+       domain: MSHOME
+      comment: MikrotikSMB
+   interfaces: all
+
+    SMB user settings:
+
+/ip smb/users/print
+Flags: X - DISABLED; * - DEFAULT; r - READ-ONLY
+Columns: NAME, PASSWORD
+#     NAME    PASSWORD
+0 X*r guest          
+1     mtuser  mtpasswd
+
+    And finally SMB shares settings:
+
+/ip/smb/shares/print
+Flags: X - DISABLED; * - DEFAULT
+Columns: NAME, DIRECTORY, REQUIRE-ENCRYPTION
+#    NAME    DIRECTORY  REQUIRE-ENCRYPTION
+;;; default share
+0 X* pub     /pub       no               
+1    backup  backup     no
+
+Now, additional configuration changes can be done, like disabling the default user and share, etc. 
+
+
