@@ -1,0 +1,24 @@
+
+System Information and Utilities
+
+    Creado por Usuario desconocido (emils), actualizado por última vez el may 31, 2022 1 min de lectura
+
+In This Section:
+
+        Clock
+        Device-mode
+        E-mail
+        Fetch
+        Files
+        Identity
+        Interface Lists
+        Neighbor discovery
+        Note
+        NTP
+        Partitions
+        Precision Time Protocol
+        Scheduler
+        Services
+        TFTP
+
+
